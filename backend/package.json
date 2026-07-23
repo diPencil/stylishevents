@@ -1,0 +1,25 @@
+{
+  "name": "stylish-events-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Stylish Events booking system",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "seed:production-data": "node scripts/seed-production-data.js",
+    "test": "node --test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "nodemailer": "^6.9.7",
+    "dotenv": "^16.3.1",
+    "mysql2": "^3.11.5",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {}
+}

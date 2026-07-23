@@ -1,0 +1,10 @@
+   ▲ Next.js 15.2.6
+   - Local:        http://localhost:3002
+   - Network:      http://192.168.1.40:3002
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1672ms
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 2.6s (1013 modules)
+ GET /admin/ 200 in 2985ms
