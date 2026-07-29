@@ -66,6 +66,10 @@ export const platformApi = {
     request<any>("/api/auth/forgot-password", { method: "POST", body: JSON.stringify(data) }),
   uploadAuthAvatar: (data: { fileName: string; dataUrl: string }) =>
     request<any>("/api/auth/avatar-upload", { method: "POST", body: JSON.stringify(data) }),
+  uploadMyAvatar: (data: { fileName: string; dataUrl: string }) =>
+    request<any>("/api/auth/me/avatar-upload", { method: "POST", body: JSON.stringify(data) }),
+  removeMyAvatar: () =>
+    request<any>("/api/auth/me/avatar", { method: "DELETE" }),
   me: (token: string) =>
     request<any>("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } }),
   updateMe: (data: Record<string, unknown>) =>
@@ -80,6 +84,58 @@ export const platformApi = {
   getSiteContentSettings: () => request<any>("/api/platform/settings/site-content"),
   updateSiteContentSettings: (data: Record<string, unknown>) =>
     request<any>("/api/platform/settings/site-content", { method: "PUT", body: JSON.stringify(data) }),
+  submitEventBrief: (data: Record<string, unknown>) =>
+    request<any>("/api/booking", { method: "POST", body: JSON.stringify(data) }),
+  submitContactInquiry: (data: Record<string, unknown>) =>
+    request<any>("/api/contact-inquiries", { method: "POST", body: JSON.stringify(data) }),
+  getMyDashboard: () => request<any>("/api/me/dashboard"),
+  listMyRegistrations: (params?: { search?: string; status?: string; period?: string; page?: number; perPage?: number }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.search) searchParams.set("search", params.search)
+    if (params?.status) searchParams.set("status", params.status)
+    if (params?.period) searchParams.set("period", params.period)
+    if (params?.page) searchParams.set("page", String(params.page))
+    if (params?.perPage) searchParams.set("perPage", String(params.perPage))
+    const queryString = searchParams.toString()
+    return request<any>(`/api/me/registrations${queryString ? `?${queryString}` : ""}`)
+  },
+  getMyRegistration: (id: number | string) => request<any>(`/api/me/registrations/${id}`),
+  listMyTickets: (params?: { search?: string; status?: string; page?: number; perPage?: number }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.search) searchParams.set("search", params.search)
+    if (params?.status) searchParams.set("status", params.status)
+    if (params?.page) searchParams.set("page", String(params.page))
+    if (params?.perPage) searchParams.set("perPage", String(params.perPage))
+    const queryString = searchParams.toString()
+    return request<any>(`/api/me/tickets${queryString ? `?${queryString}` : ""}`)
+  },
+  getMyTicket: (id: number | string) => request<any>(`/api/me/tickets/${id}`),
+  getMyTicketQr: (id: number | string) => request<any>(`/api/me/tickets/${id}/qr`),
+  listMyCertificates: (params?: { search?: string; status?: string; page?: number; perPage?: number }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.search) searchParams.set("search", params.search)
+    if (params?.status) searchParams.set("status", params.status)
+    if (params?.page) searchParams.set("page", String(params.page))
+    if (params?.perPage) searchParams.set("perPage", String(params.perPage))
+    const queryString = searchParams.toString()
+    return request<any>(`/api/me/certificates${queryString ? `?${queryString}` : ""}`)
+  },
+  listMyNotifications: () => request<any>("/api/me/notifications"),
+  listMyReviews: () => request<any>("/api/me/reviews"),
+  listContactInquiries: (params?: { search?: string; status?: string; type?: string; date?: string; limit?: number; offset?: number }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.search) searchParams.set("search", params.search)
+    if (params?.status) searchParams.set("status", params.status)
+    if (params?.type) searchParams.set("type", params.type)
+    if (params?.date) searchParams.set("date", params.date)
+    if (typeof params?.limit === "number") searchParams.set("limit", String(params.limit))
+    if (typeof params?.offset === "number") searchParams.set("offset", String(params.offset))
+    const queryString = searchParams.toString()
+    return request<any>(`/api/contact-inquiries${queryString ? `?${queryString}` : ""}`)
+  },
+  getContactInquiry: (id: number | string) => request<any>(`/api/contact-inquiries/${id}`),
+  updateContactInquiry: (id: number | string, data: Record<string, unknown>) =>
+    request<any>(`/api/contact-inquiries/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   getCurrencySettings: () => request<any>("/api/platform/settings/currency"),
   updateCurrencySettings: (data: Record<string, unknown>) =>
     request<any>("/api/platform/settings/currency", { method: "PUT", body: JSON.stringify(data) }),
@@ -217,4 +273,3 @@ export const platformApi = {
       body: JSON.stringify({ permissions }),
     }),
 }
-

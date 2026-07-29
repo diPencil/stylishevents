@@ -90,7 +90,7 @@ export function generateBookingEmailTemplate(data) {
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://stylish-events.com/${isArabic ? 'stylish-logo-ar.svg' : 'stylish-logo.svg'}" alt="Stylish Events logo" style="max-width: 150px; height: auto; margin-bottom: 15px;">
+      <img src="https://stylish-events.com/${isArabic ? 'LogoAR.png' : 'logo.png'}" alt="Stylish Events logo" style="max-width: 150px; height: auto; margin-bottom: 15px;">
       <p>${isArabic ? 'إشعار بطلب حجز جديد' : 'New Booking Request Notification'}</p>
     </div>
     

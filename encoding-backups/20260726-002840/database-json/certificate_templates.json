@@ -1,0 +1,89 @@
+{
+  "createTable": "CREATE TABLE `certificate_templates` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `event_id` bigint(20) unsigned NOT NULL,\n  `name` varchar(180) NOT NULL,\n  `template_type` enum('image','pdf') NOT NULL DEFAULT 'image',\n  `template_url` varchar(500) NOT NULL,\n  `field_positions_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`field_positions_json`)),\n  `is_default` tinyint(1) NOT NULL DEFAULT 0,\n  `is_active` tinyint(1) NOT NULL DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `fk_certificate_templates_event` (`event_id`),\n  CONSTRAINT `fk_certificate_templates_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+  "rows": [
+    {
+      "id": 1,
+      "event_id": 4,
+      "name": "digital-transformation-summit Certificate Template",
+      "template_type": "image",
+      "template_url": "https://directevents.click/templates/certificate-default.png",
+      "field_positions_json": "{\"attendeeName\":{\"x\":50,\"y\":48,\"align\":\"center\"},\"eventTitle\":{\"x\":50,\"y\":60,\"align\":\"center\"},\"date\":{\"x\":50,\"y\":72,\"align\":\"center\"},\"certificateNumber\":{\"x\":82,\"y\":88,\"align\":\"right\"}}",
+      "is_default": 1,
+      "is_active": 1,
+      "created_at": "2026-07-18T19:43:55.000Z",
+      "updated_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 2,
+      "event_id": 5,
+      "name": "international-hospitality-expo Certificate Template",
+      "template_type": "image",
+      "template_url": "https://directevents.click/templates/certificate-default.png",
+      "field_positions_json": "{\"attendeeName\":{\"x\":50,\"y\":48,\"align\":\"center\"},\"eventTitle\":{\"x\":50,\"y\":60,\"align\":\"center\"},\"date\":{\"x\":50,\"y\":72,\"align\":\"center\"},\"certificateNumber\":{\"x\":82,\"y\":88,\"align\":\"right\"}}",
+      "is_default": 1,
+      "is_active": 1,
+      "created_at": "2026-07-18T19:43:55.000Z",
+      "updated_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 3,
+      "event_id": 6,
+      "name": "founders-forum Certificate Template",
+      "template_type": "image",
+      "template_url": "https://directevents.click/templates/certificate-default.png",
+      "field_positions_json": "{\"attendeeName\":{\"x\":50,\"y\":48,\"align\":\"center\"},\"eventTitle\":{\"x\":50,\"y\":60,\"align\":\"center\"},\"date\":{\"x\":50,\"y\":72,\"align\":\"center\"},\"certificateNumber\":{\"x\":82,\"y\":88,\"align\":\"right\"}}",
+      "is_default": 1,
+      "is_active": 1,
+      "created_at": "2026-07-18T19:43:55.000Z",
+      "updated_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 4,
+      "event_id": 7,
+      "name": "smoke-medical-conference Certificate Template",
+      "template_type": "image",
+      "template_url": "https://directevents.click/templates/certificate-default.png",
+      "field_positions_json": "{\"attendeeName\":{\"x\":50,\"y\":48,\"align\":\"center\"},\"eventTitle\":{\"x\":50,\"y\":60,\"align\":\"center\"},\"date\":{\"x\":50,\"y\":72,\"align\":\"center\"},\"certificateNumber\":{\"x\":82,\"y\":88,\"align\":\"right\"}}",
+      "is_default": 1,
+      "is_active": 1,
+      "created_at": "2026-07-18T19:43:55.000Z",
+      "updated_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 5,
+      "event_id": 8,
+      "name": "customer-experience-lab Certificate Template",
+      "template_type": "image",
+      "template_url": "https://directevents.click/templates/certificate-default.png",
+      "field_positions_json": "{\"attendeeName\":{\"x\":50,\"y\":48,\"align\":\"center\"},\"eventTitle\":{\"x\":50,\"y\":60,\"align\":\"center\"},\"date\":{\"x\":50,\"y\":72,\"align\":\"center\"},\"certificateNumber\":{\"x\":82,\"y\":88,\"align\":\"right\"}}",
+      "is_default": 1,
+      "is_active": 1,
+      "created_at": "2026-07-18T19:43:55.000Z",
+      "updated_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 6,
+      "event_id": 9,
+      "name": "retail-innovation-day Certificate Template",
+      "template_type": "image",
+      "template_url": "https://directevents.click/templates/certificate-default.png",
+      "field_positions_json": "{\"attendeeName\":{\"x\":50,\"y\":48,\"align\":\"center\"},\"eventTitle\":{\"x\":50,\"y\":60,\"align\":\"center\"},\"date\":{\"x\":50,\"y\":72,\"align\":\"center\"},\"certificateNumber\":{\"x\":82,\"y\":88,\"align\":\"right\"}}",
+      "is_default": 1,
+      "is_active": 1,
+      "created_at": "2026-07-18T19:43:55.000Z",
+      "updated_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 7,
+      "event_id": 10,
+      "name": "archived-ops-bootcamp Certificate Template",
+      "template_type": "image",
+      "template_url": "https://directevents.click/templates/certificate-default.png",
+      "field_positions_json": "{\"attendeeName\":{\"x\":50,\"y\":48,\"align\":\"center\"},\"eventTitle\":{\"x\":50,\"y\":60,\"align\":\"center\"},\"date\":{\"x\":50,\"y\":72,\"align\":\"center\"},\"certificateNumber\":{\"x\":82,\"y\":88,\"align\":\"right\"}}",
+      "is_default": 1,
+      "is_active": 1,
+      "created_at": "2026-07-18T19:43:55.000Z",
+      "updated_at": "2026-07-18T19:43:55.000Z"
+    }
+  ]
+}

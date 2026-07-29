@@ -1,7 +1,7 @@
 "use client"
 
-import { Award, BadgeCheck, BarChart3, MessageSquareText, Repeat2, Users } from "lucide-react"
-import { EventCard, FeatureGrid, PageHero, PublicPageFrame, SectionHeader, SplitPanel } from "@/components/public/page-building-blocks"
+import { BadgeCheck } from "lucide-react"
+import { EventCard, PublicPageFrame, PublicPageHero } from "@/components/public/page-building-blocks"
 import { useLanguage } from "@/contexts/language-context"
 import { useEffect, useState } from "react"
 import { platformApi, apiAssetUrl } from "@/lib/platform-api"
@@ -61,19 +61,12 @@ export default function PreviousEventsPage() {
 
   return (
     <PublicPageFrame>
-      {/* Simple Image Hero */}
-      <div className="relative h-[300px] md:h-[400px] flex items-center justify-center overflow-hidden bg-slate-900">
-        <div className="absolute inset-0 bg-slate-900/60 z-10" />
-        <img src="https://images.unsplash.com/photo-1511578314322-379fff116361?q=80&w=2070&auto=format&fit=crop" alt="Previous Events" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-        <div className="relative z-20 text-center px-4 mt-16 md:mt-24">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-4 tracking-tight">
-            {isRtl ? (cfg?.titleAr || 'فعاليات سابقة') : (cfg?.titleEn || 'Previous Events')}
-          </h1>
-          <p className="text-lg md:text-xl text-slate-200 font-medium max-w-4xl mx-auto px-4">
-            {isRtl ? (cfg?.descriptionAr || 'سجل فعاليات تم تنفيذها وقياسها بالتشغيل والتجربة') : (cfg?.descriptionEn || 'A record of delivered events, measured by operation and experience')}
-          </p>
-        </div>
-      </div>
+      <PublicPageHero
+        title={isRtl ? (cfg?.titleAr || '\u0641\u0639\u0627\u0644\u064a\u0627\u062a \u0633\u0627\u0628\u0642\u0629') : (cfg?.titleEn || 'Previous Events')}
+        description={isRtl ? (cfg?.descriptionAr || '\u0633\u062c\u0644 \u0641\u0639\u0627\u0644\u064a\u0627\u062a \u062a\u0645 \u062a\u0646\u0641\u064a\u0630\u0647\u0627 \u0648\u0642\u064a\u0627\u0633\u0647\u0627 \u0628\u0627\u0644\u062a\u0634\u063a\u064a\u0644 \u0648\u0627\u0644\u062a\u062c\u0631\u0628\u0629') : (cfg?.descriptionEn || 'A record of delivered events, measured by operation and experience')}
+        backgroundImage="https://images.unsplash.com/photo-1511578314322-379fff116361?q=80&w=2070&auto=format&fit=crop"
+        imageAlt={isRtl ? '\u0641\u0639\u0627\u0644\u064a\u0627\u062a \u0633\u0627\u0628\u0642\u0629' : 'Previous Events'}
+      />
 
       {/* Events Grid Only */}
       <section className="px-4 py-14 sm:px-6 lg:py-20 bg-slate-50/50">

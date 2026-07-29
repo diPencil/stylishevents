@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { AnimatedCtaButton } from "@/components/ui/animated-cta-button"
 import { useLanguage } from "@/contexts/language-context"
 import { apiAssetUrl, platformApi } from "@/lib/platform-api"
-import { normalizePlatformTheme, readSavedPlatformTheme, resolvePlatformTheme } from "@/lib/platform-theme"
+import { defaultPlatformTheme, normalizePlatformTheme, readSavedPlatformTheme, resolvePlatformTheme } from "@/lib/platform-theme"
 import { publicNavLinks } from "@/lib/public-pages-content"
 
 type PublicMenuLink = {
@@ -20,14 +20,24 @@ type PublicMenuLink = {
 }
 
 const siteMenuStorageKey = "stylish-events-site-content-settings"
-const pageHrefs = ["/upcoming-events", "/previous-events", "/why-us", "/about", "/contact"]
+const pageHrefs = ["/upcoming-events", "/previous-events", "/about", "/contact"]
 const arabicNavLabels: Record<string, string> = {
   "/": "الرئيسية",
   "/upcoming-events": "الفعاليات القادمة",
   "/previous-events": "فعاليات سابقة",
-  "/why-us": "لماذا نحن؟",
   "/about": "عن الشركة",
   "/contact": "تواصل معنا",
+}
+
+function hasCorruptedText(value: unknown): boolean {
+  return typeof value === "string" && /(Ãƒ|Ã‚|Ã˜|Ã™|Ã¢â‚¬|Ã¯Â¿Â½|ï¿½|�|\?{4,})/.test(value)
+}
+
+function hasCorruptedTree(value: unknown): boolean {
+  if (hasCorruptedText(value)) return true
+  if (Array.isArray(value)) return value.some(hasCorruptedTree)
+  if (value && typeof value === "object") return Object.values(value).some(hasCorruptedTree)
+  return false
 }
 
 function cleanLogoUrl(value: string, fallback: string) {
@@ -37,28 +47,70 @@ function cleanLogoUrl(value: string, fallback: string) {
 function brandAssetsFromTheme(theme: any) {
   const normalized = normalizePlatformTheme(theme)
   return {
-    logoEnUrl: cleanLogoUrl(normalized.logoEnUrl, "/stylish-logo.svg"),
-    logoArUrl: cleanLogoUrl(normalized.logoArUrl, "/stylish-logo-ar.svg"),
+    logoEnUrl: cleanLogoUrl(normalized.logoEnUrl, "/logo.png"),
+    logoArUrl: cleanLogoUrl(normalized.logoArUrl, "/LogoAR.png"),
+  }
+}
+
+function roleFromToken(token: string) {
+  try {
+    const encoded = token.split(".")[0]
+    if (!encoded) return ""
+    const payload = JSON.parse(atob(encoded.replace(/-/g, "+").replace(/_/g, "/")))
+    return payload?.role || ""
+  } catch {
+    return ""
+  }
+}
+
+function readAuthCta() {
+  if (typeof window === "undefined") return { href: "/login", isLoggedIn: false }
+
+  const token =
+    window.localStorage.getItem("stylish-events-admin-token") ||
+    window.localStorage.getItem("stylish-events-auth-token") ||
+    window.localStorage.getItem("stylish-events-token")
+  if (!token) return { href: "/login", isLoggedIn: false }
+
+  try {
+    const savedUser = window.localStorage.getItem("stylish-events-admin-user")
+    const user = savedUser ? JSON.parse(savedUser) : null
+    const role = user?.role_code || user?.role?.code || user?.role || roleFromToken(token)
+    const href = ["admin", "organizer", "employee", "back_office"].includes(role) ? "/admin" : "/dashboard"
+    return { href, isLoggedIn: true }
+  } catch {
+    const role = roleFromToken(token)
+    return { href: ["admin", "organizer", "employee", "back_office"].includes(role) ? "/admin" : "/dashboard", isLoggedIn: true }
   }
 }
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [menuLinks, setMenuLinks] = useState<PublicMenuLink[]>(publicNavLinks)
-  const [brandAssets, setBrandAssets] = useState(() => brandAssetsFromTheme(readSavedPlatformTheme()))
-  const [mounted, setMounted] = useState(false)
+  const [menuLinks, setMenuLinks] = useState<PublicMenuLink[]>(() => publicNavLinks.filter((link) => link.href !== "/why-us"))
+  const [brandAssets, setBrandAssets] = useState(() => brandAssetsFromTheme(defaultPlatformTheme))
+  const [authCta, setAuthCta] = useState({ href: "/login", isLoggedIn: false })
   const pathname = usePathname()
   const { language, setLanguage, t, isRtl } = useLanguage()
 
   useEffect(() => {
-    setMounted(true)
+    setAuthCta(readAuthCta())
   }, [])
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10)
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  useEffect(() => {
+    const syncAuthCta = () => setAuthCta(readAuthCta())
+    window.addEventListener("storage", syncAuthCta)
+    window.addEventListener("focus", syncAuthCta)
+    return () => {
+      window.removeEventListener("storage", syncAuthCta)
+      window.removeEventListener("focus", syncAuthCta)
+    }
   }, [])
 
   useEffect(() => {
@@ -90,13 +142,18 @@ export function Navbar() {
       if (!saved) return
 
       const parsed = JSON.parse(saved) as { menu?: PublicMenuLink[] }
+      if (hasCorruptedTree(parsed)) {
+        window.localStorage.removeItem(siteMenuStorageKey)
+        setMenuLinks(publicNavLinks.filter((link) => link.href !== "/why-us"))
+        return
+      }
       const savedMenu = parsed.menu?.filter((item) => item.visible !== false)
       if (!savedMenu?.length) return
 
       const hasNewPageLinks = savedMenu.some((item) => pageHrefs.includes(item.href))
-      setMenuLinks(hasNewPageLinks ? savedMenu : publicNavLinks)
+      setMenuLinks((hasNewPageLinks ? savedMenu : publicNavLinks).filter((link) => link.href !== "/why-us"))
     } catch {
-      setMenuLinks(publicNavLinks)
+      setMenuLinks(publicNavLinks.filter((link) => link.href !== "/why-us"))
     }
   }, [])
 
@@ -105,11 +162,20 @@ export function Navbar() {
   }
 
   const isActive = (href: string) => {
-    if (href === "/") return pathname === "/"
-    return pathname === href || pathname.startsWith(`${href}/`)
+    const currentPath = pathname || "/"
+    if (href === "/") return currentPath === "/"
+    return currentPath === href || currentPath.startsWith(`${href}/`)
   }
 
-  if (!mounted) return null // Prevent hydration mismatch
+  const navLabel = (link: PublicMenuLink) => {
+    if (!isRtl) return link.labelEn
+    if (link.href === "/") return "الرئيسية"
+    if (link.href === "/upcoming-events") return "الفعاليات القادمة"
+    if (link.href === "/previous-events") return "فعاليات سابقة"
+    if (link.href === "/about") return "عن المنصة"
+    if (link.href === "/contact") return "تواصل معنا"
+    return arabicNavLabels[link.href] || link.labelAr
+  }
 
   return (
     <header className="fixed inset-x-0 top-6 z-50 flex justify-center px-4">
@@ -122,7 +188,7 @@ export function Navbar() {
         <Link href="/" className="flex items-center gap-2.5">
           <div className="relative overflow-hidden transition-all duration-300 h-10 w-36 md:h-12 md:w-44">
             <img
-              src={apiAssetUrl(isRtl ? brandAssets.logoArUrl : brandAssets.logoEnUrl) || (isRtl ? "/stylish-logo-ar.svg" : "/stylish-logo.svg")}
+              src={apiAssetUrl(isRtl ? brandAssets.logoArUrl : brandAssets.logoEnUrl) || (isRtl ? "/LogoAR.png" : "/logo.png")}
               alt="Stylish Events Services"
               className="h-full w-full object-contain"
             />
@@ -138,7 +204,7 @@ export function Navbar() {
                 isActive(link.href) ? "text-primary" : "text-[#475569] hover:text-primary"
               }`}
             >
-              {isRtl ? arabicNavLabels[link.href] || link.labelAr : link.labelEn}
+              {navLabel(link)}
             </Link>
           ))}
         </nav>
@@ -148,11 +214,11 @@ export function Navbar() {
             {language === "ar" ? "EN" : "AR"}
           </Button>
 
-          <Link href="/contact">
+          <Link href={authCta.href}>
             <div className="flex items-center">
               <AnimatedCtaButton style={{ '--main-size': '0.8em' } as React.CSSProperties}>
-                <span className="hidden md:inline">{isRtl ? "نظم فعاليتك" : "Plan Your Event Now"}</span>
-                <span className="md:hidden">{isRtl ? "تواصل" : "Contact"}</span>
+                <span className="hidden md:inline">{authCta.isLoggedIn ? (isRtl ? "لوحة التحكم" : "Dashboard") : (isRtl ? "تسجيل الدخول" : "Log in")}</span>
+                <span className="md:hidden">{authCta.isLoggedIn ? (isRtl ? "لوحة" : "Dashboard") : (isRtl ? "دخول" : "Log in")}</span>
               </AnimatedCtaButton>
             </div>
           </Link>
@@ -202,7 +268,7 @@ export function Navbar() {
                       className="text-2xl font-black text-slate-800 transition-colors hover:text-primary"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      {isRtl ? arabicNavLabels[link.href] || link.labelAr : link.labelEn}
+                      {navLabel(link)}
                     </Link>
                   ))}
                 </nav>
@@ -213,14 +279,14 @@ export function Navbar() {
                     onClick={toggleLanguage}
                     className="flex w-full items-center justify-between rounded-2xl bg-slate-50 p-4"
                   >
-                    <span className="text-sm font-extrabold text-slate-600">{isRtl ? "اللغة" : "Language"}</span>
-                    <span className="text-sm font-extrabold uppercase text-primary">{language === "ar" ? "English" : "العربية"}</span>
+                    <span className="text-sm font-extrabold text-slate-600">{isRtl ? "Ø§Ù„Ù„ØºØ©" : "Language"}</span>
+                    <span className="text-sm font-extrabold uppercase text-primary">{language === "ar" ? "English" : "Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©"}</span>
                   </button>
 
-                  <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Link href={authCta.href} onClick={() => setIsMobileMenuOpen(false)}>
                       <div className="mt-4 flex justify-center">
                         <AnimatedCtaButton style={{ '--main-size': '0.9em' } as React.CSSProperties}>
-                          {isRtl ? "نظم فعاليتك" : "Plan Your Event Now"}
+                          {authCta.isLoggedIn ? (isRtl ? "لوحة التحكم" : "Dashboard") : (isRtl ? "تسجيل الدخول" : "Log in")}
                         </AnimatedCtaButton>
                       </div>
                   </Link>

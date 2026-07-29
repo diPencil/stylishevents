@@ -12,9 +12,9 @@ export const defaultPlatformTheme: PlatformThemeSettings = {
   fontFamilyAr: "Cairo",
   buttonStyle: "solid",
   density: "comfortable",
-  logoEnUrl: "/stylish-logo.svg",
-  logoArUrl: "/stylish-logo-ar.svg",
-  faviconUrl: "/stylish-favicon.svg",
+  logoEnUrl: "/logo.png",
+  logoArUrl: "/LogoAR.png",
+  faviconUrl: "/favicon.png",
 }
 
 export function hexToRgb(hex: string) {

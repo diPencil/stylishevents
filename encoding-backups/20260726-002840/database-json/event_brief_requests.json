@@ -1,0 +1,36 @@
+{
+  "createTable": "CREATE TABLE `event_brief_requests` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `reference_number` varchar(80) NOT NULL,\n  `request_type` enum('single','recurring','annual','general') NOT NULL DEFAULT 'single',\n  `full_name` varchar(180) NOT NULL,\n  `email` varchar(180) NOT NULL,\n  `country_code` varchar(12) NOT NULL,\n  `phone` varchar(40) NOT NULL,\n  `preferred_contact_method` enum('phone','email','whatsapp') NOT NULL DEFAULT 'email',\n  `job_title` varchar(180) NOT NULL,\n  `organization` varchar(180) DEFAULT NULL,\n  `event_name` varchar(220) DEFAULT NULL,\n  `event_type` varchar(80) DEFAULT NULL,\n  `event_date` varchar(80) DEFAULT NULL,\n  `is_date_flexible` tinyint(1) NOT NULL DEFAULT 0,\n  `country` varchar(120) DEFAULT NULL,\n  `location` varchar(220) DEFAULT NULL,\n  `venue_status` enum('known','not_decided') NOT NULL DEFAULT 'not_decided',\n  `expected_attendance` varchar(80) DEFAULT NULL,\n  `budget_range` varchar(120) DEFAULT NULL,\n  `services_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`services_json`)),\n  `objectives` text DEFAULT NULL,\n  `event_brief` text NOT NULL,\n  `additional_requirements` text DEFAULT NULL,\n  `privacy_consent` tinyint(1) NOT NULL DEFAULT 1,\n  `communication_consent` tinyint(1) NOT NULL DEFAULT 0,\n  `language` enum('ar','en') NOT NULL DEFAULT 'en',\n  `status` enum('new','reviewing','contacted','closed') NOT NULL DEFAULT 'new',\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `reference_number` (`reference_number`)\n) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+  "rows": [
+    {
+      "id": 1,
+      "reference_number": "CONF-MS0VHAEK-0L21L",
+      "request_type": "general",
+      "full_name": "Codex Test User",
+      "email": "codex-test@example.com",
+      "country_code": "+20",
+      "phone": "1106653177",
+      "preferred_contact_method": "email",
+      "job_title": "Event Manager",
+      "organization": "Stylish QA",
+      "event_name": null,
+      "event_type": null,
+      "event_date": null,
+      "is_date_flexible": 0,
+      "country": null,
+      "location": null,
+      "venue_status": "not_decided",
+      "expected_attendance": null,
+      "budget_range": null,
+      "services_json": "[]",
+      "objectives": null,
+      "event_brief": "This is a general inquiry about planning an upcoming event setup with registration, ticketing, and support needs.",
+      "additional_requirements": null,
+      "privacy_consent": 1,
+      "communication_consent": 0,
+      "language": "en",
+      "status": "new",
+      "created_at": "2026-07-25T21:19:50.000Z",
+      "updated_at": "2026-07-25T21:19:50.000Z"
+    }
+  ]
+}

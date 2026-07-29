@@ -141,7 +141,7 @@ export default function CameraPerformancePage() {
     },
   ]
 
-  const getStatusBadgeClass = (status) => {
+  const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case "online":
         return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"

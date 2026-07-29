@@ -31,17 +31,20 @@ import countries from "i18n-iso-countries"
 import ar from "i18n-iso-countries/langs/ar.json"
 import en from "i18n-iso-countries/langs/en.json"
 import { countryDialCode } from "@/lib/country-dial-codes"
+import { DEFAULT_HOMEPAGE_REQUEST_SETUP } from "@/lib/site-content-defaults"
+import type { HomepageRequestSetupSettings } from "@/types/platform"
 
 countries.registerLocale(ar)
 countries.registerLocale(en)
 
-export function BookingForm() {
+export function BookingForm({ requestSetupSettings }: { requestSetupSettings?: Partial<HomepageRequestSetupSettings> | null }) {
   const [showSuccess, setShowSuccess] = useState(false)
   const [bookingData, setBookingData] = useState<any>(null)
   const { t, isRtl, language } = useLanguage()
   const bookingApiBaseUrl = "https://stylish-events.com"
   const [step, setStep] = useState(1)
   const [countryCode, setCountryCode] = useState("+966")
+  const content = { ...DEFAULT_HOMEPAGE_REQUEST_SETUP, ...(requestSetupSettings || {}) }
 
   const countryOptions = Object.entries(countries.getNames(language, { select: "official" })).map(
     ([code, name]) => ({
@@ -175,10 +178,12 @@ export function BookingForm() {
   }
 
   const stepTitles = [
-    isRtl ? "بيانات التواصل" : "Contact Info",
-    isRtl ? "تفاصيل الفعالية" : "Event Specs",
-    isRtl ? "الموقع والخدمات" : "Location & Services",
+    isRtl ? content.stepsAr[0] : content.stepsEn[0],
+    isRtl ? content.stepsAr[1] : content.stepsEn[1],
+    isRtl ? content.stepsAr[2] : content.stepsEn[2],
   ]
+
+  if (!content.enabled) return null
 
   return (
     <section id="booking-form" className="py-24 bg-slate-50/50">
@@ -189,25 +194,25 @@ export function BookingForm() {
           <div className="flex-1 text-white relative z-10 flex flex-col lg:max-w-[500px]">
             <div className="mb-2">
               <span className="bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase">
-                {isRtl ? "طلب حجز" : "Booking"}
+                {isRtl ? content.eyebrowAr : content.eyebrowEn}
               </span>
             </div>
             <h2 className="text-3xl md:text-4xl xl:text-5xl font-extrabold leading-tight mt-4 mb-6">
-              {t("booking.title")}
+              {isRtl ? content.titleAr : content.titleEn}
             </h2>
             <p className="text-white/80 text-base leading-relaxed mb-10">
-              {t("booking.subtitle")}
+              {isRtl ? content.descriptionAr : content.descriptionEn}
             </p>
+            {(isRtl ? content.supportingTextAr : content.supportingTextEn) ? (
+              <p className="text-white/65 text-sm leading-relaxed mb-8 -mt-4">
+                {isRtl ? content.supportingTextAr : content.supportingTextEn}
+              </p>
+            ) : null}
             <div className="grid grid-cols-2 gap-4 mb-10">
-              {[
-                { value: "500+", label: isRtl ? "فعالية ناجحة" : "Successful Events" },
-                { value: "98%", label: isRtl ? "رضا العملاء" : "Client Satisfaction" },
-                { value: "50+", label: isRtl ? "دولة حول العالم" : "Countries Worldwide" },
-                { value: "15+", label: isRtl ? "سنة خبرة" : "Years Experience" },
-              ].map((stat) => (
-                <div key={stat.label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+              {content.statCards.map((stat) => (
+                <div key={stat.id} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
                   <div className="text-2xl font-extrabold">{stat.value}</div>
-                  <div className="text-white/70 text-xs mt-1">{stat.label}</div>
+                  <div className="text-white/70 text-xs mt-1">{isRtl ? stat.labelAr : stat.labelEn}</div>
                 </div>
               ))}
             </div>
@@ -586,7 +591,7 @@ export function BookingForm() {
                           disabled={isSubmitting}
                           className="px-6 py-6 rounded-2xl font-bold border-slate-200 hover:bg-slate-50 min-w-[100px]"
                         >
-                          {isRtl ? "السابق" : "Back"}
+                          {isRtl ? content.backLabelAr : content.backLabelEn}
                         </Button>
                       )}
 
@@ -597,7 +602,7 @@ export function BookingForm() {
                           disabled={isSubmitting}
                           className="flex-1 py-6 text-sm md:text-base font-extrabold bg-[#121212] hover:bg-black text-white rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {isRtl ? "التالي" : "Next"}
+                          {isRtl ? content.nextLabelAr : content.nextLabelEn}
                           <ChevronsRight className={`w-5 h-5 ${isRtl ? "rotate-180" : ""}`} />
                         </Button>
                       ) : (
@@ -609,11 +614,11 @@ export function BookingForm() {
                           {isSubmitting ? (
                             <>
                               <span className="inline-block animate-spin mr-2">⏳</span>
-                              {isRtl ? "جاري..." : "Sending..."}
+                              {isRtl ? content.sendingLabelAr : content.sendingLabelEn}
                             </>
                           ) : (
                             <>
-                              {t("booking.confirmButton")}
+                              {isRtl ? content.submitLabelAr : content.submitLabelEn}
                               <div className="w-5 h-5 rounded-lg bg-white/10 flex items-center justify-center">🔒</div>
                             </>
                           )}
@@ -636,6 +641,10 @@ export function BookingForm() {
           isOpen={showSuccess}
           onClose={() => setShowSuccess(false)}
           data={bookingData}
+          content={{
+            title: isRtl ? content.successTitleAr : content.successTitleEn,
+            description: isRtl ? content.successDescriptionAr : content.successDescriptionEn,
+          }}
         />
       )}
     </section>

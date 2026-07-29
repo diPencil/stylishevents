@@ -1,0 +1,341 @@
+{
+  "createTable": "CREATE TABLE `role_permissions` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `role_id` bigint(20) unsigned NOT NULL,\n  `permission_key` varchar(120) NOT NULL,\n  `allowed` tinyint(1) NOT NULL DEFAULT 0,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_role_permission` (`role_id`,`permission_key`),\n  CONSTRAINT `fk_role_permissions_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB AUTO_INCREMENT=68 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+  "rows": [
+    {
+      "id": 1,
+      "role_id": 1,
+      "permission_key": "dashboard.view",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 2,
+      "role_id": 1,
+      "permission_key": "users.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 3,
+      "role_id": 1,
+      "permission_key": "roles.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 4,
+      "role_id": 1,
+      "permission_key": "events.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 5,
+      "role_id": 1,
+      "permission_key": "tickets.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 6,
+      "role_id": 1,
+      "permission_key": "pricing.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 7,
+      "role_id": 1,
+      "permission_key": "registrations.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 8,
+      "role_id": 1,
+      "permission_key": "payments.verify",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 9,
+      "role_id": 1,
+      "permission_key": "attendees.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 10,
+      "role_id": 1,
+      "permission_key": "checkin.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 11,
+      "role_id": 1,
+      "permission_key": "certificates.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 12,
+      "role_id": 1,
+      "permission_key": "reviews.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 13,
+      "role_id": 1,
+      "permission_key": "reports.view",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 14,
+      "role_id": 1,
+      "permission_key": "settings.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 15,
+      "role_id": 1,
+      "permission_key": "kiosk.use",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 16,
+      "role_id": 1,
+      "permission_key": "profile.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 17,
+      "role_id": 2,
+      "permission_key": "dashboard.view",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 18,
+      "role_id": 2,
+      "permission_key": "events.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 19,
+      "role_id": 2,
+      "permission_key": "tickets.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 20,
+      "role_id": 2,
+      "permission_key": "pricing.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 21,
+      "role_id": 2,
+      "permission_key": "registrations.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 22,
+      "role_id": 2,
+      "permission_key": "attendees.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 23,
+      "role_id": 2,
+      "permission_key": "checkin.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 24,
+      "role_id": 2,
+      "permission_key": "certificates.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 25,
+      "role_id": 2,
+      "permission_key": "reviews.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 26,
+      "role_id": 2,
+      "permission_key": "reports.view",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 27,
+      "role_id": 2,
+      "permission_key": "profile.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 28,
+      "role_id": 6,
+      "permission_key": "dashboard.view",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 29,
+      "role_id": 6,
+      "permission_key": "registrations.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 30,
+      "role_id": 6,
+      "permission_key": "payments.verify",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 31,
+      "role_id": 6,
+      "permission_key": "attendees.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 32,
+      "role_id": 6,
+      "permission_key": "checkin.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 33,
+      "role_id": 6,
+      "permission_key": "certificates.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 34,
+      "role_id": 6,
+      "permission_key": "reports.view",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 35,
+      "role_id": 6,
+      "permission_key": "profile.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 36,
+      "role_id": 3,
+      "permission_key": "dashboard.view",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 37,
+      "role_id": 3,
+      "permission_key": "attendees.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 38,
+      "role_id": 3,
+      "permission_key": "checkin.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 39,
+      "role_id": 3,
+      "permission_key": "certificates.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 40,
+      "role_id": 3,
+      "permission_key": "profile.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 41,
+      "role_id": 5,
+      "permission_key": "profile.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    },
+    {
+      "id": 42,
+      "role_id": 4,
+      "permission_key": "profile.manage",
+      "allowed": 1,
+      "created_at": "2026-07-18T12:16:43.000Z",
+      "updated_at": "2026-07-18T12:16:43.000Z"
+    }
+  ]
+}

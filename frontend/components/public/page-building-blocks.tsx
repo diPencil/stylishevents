@@ -6,6 +6,7 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/contexts/language-context"
+import { apiAssetUrl } from "@/lib/platform-api"
 import { cn } from "@/lib/utils"
 import type { LucideIcon } from "lucide-react"
 
@@ -16,6 +17,46 @@ export function PublicPageFrame({ children }: { children: React.ReactNode }) {
       <main>{children}</main>
       <Footer />
     </div>
+  )
+}
+
+export function PublicPageHero({
+  title,
+  description,
+  backgroundImage,
+  backgroundPosition = "center",
+  imageAlt,
+}: {
+  title: string
+  description: string
+  backgroundImage?: string
+  backgroundPosition?: string
+  imageAlt?: string
+}) {
+  const { isRtl } = useLanguage()
+  const resolvedImage =
+    apiAssetUrl(backgroundImage || "") ||
+    "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2070&auto=format&fit=crop"
+
+  return (
+    <section
+      className="relative flex h-[300px] items-center justify-center overflow-hidden bg-slate-900 bg-cover bg-no-repeat md:h-[400px]"
+      style={{ backgroundImage: `url("${resolvedImage}")`, backgroundPosition }}
+      role={imageAlt ? "img" : undefined}
+      aria-label={imageAlt}
+      dir={isRtl ? "rtl" : "ltr"}
+    >
+      <div className="absolute inset-0 z-10 bg-slate-900/60" />
+      <div className="absolute inset-0 bg-slate-900/20" />
+      <div className="relative z-20 mt-16 px-4 text-center md:mt-24">
+        <h1 className="mb-4 text-4xl font-extrabold tracking-tight text-white md:text-5xl lg:text-6xl">
+          {title}
+        </h1>
+        <p className="mx-auto max-w-4xl px-4 text-lg font-medium text-slate-200 md:text-xl">
+          {description}
+        </p>
+      </div>
+    </section>
   )
 }
 

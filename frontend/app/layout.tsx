@@ -74,19 +74,24 @@ const baseMetadata: Metadata = {
 }
 
 async function fetchPublicThemeSettings() {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 1500)
+
   try {
-    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
-    const res = await fetch(`${API_BASE}/api/platform/settings/theme`, { cache: "no-store" })
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:5000"
+    const res = await fetch(`${API_BASE}/api/platform/settings/theme`, { cache: "no-store", signal: controller.signal })
     const payload = await res.json().catch(() => ({}))
     return payload?.data || null
   } catch {
     return null
+  } finally {
+    clearTimeout(timeout)
   }
 }
 
 function resolveAssetUrl(value?: string | null) {
   if (!value) return ""
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:5000"
   const v = String(value)
   if (/^data:/i.test(v) || /^https?:\/\//i.test(v)) return v
   if (v.startsWith("/uploads/")) return `${API_BASE}${v}`
@@ -191,7 +196,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     root.dataset.platformDensity = theme.density || 'comfortable';
                     if (theme.faviconUrl) {
                       var apiBase = '${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"}';
-                      var faviconUrl = String(theme.faviconUrl || '/stylish-favicon.svg');
+                      var faviconUrl = String(theme.faviconUrl || '/favicon.png');
                       if (faviconUrl.indexOf('/uploads/') === 0) faviconUrl = apiBase + faviconUrl;
                       if (faviconUrl.indexOf('uploads/') === 0) faviconUrl = apiBase + '/' + faviconUrl;
                       if (faviconUrl.indexOf('data:') !== 0) faviconUrl += (faviconUrl.indexOf('?') === -1 ? '?' : '&') + 'v=' + Date.now();

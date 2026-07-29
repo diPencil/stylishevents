@@ -1,0 +1,31 @@
+﻿ M backend/scripts/seed-production-data.js
+ M backend/src/routes/booking.js
+ M backend/src/routes/platform.js
+ M backend/src/utils/validation.js
+ M frontend/app/admin/page.tsx
+ M frontend/app/contact/page.tsx
+ M frontend/app/forgot-password/page.tsx
+ M frontend/app/globals.css
+ M frontend/app/login/page.tsx
+ M frontend/app/page.tsx
+ M frontend/app/signup/page.tsx
+ M frontend/components/admin/admin-shell.tsx
+ M frontend/components/admin/site-content-settings-panel.tsx
+ M frontend/components/event-showcase-section.tsx
+ M frontend/components/navbar.tsx
+ M frontend/components/video-hero.tsx
+ M frontend/contexts/language-context.tsx
+ M frontend/lib/admin-translations.ts
+ M frontend/lib/platform-api.ts
+ M frontend/lib/site-content-defaults.ts
+ M frontend/scripts/start-local.ps1
+ M frontend/types/platform.ts
+?? admin_page_head.tsx
+?? fix_grid.js
+?? frontend/components/auth/auth-brand-headline.tsx
+?? frontend/components/events-inspire-section.tsx
+?? frontend/runtime-logs/frontend-live.log
+?? frontend/temp.js
+?? runtime-logs/
+?? start-local.bat
+?? start-local.ps1

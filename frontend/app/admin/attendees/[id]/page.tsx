@@ -1,5 +1,6 @@
 import { LiveAttendeeDetailPage } from "@/components/admin/live-detail-pages"
 
-export default function AttendeeDetailsPage({ params }: { params: { id: string } }) {
-  return <LiveAttendeeDetailPage id={params.id} />
+export default async function AttendeeDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <LiveAttendeeDetailPage id={id} />
 }

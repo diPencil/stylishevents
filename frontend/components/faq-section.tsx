@@ -159,7 +159,7 @@ export function FaqSection() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-6xl mx-auto items-start">
-          {faqs.map((faq, index) => (
+          {faqs.map((faq: { q: string; a: string }, index: number) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 10 }}

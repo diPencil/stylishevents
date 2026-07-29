@@ -1,8 +1,7 @@
 "use client"
 
-import { CalendarDays, CheckCircle2, Layers3, Ticket } from "lucide-react"
-import { EventCard, FeatureGrid, PageHero, PublicPageFrame, SectionHeader, SplitPanel } from "@/components/public/page-building-blocks"
-import { servicePillars } from "@/lib/public-pages-content"
+import { CheckCircle2 } from "lucide-react"
+import { EventCard, PublicPageFrame, PublicPageHero } from "@/components/public/page-building-blocks"
 import { useLanguage } from "@/contexts/language-context"
 import { useEffect, useState } from "react"
 import { platformApi, apiAssetUrl } from "@/lib/platform-api"
@@ -62,19 +61,12 @@ export default function UpcomingEventsPage() {
 
   return (
     <PublicPageFrame>
-      {/* Simple Image Hero */}
-      <div className="relative h-[300px] md:h-[400px] flex items-center justify-center overflow-hidden bg-slate-900">
-        <div className="absolute inset-0 bg-slate-900/60 z-10" />
-        <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2070&auto=format&fit=crop" alt="Upcoming Events" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-        <div className="relative z-20 text-center px-4 mt-16 md:mt-24">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-4 tracking-tight">
-            {isRtl ? (cfg?.titleAr || 'الفعاليات القادمة') : (cfg?.titleEn || 'Upcoming Events')}
-          </h1>
-          <p className="text-lg md:text-xl text-slate-200 font-medium max-w-4xl mx-auto px-4">
-            {isRtl ? (cfg?.descriptionAr || 'اكتشف الفعاليات القادمة الجاهزة للتسجيل والتشغيل') : (cfg?.descriptionEn || 'Discover the next events ready for registration and operation')}
-          </p>
-        </div>
-      </div>
+      <PublicPageHero
+        title={isRtl ? (cfg?.titleAr || '\u0627\u0644\u0641\u0639\u0627\u0644\u064a\u0627\u062a \u0627\u0644\u0642\u0627\u062f\u0645\u0629') : (cfg?.titleEn || 'Upcoming Events')}
+        description={isRtl ? (cfg?.descriptionAr || '\u0627\u0643\u062a\u0634\u0641 \u0627\u0644\u0641\u0639\u0627\u0644\u064a\u0627\u062a \u0627\u0644\u0642\u0627\u062f\u0645\u0629 \u0627\u0644\u062c\u0627\u0647\u0632\u0629 \u0644\u0644\u062a\u0633\u062c\u064a\u0644 \u0648\u0627\u0644\u062a\u0634\u063a\u064a\u0644') : (cfg?.descriptionEn || 'Discover the next events ready for registration and operation')}
+        backgroundImage="https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2070&auto=format&fit=crop"
+        imageAlt={isRtl ? '\u0627\u0644\u0641\u0639\u0627\u0644\u064a\u0627\u062a \u0627\u0644\u0642\u0627\u062f\u0645\u0629' : 'Upcoming Events'}
+      />
 
       {/* Events Grid Only */}
       <section className="px-4 py-14 sm:px-6 lg:py-20 bg-slate-50/50">

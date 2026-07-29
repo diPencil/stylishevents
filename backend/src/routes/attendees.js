@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import express from 'express';
 import { z } from 'zod';
 import { first, query, transaction } from '../db/mysql.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { asyncRoute, fail, ok } from '../utils/apiResponse.js';
 
 const router = express.Router();
@@ -144,7 +145,7 @@ router.post('/', asyncRoute(async (req, res) => {
   ok(res, { id: result.insertId, ...attendee }, 'Attendee created');
 }));
 
-router.post('/checkin', asyncRoute(async (req, res) => {
+router.post('/checkin', requireAuth, requirePermission('checkin.manage'), asyncRoute(async (req, res) => {
   const token = String(req.body.qrToken || '');
   if (!token) return fail(res, 400, 'QR token is required');
 
@@ -155,20 +156,20 @@ router.post('/checkin', asyncRoute(async (req, res) => {
   `, { token });
 
   if (!attendee) return fail(res, 404, 'Invalid QR code', { result: 'invalid' });
-  if (attendee.qr_status !== 'active') {
-    await query(`
-      INSERT INTO checkin_logs (attendee_id, event_id, scan_result, notes)
-      VALUES (:attendeeId, :eventId, 'revoked', 'QR is not active')
-    `, { attendeeId: attendee.id, eventId: attendee.event_id });
-    return fail(res, 409, 'QR code is not active', { result: 'revoked' });
-  }
-
   if (attendee.checked_in_at) {
     await query(`
       INSERT INTO checkin_logs (attendee_id, event_id, scan_result, notes)
       VALUES (:attendeeId, :eventId, 'duplicate', 'Already checked in')
     `, { attendeeId: attendee.id, eventId: attendee.event_id });
     return fail(res, 409, 'Attendee already checked in', { result: 'duplicate', attendee });
+  }
+
+  if (attendee.qr_status !== 'active') {
+    await query(`
+      INSERT INTO checkin_logs (attendee_id, event_id, scan_result, notes)
+      VALUES (:attendeeId, :eventId, 'revoked', 'QR is not active')
+    `, { attendeeId: attendee.id, eventId: attendee.event_id });
+    return fail(res, 409, 'QR code is not active', { result: 'revoked' });
   }
 
   const checkedIn = await transaction(async (connection) => {

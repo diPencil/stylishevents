@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { AuthBrandHeadline } from "@/components/auth/auth-brand-headline"
 import { useLanguage } from "@/contexts/language-context"
 import { apiAssetUrl, platformApi } from "@/lib/platform-api"
 import { normalizePlatformTheme, readSavedPlatformTheme, resolvePlatformTheme } from "@/lib/platform-theme"
@@ -84,12 +85,7 @@ export default function Login() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  const [theme, setTheme] = useState<PlatformThemeSettings>(() => readSavedPlatformTheme())
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const [theme, setTheme] = useState<PlatformThemeSettings | null>(null)
 
   useEffect(() => {
     const syncTheme = (event?: Event) => {
@@ -98,7 +94,7 @@ export default function Login() {
     }
 
     syncTheme()
-    platformApi.getThemeSettings().then((settings) => setTheme((current) => resolvePlatformTheme(settings, current))).catch(() => undefined)
+    platformApi.getThemeSettings().then((settings) => setTheme((current) => resolvePlatformTheme(settings, current || undefined))).catch(() => undefined)
     window.addEventListener("stylish-events-theme-settings-updated", syncTheme)
 
     return () => window.removeEventListener("stylish-events-theme-settings-updated", syncTheme)
@@ -112,7 +108,8 @@ export default function Login() {
       .me(token)
       .then((user) => {
         window.localStorage.setItem("stylish-events-admin-user", JSON.stringify(user))
-        router.replace("/admin")
+        const role = user?.role_code || user?.role?.code
+        router.replace(["admin", "organizer", "employee", "back_office"].includes(role) ? "/admin" : "/dashboard")
       })
       .catch(() => {
         window.localStorage.removeItem("stylish-events-admin-token")
@@ -136,7 +133,7 @@ export default function Login() {
       const next = new URLSearchParams(window.location.search).get("next")
       window.location.href = ["admin", "organizer", "employee", "back_office"].includes(role)
         ? next || "/admin"
-        : "/customer"
+        : next || "/dashboard"
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : text.errorFallback)
     } finally {
@@ -144,7 +141,7 @@ export default function Login() {
     }
   }
 
-  const logoSrc = apiAssetUrl(isRtl ? theme?.logoArUrl : theme?.logoEnUrl) || (isRtl ? "/stylish-logo-ar.svg" : "/stylish-logo.svg")
+  const logoSrc = apiAssetUrl(isRtl ? theme?.logoArUrl : theme?.logoEnUrl) || (isRtl ? "/LogoAR.png" : "/logo.png")
   const themeStyle = useMemo(
     () =>
       ({
@@ -154,8 +151,6 @@ export default function Login() {
       }) as React.CSSProperties,
     [theme],
   )
-
-  if (!mounted) return null
 
   return (
     <main className="relative min-h-dvh overflow-x-hidden bg-slate-50 text-slate-950 lg:overflow-hidden" dir={isRtl ? "rtl" : "ltr"} style={themeStyle}>
@@ -191,7 +186,9 @@ export default function Login() {
 
       <section className="relative z-10 mx-auto grid min-h-dvh w-full max-w-7xl items-center gap-6 px-4 py-5 sm:px-6 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:px-12 lg:py-8">
         <div className="absolute left-4 top-4 sm:left-6 sm:top-6 md:left-8 lg:left-12">
-          <img src={logoSrc} alt="Stylish Events" className="h-10 w-auto object-contain sm:h-12" />
+          <Link href="/" aria-label="Go to homepage" className="block transition hover:opacity-85">
+            <img src={logoSrc} alt="Stylish Events" className="h-10 w-auto object-contain sm:h-12" draggable={false} />
+          </Link>
         </div>
 
         <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="hidden pt-24 lg:block lg:pt-10">
@@ -199,16 +196,7 @@ export default function Login() {
             <p className="text-sm font-semibold uppercase tracking-[0.32em]" style={{ color: "color-mix(in srgb, var(--login-primary) 42%, white)" }}>
               {text.future}
             </p>
-            <h1
-              className="mt-3 text-[64px] font-semibold leading-none tracking-normal sm:text-[86px] lg:text-[112px]"
-              style={{
-                color: "var(--login-secondary)",
-                fontFamily: '"Playfair Display", Georgia, "Times New Roman", serif',
-                letterSpacing: "0",
-              }}
-            >
-              {text.headline}
-            </h1>
+            <AuthBrandHeadline isRtl={isRtl} color="var(--login-secondary)" />
             <p className="mt-3 text-xs font-semibold uppercase tracking-[0.42em]" style={{ color: "color-mix(in srgb, var(--login-primary) 26%, white)" }}>
               {text.brandLine}
             </p>

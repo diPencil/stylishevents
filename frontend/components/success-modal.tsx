@@ -21,6 +21,10 @@ countries.registerLocale(en)
 interface SuccessModalProps {
     isOpen: boolean
     onClose: () => void
+    content?: {
+        title?: string
+        description?: string
+    }
     data: {
         fullName: string
         eventName: string
@@ -36,7 +40,7 @@ interface SuccessModalProps {
     }
 }
 
-export function SuccessModal({ isOpen, onClose, data }: SuccessModalProps) {
+export function SuccessModal({ isOpen, onClose, data, content }: SuccessModalProps) {
     const { t, isRtl, language } = useLanguage()
     const [isLoading, setIsLoading] = useState(false)
     const contentRef = useRef<HTMLDivElement>(null)
@@ -163,10 +167,10 @@ export function SuccessModal({ isOpen, onClose, data }: SuccessModalProps) {
                         {/* Title Section (Slim & Simple) */}
                         <div className="text-center space-y-1.5">
                             <h2 className="text-base md:text-lg font-normal text-slate-600">
-                                {t("success.title")}
+                                {content?.title || t("success.title")}
                             </h2>
                             <p className="text-[11px] md:text-xs text-slate-400 font-normal">
-                                {t("success.subtitle")}
+                                {content?.description || t("success.subtitle")}
                             </p>
                             <p className="text-brand-purple font-medium text-xs md:text-sm tracking-widest pt-1">
                                 #{data.bookingNumber}

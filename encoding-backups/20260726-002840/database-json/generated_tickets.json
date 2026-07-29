@@ -1,0 +1,82 @@
+{
+  "createTable": "CREATE TABLE `generated_tickets` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `registration_id` bigint(20) unsigned NOT NULL,\n  `attendee_id` bigint(20) unsigned NOT NULL,\n  `ticket_number` varchar(80) NOT NULL,\n  `qr_token` char(64) NOT NULL,\n  `pdf_url` varchar(500) DEFAULT NULL,\n  `generated_at` datetime NOT NULL,\n  `printed_at` datetime DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `registration_id` (`registration_id`),\n  UNIQUE KEY `attendee_id` (`attendee_id`),\n  UNIQUE KEY `ticket_number` (`ticket_number`),\n  UNIQUE KEY `qr_token` (`qr_token`),\n  CONSTRAINT `fk_generated_tickets_attendee` FOREIGN KEY (`attendee_id`) REFERENCES `attendees` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `fk_generated_tickets_registration` FOREIGN KEY (`registration_id`) REFERENCES `registrations` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+  "rows": [
+    {
+      "id": 1,
+      "registration_id": 1,
+      "attendee_id": 1,
+      "ticket_number": "TKT-MRQAVLHS-940B3D",
+      "qr_token": "aa62ccace110f01bdf33a7a3e32144522e864fcb31155ec71b796cef7e30306f",
+      "pdf_url": null,
+      "generated_at": "2026-07-18T11:45:24.000Z",
+      "printed_at": null,
+      "created_at": "2026-07-18T11:45:24.000Z"
+    },
+    {
+      "id": 2,
+      "registration_id": 3,
+      "attendee_id": 2,
+      "ticket_number": "TKT-DTS-1001",
+      "qr_token": "f262b807970fef9cb7a5a89a9dd4ad836e4b8221b17fa33109decaeaab75c61a",
+      "pdf_url": "https://stylish-events.com/tickets/TKT-DTS-1001.pdf",
+      "generated_at": "2026-07-18T07:22:00.000Z",
+      "printed_at": "2026-07-18T11:20:00.000Z",
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 3,
+      "registration_id": 4,
+      "attendee_id": 3,
+      "ticket_number": "TKT-DTS-1002",
+      "qr_token": "11d87b90af24793e1898845e18d5510057b1008a0bb4fd1ec1d01c2469470ec4",
+      "pdf_url": "https://stylish-events.com/tickets/TKT-DTS-1002.pdf",
+      "generated_at": "2026-07-18T08:05:00.000Z",
+      "printed_at": null,
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 4,
+      "registration_id": 5,
+      "attendee_id": 4,
+      "ticket_number": "TKT-HSP-1003",
+      "qr_token": "1dff6757984144bee2c795ca6b361eae24377cdebbe325042572e18b3ea7fa56",
+      "pdf_url": "https://stylish-events.com/tickets/TKT-HSP-1003.pdf",
+      "generated_at": "2026-07-17T12:20:00.000Z",
+      "printed_at": "2026-07-18T11:20:00.000Z",
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 5,
+      "registration_id": 7,
+      "attendee_id": 5,
+      "ticket_number": "TKT-MED-1005",
+      "qr_token": "2cecf365f97c6d3b34607e35fe538723d42fab9834140a0bd6ea5562f04080a8",
+      "pdf_url": "https://stylish-events.com/tickets/TKT-MED-1005.pdf",
+      "generated_at": "2026-07-15T11:10:00.000Z",
+      "printed_at": "2026-07-18T11:20:00.000Z",
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 6,
+      "registration_id": 10,
+      "attendee_id": 6,
+      "ticket_number": "TKT-HSP-1008",
+      "qr_token": "0fd698c7cea14b16f48b3ca27c5a2c9ba91febe67fbe7b161750d2faded4e25c",
+      "pdf_url": "https://stylish-events.com/tickets/TKT-HSP-1008.pdf",
+      "generated_at": "2026-07-13T10:12:00.000Z",
+      "printed_at": null,
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 7,
+      "registration_id": 11,
+      "attendee_id": 7,
+      "ticket_number": "TKT-RTL-1009",
+      "qr_token": "6184f304a487345f8df67c6ff250f6b397521b2825b37e8fd0c3e791477a4f01",
+      "pdf_url": "https://stylish-events.com/tickets/TKT-RTL-1009.pdf",
+      "generated_at": "2026-05-02T07:00:00.000Z",
+      "printed_at": "2026-07-18T11:20:00.000Z",
+      "created_at": "2026-07-18T19:43:55.000Z"
+    }
+  ]
+}

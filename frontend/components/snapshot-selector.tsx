@@ -6,7 +6,7 @@ export interface Snapshot {
   title: string
   timestamp: string
   image: string
-  data: {
+  data?: {
     waitTime: number
     queueLength: number
     serviceTime: number
@@ -45,11 +45,13 @@ export interface Snapshot {
 
 interface SnapshotSelectorProps {
   snapshots: Snapshot[]
-  selectedSnapshotId: number
+  selectedSnapshotId?: number | null
+  selectedSnapshot?: number | null
   onSelectSnapshot: (id: number) => void
 }
 
-export function SnapshotSelector({ snapshots, selectedSnapshotId, onSelectSnapshot }: SnapshotSelectorProps) {
+export function SnapshotSelector({ snapshots, selectedSnapshot, selectedSnapshotId, onSelectSnapshot }: SnapshotSelectorProps) {
+  const activeSnapshotId = selectedSnapshotId ?? selectedSnapshot ?? null
   return (
     <div className="mb-8">
       <h2 className="text-xl font-semibold mb-4">Video Snapshots</h2>
@@ -59,7 +61,7 @@ export function SnapshotSelector({ snapshots, selectedSnapshotId, onSelectSnapsh
             key={snapshot.id}
             onClick={() => onSelectSnapshot(snapshot.id)}
             className={`cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
-              selectedSnapshotId === snapshot.id
+              activeSnapshotId === snapshot.id
                 ? "border-primary scale-[1.02] shadow-md"
                 : "border-border hover:border-primary/50"
             }`}

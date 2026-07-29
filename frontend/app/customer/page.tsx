@@ -1,10 +1,5 @@
-import { PortalShell } from "@/components/portal/portal-shell"
-import { RoleDashboard } from "@/components/portal/role-dashboard"
+import { redirect } from "next/navigation"
 
-export default function CustomerPortalPage() {
-  return (
-    <PortalShell role="customer">
-      <RoleDashboard role="customer" />
-    </PortalShell>
-  )
+export default function CustomerRedirectPage() {
+  redirect("/dashboard")
 }

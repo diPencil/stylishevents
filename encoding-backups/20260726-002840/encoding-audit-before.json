@@ -1,0 +1,449 @@
+{
+  "generatedAt": "2026-07-25T21:31:08.319Z",
+  "database": "directevents_platform",
+  "findingsCount": 44,
+  "totals": {
+    "project_settings.setting_value.contactPage.contactCards.0.labelAr": 1,
+    "project_settings.setting_value.contactPage.contactCards.0.supportingTextAr": 1,
+    "project_settings.setting_value.contactPage.contactCards.1.labelAr": 1,
+    "project_settings.setting_value.contactPage.contactCards.1.supportingTextAr": 1,
+    "project_settings.setting_value.contactPage.contactCards.2.labelAr": 1,
+    "project_settings.setting_value.contactPage.contactCards.2.supportingTextAr": 1,
+    "project_settings.setting_value.contactPage.contactCards.3.labelAr": 1,
+    "project_settings.setting_value.contactPage.contactCards.3.supportingTextAr": 1,
+    "project_settings.setting_value.contactPage.hero.descriptionAr": 1,
+    "project_settings.setting_value.contactPage.hero.eyebrowAr": 1,
+    "project_settings.setting_value.contactPage.hero.imageAltAr": 1,
+    "project_settings.setting_value.contactPage.hero.primaryCtaAr": 1,
+    "project_settings.setting_value.contactPage.hero.secondaryCtaAr": 1,
+    "project_settings.setting_value.contactPage.hero.supportingTextAr": 1,
+    "project_settings.setting_value.contactPage.hero.titleAr": 1,
+    "project_settings.setting_value.contactPage.requestSection.benefits.0.textAr": 1,
+    "project_settings.setting_value.contactPage.requestSection.benefits.0.titleAr": 1,
+    "project_settings.setting_value.contactPage.requestSection.benefits.1.textAr": 1,
+    "project_settings.setting_value.contactPage.requestSection.benefits.1.titleAr": 1,
+    "project_settings.setting_value.contactPage.requestSection.benefits.2.textAr": 1,
+    "project_settings.setting_value.contactPage.requestSection.benefits.2.titleAr": 1,
+    "project_settings.setting_value.contactPage.requestSection.benefits.3.textAr": 1,
+    "project_settings.setting_value.contactPage.requestSection.benefits.3.titleAr": 1,
+    "project_settings.setting_value.contactPage.requestSection.descriptionAr": 1,
+    "project_settings.setting_value.contactPage.requestSection.eyebrowAr": 1,
+    "project_settings.setting_value.contactPage.requestSection.submitLabelAr": 1,
+    "project_settings.setting_value.contactPage.requestSection.supportingTextAr": 1,
+    "project_settings.setting_value.contactPage.requestSection.titleAr": 1,
+    "project_settings.setting_value.contactPage.successState.descriptionAr": 1,
+    "project_settings.setting_value.contactPage.successState.titleAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.cta.labelAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.descriptionAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.eyebrowAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.gallery.0.altAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.gallery.1.altAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.gallery.2.altAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.gallery.3.altAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.timeline.items.0.descriptionAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.timeline.items.0.titleAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.timeline.items.1.descriptionAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.timeline.items.1.titleAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.timeline.items.2.descriptionAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.timeline.items.2.titleAr": 1,
+    "project_settings.setting_value.homepage.eventsInspireSection.titleAr": 1
+  },
+  "findings": [
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.timeline.items.0.titleAr",
+      "issue": "question_mark_loss",
+      "preview": "?????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.timeline.items.0.descriptionAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ??????? ???????? ?????? ??? ??????????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.timeline.items.1.titleAr",
+      "issue": "question_mark_loss",
+      "preview": "?????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.timeline.items.1.descriptionAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ?? ????? ????? ???? ??????? ?????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.timeline.items.2.titleAr",
+      "issue": "question_mark_loss",
+      "preview": "?????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.timeline.items.2.descriptionAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ??????? ??????? ??? ???? ?????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.eyebrowAr",
+      "issue": "question_mark_loss",
+      "preview": "????? ????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.titleAr",
+      "issue": "question_mark_loss",
+      "preview": "??????? ?????? ??????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.descriptionAr",
+      "issue": "question_mark_loss",
+      "preview": "????? ?? ????? ???????? ??????????? ?????? ????? ?????? ?????? ????? ????? ?????? ??? ????...",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.cta.labelAr",
+      "issue": "question_mark_loss",
+      "preview": "?????? ????????? ???????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.gallery.0.altAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ???????? ?? ?????? ?????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.gallery.1.altAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ????? ????? ???? ??????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.gallery.2.altAr",
+      "issue": "question_mark_loss",
+      "preview": "????? ???? ???? ???? ??????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "homepage.eventsInspireSection.gallery.3.altAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ???????? ??????? ??????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.hero.eyebrowAr",
+      "issue": "question_mark_loss",
+      "preview": "????? ?? ??????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.hero.titleAr",
+      "issue": "question_mark_loss",
+      "preview": "????? ??????? ???????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.hero.descriptionAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ?????? ??????? ???????? ?????? ?? ????? ??????? ???????? ?????? ??????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.hero.supportingTextAr",
+      "issue": "question_mark_loss",
+      "preview": "?? ???? ?????? ????? ????? ???? ??????? ????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.hero.primaryCtaAr",
+      "issue": "question_mark_loss",
+      "preview": "????? ?????? ????????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.hero.secondaryCtaAr",
+      "issue": "question_mark_loss",
+      "preview": "??? ?????? ???????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.hero.imageAltAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ????? ??????? ????? ????? ??????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.contactCards.0.labelAr",
+      "issue": "question_mark_loss",
+      "preview": "??????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.contactCards.0.supportingTextAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ?????? ?? ??????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.contactCards.1.labelAr",
+      "issue": "question_mark_loss",
+      "preview": "?????? ??????????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.contactCards.1.supportingTextAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ???????? ???????? ????????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.contactCards.2.labelAr",
+      "issue": "question_mark_loss",
+      "preview": "???????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.contactCards.2.supportingTextAr",
+      "issue": "question_mark_loss",
+      "preview": "?????? ?????? ????????? ???????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.contactCards.3.labelAr",
+      "issue": "question_mark_loss",
+      "preview": "?????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.contactCards.3.supportingTextAr",
+      "issue": "question_mark_loss",
+      "preview": "?????? ?????? ??? ?????? ????????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.requestSection.eyebrowAr",
+      "issue": "question_mark_loss",
+      "preview": "?????? ?????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.requestSection.titleAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ????? ????? ????????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.requestSection.descriptionAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ???????? ?????? ??? ?????? ?????? ?????? ??????? ???? ?????? ??????? ???????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.requestSection.supportingTextAr",
+      "issue": "question_mark_loss",
+      "preview": "??????? ????? ????????? ??????? ????????? ????????? ??????? ???????????? ??????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.requestSection.submitLabelAr",
+      "issue": "question_mark_loss",
+      "preview": "????? ???? ????????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.requestSection.benefits.0.titleAr",
+      "issue": "question_mark_loss",
+      "preview": "?? ??? ????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.requestSection.benefits.0.textAr",
+      "issue": "question_mark_loss",
+      "preview": "????? ?????? ???? ?????? ????? ?????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.requestSection.benefits.1.titleAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.requestSection.benefits.1.textAr",
+      "issue": "question_mark_loss",
+      "preview": "???? ????? ????? ????? ???? ?? ??????? ???????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.requestSection.benefits.2.titleAr",
+      "issue": "question_mark_loss",
+      "preview": "????? ???",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.requestSection.benefits.2.textAr",
+      "issue": "question_mark_loss",
+      "preview": "?????? ??? ???? ???????? ?? ?????? ?? ???? ????? ???????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.requestSection.benefits.3.titleAr",
+      "issue": "question_mark_loss",
+      "preview": "??? ?????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.requestSection.benefits.3.textAr",
+      "issue": "question_mark_loss",
+      "preview": "??? ?????? ??? ??????? ?????? ???????.",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.successState.titleAr",
+      "issue": "question_mark_loss",
+      "preview": "?? ?????? ???? ???????",
+      "suggestedPreview": null
+    },
+    {
+      "table": "project_settings",
+      "id": "8",
+      "column": "setting_value",
+      "jsonPath": "contactPage.successState.descriptionAr",
+      "issue": "question_mark_loss",
+      "preview": "?????? ?????? ???? ??????? ??? ????? ???????? ???????.",
+      "suggestedPreview": null
+    }
+  ]
+}

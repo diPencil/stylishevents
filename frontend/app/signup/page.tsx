@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CountrySelect } from "@/components/country-select"
+import { AuthBrandHeadline } from "@/components/auth/auth-brand-headline"
 import { useLanguage } from "@/contexts/language-context"
 import { applyCountryDialCode } from "@/lib/country-dial-codes"
 import { apiAssetUrl, platformApi } from "@/lib/platform-api"
@@ -125,7 +126,7 @@ export default function SignUp() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
-  const [theme, setTheme] = useState<PlatformThemeSettings>(() => readSavedPlatformTheme())
+  const [theme, setTheme] = useState<PlatformThemeSettings | null>(null)
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
@@ -147,7 +148,7 @@ export default function SignUp() {
     }
 
     syncTheme()
-    platformApi.getThemeSettings().then((settings) => setTheme((current) => resolvePlatformTheme(settings, current))).catch(() => undefined)
+    platformApi.getThemeSettings().then((settings) => setTheme((current) => resolvePlatformTheme(settings, current || undefined))).catch(() => undefined)
     window.addEventListener("stylish-events-theme-settings-updated", syncTheme)
 
     return () => window.removeEventListener("stylish-events-theme-settings-updated", syncTheme)
@@ -227,7 +228,7 @@ export default function SignUp() {
     }
   }
 
-  const logoSrc = apiAssetUrl(isRtl ? theme?.logoArUrl : theme?.logoEnUrl) || (isRtl ? "/stylish-logo-ar.svg" : "/stylish-logo.svg")
+  const logoSrc = apiAssetUrl(isRtl ? theme?.logoArUrl : theme?.logoEnUrl) || (isRtl ? "/LogoAR.png" : "/logo.png")
   const pageStyle = useMemo(
     () =>
       ({
@@ -256,7 +257,9 @@ export default function SignUp() {
 
       <section className="relative z-10 mx-auto flex min-h-dvh w-full max-w-6xl flex-col px-4 py-4 sm:px-6 sm:py-6 lg:h-full lg:px-10 lg:py-7">
         <div className="flex shrink-0 items-center justify-between gap-4">
-          <img src={logoSrc} alt={text.logoAlt} className="h-10 w-auto object-contain sm:h-12" />
+          <Link href="/" aria-label="Go to homepage" className="block transition hover:opacity-85">
+            <img src={logoSrc} alt={text.logoAlt} className="h-10 w-auto object-contain sm:h-12" draggable={false} />
+          </Link>
           <button
             type="button"
             onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
@@ -272,6 +275,9 @@ export default function SignUp() {
             <div className="max-h-[calc(100dvh-104px)] overflow-y-auto rounded-[18px] border border-white bg-white p-4 shadow-[0_24px_80px_rgba(15,23,42,0.13)] sm:p-5 md:p-6 lg:max-h-none lg:overflow-visible lg:p-7">
               <div className="mb-4 text-center sm:mb-5">
                 <p className="text-xs font-bold uppercase tracking-[0.28em] text-primary">{text.eyebrow}</p>
+                <div className="mx-auto flex justify-center">
+                  <AuthBrandHeadline isRtl={isRtl} color="var(--signup-secondary)" size="compact" />
+                </div>
                 <h1 className="mt-2 text-2xl font-bold tracking-normal text-slate-950 sm:text-3xl lg:text-4xl">{text.title}</h1>
                 <p className="mx-auto mt-2 max-w-xl text-sm font-medium leading-6 text-slate-600">{text.intro}</p>
               </div>

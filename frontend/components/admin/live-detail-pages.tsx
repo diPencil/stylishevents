@@ -645,7 +645,7 @@ export function LiveCustomerAssetPreviewPage({ id, kind }: { id: string; kind: "
         <Card className="overflow-hidden rounded-[28px] border-0 bg-white shadow-[0_16px_35px_rgba(15,23,42,0.06)]">
           <CardContent className="p-4 md:p-6">
             <div className="relative mx-auto aspect-[1.414/1] w-full max-w-5xl overflow-hidden rounded-[28px] border border-slate-100 bg-gradient-to-br from-[#eef6ff] via-white to-[#f8effb] shadow-inner">
-              <div className="absolute left-[6%] top-[7%]"><img src="/stylish-logo.svg" alt="Stylish Events" className="h-9 w-auto" /></div>
+              <div className="absolute left-[6%] top-[7%]"><img src="/logo.png" alt="Stylish Events" className="h-9 w-auto" /></div>
               <div className="absolute right-[6%] top-[8%] rounded-full bg-white/80 px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-[hsl(var(--primary))]">{language === "ar" ? "حضور موثق" : "Verified Attendance"}</div>
               <div className="absolute inset-x-[9%] top-[25%] text-center">
                 <p className="text-xs font-extrabold uppercase tracking-[0.35em] text-slate-400">{adminT(language, "certificates.certificateOfAttendance")}</p>
@@ -665,7 +665,7 @@ export function LiveCustomerAssetPreviewPage({ id, kind }: { id: string; kind: "
           <Card className="rounded-[28px] border-0 bg-white shadow-[0_16px_35px_rgba(15,23,42,0.06)]">
             <CardContent className="p-6">
               <div className="mx-auto max-w-xl rounded-[34px] bg-gradient-to-br from-[#0f172a] to-[hsl(var(--primary))] p-6 text-white shadow-2xl">
-                <div className="flex items-center justify-between"><img src="/stylish-favicon.svg" alt="Stylish Events" className="h-12 w-12 rounded-full bg-white p-1" /><Badge className="rounded-xl bg-white/20 text-white hover:bg-white/20">{status}</Badge></div>
+                <div className="flex items-center justify-between"><img src="/favicon.png" alt="Stylish Events" className="h-12 w-12 rounded-full bg-white p-1" /><Badge className="rounded-xl bg-white/20 text-white hover:bg-white/20">{status}</Badge></div>
                 <p className="mt-10 text-xs font-bold uppercase tracking-widest text-white/60">{language === "ar" ? "كارت دخول الفعالية" : "Event Access Card"}</p>
                 <h2 className="mt-3 text-3xl font-extrabold leading-tight">{row.full_name}</h2>
                 <p className="mt-3 text-sm font-semibold leading-6 text-white/70">{eventTitle(row)}</p>

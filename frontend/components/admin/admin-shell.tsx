@@ -18,6 +18,8 @@ import {
   MessageSquareText,
   PanelLeftClose,
   PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   QrCode,
   ReceiptText,
   Search,
@@ -50,11 +52,12 @@ const defaultTheme: PlatformThemeSettings = {
   accentColor: "#2563EB",
   radius: "12",
   fontFamily: "Rubik",
+  fontFamilyAr: "Cairo",
   buttonStyle: "solid",
   density: "comfortable",
-  logoEnUrl: "/stylish-logo.svg",
-  logoArUrl: "/stylish-logo-ar.svg",
-  faviconUrl: "/stylish-favicon.svg",
+  logoEnUrl: "/logo.png",
+  logoArUrl: "/LogoAR.png",
+  faviconUrl: "/favicon.png",
 }
 
 const profileStorageKey = "stylish-events-admin-profile"
@@ -247,6 +250,7 @@ const navItems = [
   { href: "/admin/events", key: "events", icon: CalendarDays },
   { href: "/admin/tickets", key: "tickets", icon: Ticket },
   { href: "/admin/orders", key: "orders", icon: ReceiptText },
+  { href: "/admin/contact-inquiries", key: "contactInquiries", icon: Inbox },
   { href: "/admin/attendees", key: "attendees", icon: Users },
   { href: "/admin/users", key: "users", icon: UserCog },
   { href: "/admin/checkin", key: "checkin", icon: QrCode },
@@ -266,13 +270,14 @@ const baseSearchItems = [
   { title: "Events table", subtitle: "Manage events, drafts, and deleted items", href: "/admin/events", type: "Page" },
   { title: "Ticket bookings", subtitle: "Customers, QR codes, and live check-in", href: "/admin/tickets", type: "Page" },
   { title: "Bookings & payments", subtitle: "Orders, invoices, refunds, and cancellations", href: "/admin/orders", type: "Page" },
+  { title: "Contact inquiries", subtitle: "General questions, support, partnerships, and planning inquiries", href: "/admin/contact-inquiries", type: "Page" },
   { title: "Users and roles", subtitle: "Admin users, organizers, employees, and permissions", href: "/admin/users", type: "Page" },
   { title: "Theme settings", subtitle: "Colors, logos, radius, and font", href: "/admin/settings", type: "Settings" },
 ]
 
 function StylishEventsMark({ collapsed, theme }: { collapsed?: boolean; theme: PlatformThemeSettings }) {
-  const { language } = useLanguage()
-  const logoSrc = apiAssetUrl(collapsed ? theme.faviconUrl : language === "ar" ? theme.logoArUrl : theme.logoEnUrl) || (collapsed ? "/stylish-favicon.svg" : "/stylish-logo.svg")
+  const { language, isRtl } = useLanguage()
+  const logoSrc = apiAssetUrl(collapsed ? theme.faviconUrl : language === "ar" ? theme.logoArUrl : theme.logoEnUrl) || (collapsed ? "/favicon.png" : language === "ar" ? "/LogoAR.png" : "/logo.png")
 
   return (
     <div className={cn("flex h-16 items-center", collapsed && "justify-center")}>
@@ -281,7 +286,7 @@ function StylishEventsMark({ collapsed, theme }: { collapsed?: boolean; theme: P
         alt="Stylish Events"
         className={cn(
           "h-auto object-contain transition-all",
-          collapsed ? "max-h-10 w-10 rounded-xl object-center" : "max-h-12 w-full max-w-[190px] object-left"
+          collapsed ? "max-h-10 w-10 rounded-xl object-center" : cn("max-h-12 w-full max-w-[190px]", isRtl ? "object-right" : "object-left")
         )}
       />
     </div>
@@ -290,21 +295,24 @@ function StylishEventsMark({ collapsed, theme }: { collapsed?: boolean; theme: P
 
 function AdminNav({ collapsed }: { collapsed?: boolean }) {
   const pathname = usePathname()
-  const { language } = useLanguage()
+  const currentPath = pathname || ""
+  const { language, isRtl } = useLanguage()
 
   return (
     <nav className="space-y-1">
       {navItems.map((item) => {
         const Icon = item.icon
-        const active = item.href === "/admin" ? pathname === item.href : pathname.startsWith(item.href)
+        const active = item.href === "/admin" ? currentPath === item.href : currentPath.startsWith(item.href)
 
         return (
           <Link
             key={item.href}
             href={item.href}
+            aria-current={active ? "page" : undefined}
             title={collapsed ? adminT(language, `nav.${item.key}`) : undefined}
             className={cn(
               "admin-nav-item group flex h-10 items-center gap-3 rounded-xl px-3 text-[13px] font-bold text-slate-500 transition duration-200 hover:bg-white",
+              isRtl && !collapsed && "text-right",
               collapsed && "justify-center px-0",
               active && "admin-nav-item-active bg-white shadow-[0_10px_25px_rgba(93,58,138,0.08)]"
             )}
@@ -330,6 +338,7 @@ function SidebarBody({
   profile?: AdminProfile
 }) {
   const { language } = useLanguage()
+  const isRtl = language === "ar"
 
   return (
     <div className="flex h-full flex-col">
@@ -345,17 +354,19 @@ function SidebarBody({
             )}
             title={collapsed ? "Open sidebar" : "Close sidebar"}
           >
-            {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            {isRtl
+              ? collapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />
+              : collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             {!collapsed && <span>{adminT(language, "common.collapse")}</span>}
           </button>
         )}
       </div>
 
-      <div className={cn("admin-scrollbar min-h-0 flex-1 overflow-y-auto", collapsed ? "px-0" : "pr-1")}>
-        {!collapsed && <p className="mb-3 px-3 text-[10px] font-extrabold uppercase tracking-[0.20em] text-slate-300">{adminT(language, "common.main")}</p>}
+      <div className={cn("admin-scrollbar min-h-0 flex-1 overflow-y-auto", collapsed ? "px-0" : isRtl ? "pl-1" : "pr-1")}>
+        {!collapsed && <p className={cn("mb-3 px-3 text-[10px] font-extrabold uppercase tracking-[0.20em] text-slate-300", isRtl && "text-right")}>{adminT(language, "common.main")}</p>}
         <AdminNav collapsed={collapsed} />
 
-        {!collapsed && <p className="mb-3 mt-7 px-3 text-[10px] font-extrabold uppercase tracking-[0.20em] text-slate-300">{adminT(language, "common.workspace")}</p>}
+        {!collapsed && <p className={cn("mb-3 mt-7 px-3 text-[10px] font-extrabold uppercase tracking-[0.20em] text-slate-300", isRtl && "text-right")}>{adminT(language, "common.workspace")}</p>}
         <div className="space-y-1">
           {secondaryItems.map((item) => {
             const Icon = item.icon
@@ -365,6 +376,7 @@ function SidebarBody({
                 title={collapsed ? item.label : undefined}
                 className={cn(
                   "admin-nav-item flex h-10 w-full cursor-pointer items-center gap-3 rounded-xl px-3 text-[13px] font-bold text-slate-500 transition hover:bg-white",
+                  isRtl && !collapsed && "text-right",
                   collapsed && "justify-center px-0"
                 )}
               >
@@ -541,10 +553,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="admin-dashboard min-h-screen bg-[hsl(var(--primary)/0.07)] text-[#17172f]" dir={isRtl ? "rtl" : "ltr"}>
       <aside className={cn(
-        "fixed inset-y-0 z-30 hidden border-[hsl(var(--primary)/0.08)] bg-white/65 p-5 shadow-[18px_0_55px_rgba(15,23,42,0.04)] backdrop-blur-xl transition-all duration-300 lg:block",
-        sidebarCollapsed ? "w-[92px]" : "w-[252px]",
-        isRtl ? "border-l" : "border-r",
-        isRtl ? "right-0" : "left-0"
+        "fixed inset-y-0 z-30 hidden border-[hsl(var(--primary)/0.08)] bg-white/65 p-5 backdrop-blur-xl transition-all duration-300 lg:block",
+        isRtl
+          ? "right-0 border-l shadow-[-18px_0_55px_rgba(15,23,42,0.04)]"
+          : "left-0 border-r shadow-[18px_0_55px_rgba(15,23,42,0.04)]",
+        sidebarCollapsed ? "w-[92px]" : "w-[252px]"
       )}>
         <SidebarBody collapsed={sidebarCollapsed} onToggle={toggleSidebar} theme={theme} profile={profile} />
       </aside>
@@ -552,9 +565,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <div
         className={cn(
           "min-h-screen overflow-x-hidden transition-[padding] duration-300",
-          isRtl
-            ? sidebarCollapsed ? "lg:pr-[92px]" : "lg:pr-[252px]"
-            : sidebarCollapsed ? "lg:pl-[92px]" : "lg:pl-[252px]"
+          sidebarCollapsed
+            ? isRtl ? "lg:pr-[92px]" : "lg:pl-[92px]"
+            : isRtl ? "lg:pr-[252px]" : "lg:pl-[252px]"
         )}
       >
         <header className="sticky top-0 z-20 px-4 pt-4 md:px-6">
@@ -562,7 +575,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <div className="flex min-w-0 items-center gap-3">
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-11 w-11 rounded-2xl bg-[#f8f5fb] lg:hidden">
+                  <Button variant="ghost" size="icon" aria-label={adminT(language, "common.main")} className="h-11 w-11 rounded-2xl bg-[#f8f5fb] lg:hidden">
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
@@ -576,7 +589,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 <Input
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  className="h-10 border-0 bg-transparent p-0 text-sm font-semibold text-slate-600 shadow-none placeholder:text-slate-400 focus-visible:ring-0"
+                  dir={isRtl ? "rtl" : "ltr"}
+                  className={cn("h-10 border-0 bg-transparent p-0 text-sm font-semibold text-slate-600 shadow-none placeholder:text-slate-400 focus-visible:ring-0", isRtl && "text-right")}
                   placeholder={adminT(language, "common.searchPlaceholder")}
                 />
                 {searchQuery.trim() && (
@@ -634,10 +648,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuTrigger asChild>
                   <button className="relative flex h-11 w-11 cursor-pointer items-center justify-center rounded-2xl bg-[#f8f5fb] text-slate-500 transition hover:bg-white hover:text-[hsl(var(--primary))]">
                     <Bell className="h-5 w-5" />
-                    <span className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full bg-[hsl(var(--primary))]" />
+                    <span className={cn("absolute top-2.5 h-2.5 w-2.5 rounded-full bg-[hsl(var(--primary))]", isRtl ? "left-2.5" : "right-2.5")} />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[360px] rounded-[24px] border-0 p-3 shadow-[0_22px_55px_rgba(15,23,42,0.16)]">
+                <DropdownMenuContent align="end" className={cn("w-[360px] rounded-[24px] border-0 p-3 shadow-[0_22px_55px_rgba(15,23,42,0.16)]", isRtl ? "[direction:rtl]" : "[direction:ltr]")}>
                   <div className="mb-2 flex items-center justify-between px-2">
                     <DropdownMenuLabel className="p-0 text-base font-extrabold">{adminT(language, "common.notifications")}</DropdownMenuLabel>
                     <span className="rounded-full bg-[hsl(var(--primary)/0.10)] px-2 py-1 text-[10px] font-extrabold text-[hsl(var(--primary))]">{notifications.filter((item) => item.unread).length} {language === "ar" ? "جديد" : "new"}</span>
@@ -676,7 +690,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                       <ChevronDown className="h-4 w-4 text-slate-400" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-[280px] rounded-[24px] border-0 p-3 shadow-[0_22px_55px_rgba(15,23,42,0.16)]">
+                  <DropdownMenuContent align="end" className={cn("w-[280px] rounded-[24px] border-0 p-3 shadow-[0_22px_55px_rgba(15,23,42,0.16)]", isRtl ? "[direction:rtl]" : "[direction:ltr]")}>
                     <div className="mb-4 flex items-center gap-3">
                       <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-[hsl(var(--primary)/0.10)] text-[hsl(var(--primary))]">
                         {profile.avatarUrl ? <img src={profile.avatarUrl} alt={profile.name} className="h-full w-full object-cover" /> : <Users className="h-6 w-6" />}

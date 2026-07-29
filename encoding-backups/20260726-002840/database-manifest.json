@@ -1,0 +1,98 @@
+[
+  {
+    "table": "admin_notifications",
+    "rows": 5
+  },
+  {
+    "table": "attendees",
+    "rows": 7
+  },
+  {
+    "table": "audit_logs",
+    "rows": 33
+  },
+  {
+    "table": "bank_accounts",
+    "rows": 10
+  },
+  {
+    "table": "certificate_templates",
+    "rows": 7
+  },
+  {
+    "table": "certificates",
+    "rows": 3
+  },
+  {
+    "table": "checkin_logs",
+    "rows": 0
+  },
+  {
+    "table": "doctors",
+    "rows": 11
+  },
+  {
+    "table": "event_brief_requests",
+    "rows": 1
+  },
+  {
+    "table": "event_cards",
+    "rows": 5
+  },
+  {
+    "table": "event_sessions",
+    "rows": 4
+  },
+  {
+    "table": "events",
+    "rows": 10
+  },
+  {
+    "table": "generated_tickets",
+    "rows": 7
+  },
+  {
+    "table": "kiosk_search_logs",
+    "rows": 1
+  },
+  {
+    "table": "orders",
+    "rows": 11
+  },
+  {
+    "table": "project_settings",
+    "rows": 4
+  },
+  {
+    "table": "registrations",
+    "rows": 11
+  },
+  {
+    "table": "reviews",
+    "rows": 0
+  },
+  {
+    "table": "role_permissions",
+    "rows": 42
+  },
+  {
+    "table": "roles",
+    "rows": 6
+  },
+  {
+    "table": "ticket_price_periods",
+    "rows": 26
+  },
+  {
+    "table": "ticket_types",
+    "rows": 10
+  },
+  {
+    "table": "users",
+    "rows": 14
+  },
+  {
+    "table": "venues",
+    "rows": 4
+  }
+]

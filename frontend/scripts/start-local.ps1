@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 
-$root = Split-Path -Parent $PSScriptRoot
+$frontendRoot = Split-Path -Parent $PSScriptRoot
+$monorepoRoot = Split-Path -Parent $frontendRoot
 $node = "C:\Program Files\nodejs\node.exe"
 $pathValue = @(
   [Environment]::GetEnvironmentVariable("Path", "Machine"),
@@ -25,13 +26,13 @@ Start-Sleep -Seconds 1
 
 $backend = Start-Process `
   -FilePath "cmd.exe" `
-  -ArgumentList @("/k", "cd /d `"$root\backend`" && `"$node`" src\server.js") `
+  -ArgumentList @("/k", "cd /d `"$monorepoRoot\backend`" && `"$node`" src\server.js") `
   -WindowStyle Hidden `
   -PassThru
 
 $frontend = Start-Process `
   -FilePath "cmd.exe" `
-  -ArgumentList @("/k", "cd /d `"$root\frontend`" && `"$node`" .\node_modules\next\dist\bin\next start -p 3002") `
+  -ArgumentList @("/k", "cd /d `"$frontendRoot`" && `"$node`" .\node_modules\next\dist\bin\next dev -p 3002") `
   -WindowStyle Hidden `
   -PassThru
 

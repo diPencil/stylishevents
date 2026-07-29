@@ -4,7 +4,7 @@ import path from 'path';
 import { z } from 'zod';
 import { fileURLToPath } from 'url';
 import { requireAuth } from '../middleware/auth.js';
-import { first, query } from '../db/mysql.js';
+import { first, query, transaction } from '../db/mysql.js';
 import { asyncRoute, fail, ok } from '../utils/apiResponse.js';
 import { auditLog, createToken, hashPassword, verifyPassword } from '../utils/auth.js';
 
@@ -67,10 +67,26 @@ const passwordSchema = z.object({
   newPassword: z.string().min(8),
 });
 
+function verifyAvatarImageBuffer(mime, buffer) {
+  if (!buffer?.length) return false;
+  if (mime === 'image/png') return buffer.length > 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  if (mime === 'image/jpeg' || mime === 'image/jpg') return buffer.length > 4 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[buffer.length - 2] === 0xff && buffer[buffer.length - 1] === 0xd9;
+  if (mime === 'image/webp') return buffer.length > 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+  return false;
+}
+
+async function removeLocalAvatar(url) {
+  const value = String(url || '');
+  if (!value.startsWith('/uploads/avatars/')) return;
+  const fileName = path.basename(value);
+  if (!fileName || fileName !== value.split('/').pop()) return;
+  await fs.rm(path.join(uploadRoot, fileName), { force: true }).catch(() => undefined);
+}
+
 async function saveAvatarUpload({ fileName, dataUrl }) {
-  const match = dataUrl.match(/^data:(image\/(?:png|jpeg|jpg|webp|gif));base64,([A-Za-z0-9+/=]+)$/);
+  const match = dataUrl.match(/^data:(image\/(?:png|jpeg|jpg|webp));base64,([A-Za-z0-9+/=]+)$/);
   if (!match) {
-    const error = new Error('Only png, jpg, webp, and gif images are allowed');
+    const error = new Error('Only png, jpg, and webp images are allowed');
     error.statusCode = 400;
     throw error;
   }
@@ -80,10 +96,14 @@ async function saveAvatarUpload({ fileName, dataUrl }) {
     'image/jpeg': 'jpg',
     'image/jpg': 'jpg',
     'image/webp': 'webp',
-    'image/gif': 'gif',
   };
   const extension = extensionByMime[match[1]];
   const buffer = Buffer.from(match[2], 'base64');
+  if (!verifyAvatarImageBuffer(match[1], buffer)) {
+    const error = new Error('Invalid or corrupted image file');
+    error.statusCode = 400;
+    throw error;
+  }
   if (buffer.length > 2 * 1024 * 1024) {
     const error = new Error('Avatar image must be 2MB or smaller');
     error.statusCode = 413;
@@ -151,6 +171,33 @@ router.post('/avatar-upload', asyncRoute(async (req, res) => {
   } catch (error) {
     return fail(res, error.statusCode || 500, error.message || 'Avatar upload failed');
   }
+}));
+
+router.post('/me/avatar-upload', requireAuth, asyncRoute(async (req, res) => {
+  const parsed = avatarUploadSchema.safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
+
+  try {
+    const current = await first('SELECT avatar_url FROM users WHERE id = :id LIMIT 1', { id: req.user.id });
+    const url = await saveAvatarUpload(parsed.data);
+    await query('UPDATE users SET avatar_url = :url WHERE id = :id', {
+      id: req.user.id,
+      url,
+    });
+    await removeLocalAvatar(current?.avatar_url);
+    await auditLog(req, 'auth.avatar_update', 'user', req.user.id);
+    ok(res, { url, avatar_url: url }, 'Profile photo uploaded');
+  } catch (error) {
+    return fail(res, error.statusCode || 500, error.message || 'Profile photo upload failed');
+  }
+}));
+
+router.delete('/me/avatar', requireAuth, asyncRoute(async (req, res) => {
+  const current = await first('SELECT avatar_url FROM users WHERE id = :id LIMIT 1', { id: req.user.id });
+  await query('UPDATE users SET avatar_url = NULL WHERE id = :id', { id: req.user.id });
+  await removeLocalAvatar(current?.avatar_url);
+  await auditLog(req, 'auth.avatar_remove', 'user', req.user.id);
+  ok(res, { id: req.user.id, avatar_url: null }, 'Profile photo removed');
 }));
 
 router.post('/register', asyncRoute(async (req, res) => {
@@ -279,23 +326,33 @@ router.patch('/me', requireAuth, asyncRoute(async (req, res) => {
     id: current.id,
   };
 
-  await query(`
-    UPDATE users
-    SET
-      name = :name,
-      email = :email,
-      phone = :phone,
-      country_code = :countryCode,
-      country_name = :countryName,
-      gender = :gender,
-      username = :username,
-      preferred_language = :preferredLanguage,
-      avatar_url = :avatarUrl
-    WHERE id = :id
-  `, profile);
+  await transaction(async (connection) => {
+    await connection.execute(`
+      UPDATE users
+      SET
+        name = :name,
+        email = :email,
+        phone = :phone,
+        country_code = :countryCode,
+        country_name = :countryName,
+        gender = :gender,
+        username = :username,
+        preferred_language = :preferredLanguage,
+        avatar_url = :avatarUrl
+      WHERE id = :id
+    `, profile);
+
+    if (current.role_code === 'customer' && parsed.data.name !== undefined) {
+      await connection.execute(`
+        UPDATE doctors
+        SET full_name = :name
+        WHERE user_id = :id
+      `, profile);
+    }
+  });
 
   await auditLog(req, 'auth.profile_update', 'user', current.id);
-  ok(res, { ...current, ...profile }, 'Profile updated');
+  ok(res, { ...current, ...profile, customer_full_name: current.role_code === 'customer' ? profile.name : current.customer_full_name }, 'Profile updated');
 }));
 
 router.patch('/me/password', requireAuth, asyncRoute(async (req, res) => {

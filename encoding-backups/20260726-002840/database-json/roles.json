@@ -1,0 +1,47 @@
+{
+  "createTable": "CREATE TABLE `roles` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `code` varchar(50) NOT NULL,\n  `name_en` varchar(100) NOT NULL,\n  `name_ar` varchar(100) NOT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `code` (`code`)\n) ENGINE=InnoDB AUTO_INCREMENT=60 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+  "rows": [
+    {
+      "id": 1,
+      "code": "admin",
+      "name_en": "Admin",
+      "name_ar": "مدير النظام",
+      "created_at": "2026-07-18T09:35:45.000Z"
+    },
+    {
+      "id": 2,
+      "code": "organizer",
+      "name_en": "Organizer",
+      "name_ar": "منظم",
+      "created_at": "2026-07-18T09:35:45.000Z"
+    },
+    {
+      "id": 3,
+      "code": "employee",
+      "name_en": "Employee",
+      "name_ar": "موظف",
+      "created_at": "2026-07-18T09:35:45.000Z"
+    },
+    {
+      "id": 4,
+      "code": "customer",
+      "name_en": "Customer",
+      "name_ar": "عميل",
+      "created_at": "2026-07-18T09:35:45.000Z"
+    },
+    {
+      "id": 5,
+      "code": "doctor",
+      "name_en": "Doctor",
+      "name_ar": "طبيب",
+      "created_at": "2026-07-18T09:35:55.000Z"
+    },
+    {
+      "id": 6,
+      "code": "back_office",
+      "name_en": "Back Office",
+      "name_ar": "الدعم التشغيلي",
+      "created_at": "2026-07-18T12:16:43.000Z"
+    }
+  ]
+}

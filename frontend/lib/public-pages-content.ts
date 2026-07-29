@@ -23,7 +23,6 @@ export const publicNavLinks = [
   { href: "/", labelEn: "Home", labelAr: "الرئيسية" },
   { href: "/upcoming-events", labelEn: "Upcoming Events", labelAr: "الفعاليات القادمة" },
   { href: "/previous-events", labelEn: "Previous Events", labelAr: "فعاليات سابقة" },
-  { href: "/why-us", labelEn: "Why Us?", labelAr: "لماذا نحن؟" },
   { href: "/about", labelEn: "About", labelAr: "عن الشركة" },
   { href: "/contact", labelEn: "Contact", labelAr: "تواصل معنا" },
 ]

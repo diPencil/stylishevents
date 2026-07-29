@@ -1,0 +1,49 @@
+{
+  "createTable": "CREATE TABLE `event_sessions` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `event_id` bigint(20) unsigned NOT NULL,\n  `title_en` varchar(220) NOT NULL,\n  `title_ar` varchar(220) NOT NULL,\n  `speaker_name` varchar(180) DEFAULT NULL,\n  `starts_at` datetime NOT NULL,\n  `ends_at` datetime NOT NULL,\n  `room_name` varchar(120) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `fk_event_sessions_event` (`event_id`),\n  CONSTRAINT `fk_event_sessions_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+  "rows": [
+    {
+      "id": 1,
+      "event_id": 4,
+      "title_en": "Opening Keynote: Operating Digital Events",
+      "title_ar": "الكلمة الافتتاحية: تشغيل الفعاليات الرقمية",
+      "speaker_name": "Mariam Fathy",
+      "starts_at": "2026-08-18T07:30:00.000Z",
+      "ends_at": "2026-08-18T08:15:00.000Z",
+      "room_name": "Main Hall",
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 2,
+      "event_id": 4,
+      "title_en": "AI in Customer Operations",
+      "title_ar": "الذكاء الاصطناعي في تشغيل العملاء",
+      "speaker_name": "Omar Nabil",
+      "starts_at": "2026-08-18T09:00:00.000Z",
+      "ends_at": "2026-08-18T10:00:00.000Z",
+      "room_name": "Room A",
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 3,
+      "event_id": 5,
+      "title_en": "Hospitality Revenue Systems",
+      "title_ar": "أنظمة إيرادات الضيافة",
+      "speaker_name": "Laila Hassan",
+      "starts_at": "2026-09-04T08:00:00.000Z",
+      "ends_at": "2026-09-04T09:00:00.000Z",
+      "room_name": "Expo Stage",
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 4,
+      "event_id": 7,
+      "title_en": "Clinical Updates in Smoking Cessation",
+      "title_ar": "تحديثات سريرية في الإقلاع عن التدخين",
+      "speaker_name": "Dr Kareem Adel",
+      "starts_at": "2026-08-20T07:00:00.000Z",
+      "ends_at": "2026-08-20T08:30:00.000Z",
+      "room_name": "Medical Hall",
+      "created_at": "2026-07-18T19:43:55.000Z"
+    }
+  ]
+}

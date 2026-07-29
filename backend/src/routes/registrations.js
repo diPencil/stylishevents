@@ -2,9 +2,11 @@
 import express from 'express';
 import { z } from 'zod';
 import { first, query, transaction } from '../db/mysql.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 import { asyncRoute, fail, ok } from '../utils/apiResponse.js';
 
 const router = express.Router();
+const requireRegistrationAdmin = [requireAuth, requireRole('admin', 'organizer', 'back_office', 'employee')];
 
 const registrationSchema = z.object({
   eventId: z.number().int().positive(),
@@ -119,7 +121,7 @@ async function activeBankAccount(currency) {
   `, { currency });
 }
 
-router.get('/', asyncRoute(async (req, res) => {
+router.get('/', ...requireRegistrationAdmin, asyncRoute(async (req, res) => {
   const status = String(req.query.status || '').trim();
   const eventId = Number(req.query.eventId || 0);
   const limit = Math.min(1000, Math.max(1, Number(req.query.limit || 300)));
@@ -185,7 +187,7 @@ router.get('/', asyncRoute(async (req, res) => {
   ok(res, rows);
 }));
 
-router.get('/:id', asyncRoute(async (req, res) => {
+router.get('/:id', ...requireRegistrationAdmin, asyncRoute(async (req, res) => {
   const registration = await first(`
     SELECT
       r.*,
@@ -412,7 +414,7 @@ router.patch('/:id/payment-proof', asyncRoute(async (req, res) => {
   ok(res, { id: Number(req.params.id) }, 'Payment proof submitted');
 }));
 
-router.patch('/:id/payment-review', asyncRoute(async (req, res) => {
+router.patch('/:id/payment-review', ...requireRegistrationAdmin, asyncRoute(async (req, res) => {
   const parsed = paymentReviewSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 
@@ -569,7 +571,7 @@ router.patch('/:id/payment-review', asyncRoute(async (req, res) => {
   ok(res, { id: registration.id, status: 'approved', ...approved }, 'Payment approved and ticket generated');
 }));
 
-router.patch('/:id/order-status', asyncRoute(async (req, res) => {
+router.patch('/:id/order-status', ...requireRegistrationAdmin, asyncRoute(async (req, res) => {
   const parsed = orderStatusSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 

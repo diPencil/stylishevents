@@ -22,14 +22,15 @@ import {
 } from "lucide-react"
 import { VideoHero } from "@/components/video-hero"
 import { EventShowcaseSection } from "@/components/event-showcase-section"
+import { EventsInspireSection } from "@/components/events-inspire-section"
+import { FinalCtaSection } from "@/components/final-cta-section"
+import { DEFAULT_FEATURES_SECTION } from "@/lib/site-content-defaults"
 
 export default function Home() {
   const { t, isRtl } = useLanguage()
-  const [mounted, setMounted] = useState(false)
   const [siteContent, setSiteContent] = useState<any>(null)
 
   useEffect(() => {
-    setMounted(true)
     import("@/lib/platform-api").then(({ platformApi }) => {
       platformApi.getSiteContentSettings().then((data) => {
         if (data) setSiteContent(data)
@@ -42,11 +43,10 @@ export default function Home() {
     element?.scrollIntoView({ behavior: "smooth" })
   }
 
-  if (!mounted) return null
-
   // Default fallback if loading or failing
   const defaultCards = (t("whyUs.cards") as unknown as any[]) || []
   const dynamicCards = siteContent?.whyUsCards?.length ? siteContent.whyUsCards : defaultCards
+  const featuresSection = { ...DEFAULT_FEATURES_SECTION, ...(siteContent?.featuresSection || {}) }
 
   const whyUsCards = dynamicCards.map((c: any, i: number) => ({
     title: isRtl ? c.titleAr || defaultCards[i]?.title : c.titleEn || defaultCards[i]?.title,
@@ -67,7 +67,7 @@ export default function Home() {
     "@type": "Organization",
     "name": "Stylish Events",
     "url": "https://stylish-events.com",
-    "logo": "https://stylish-events.com/stylish-logo.svg",
+    "logo": "https://stylish-events.com/logo.png",
     "description": "شريككم الموثوق في تنظيم وحجز المؤتمرات والمعارض الدولية بكل احترافية.",
     "sameAs": [
       "https://twitter.com/stylishevents",
@@ -88,6 +88,7 @@ export default function Home() {
         <VideoHero />
 
         {/* Section 1: Features (New - Based on Reference) */}
+        {featuresSection.enabled ? (
         <section id="features" className="pt-32 md:pt-64 pb-32 relative overflow-hidden bg-[hsl(var(--primary)/0.05)]">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="flex flex-col items-center text-center mb-20">
@@ -97,13 +98,13 @@ export default function Home() {
                 viewport={{ once: true }}
                 className="px-4 py-1 mb-6 text-[13px] font-bold rounded-full bg-slate-50 border border-slate-100 text-slate-500"
               >
-                {isRtl ? siteContent?.homepage?.featuresBadgeAr || "المميزات" : siteContent?.homepage?.featuresBadgeEn || "Features"}
+                {isRtl ? featuresSection.eyebrowAr : featuresSection.eyebrowEn}
               </motion.div>
               <h2 className={`text-3xl md:text-6xl ${isRtl ? 'font-bold' : 'font-extrabold'} tracking-tighter text-[#0f172a] mb-6 max-w-4xl leading-[1.1]`}>
-                {isRtl ? siteContent?.homepage?.featuresTitleAr || "حوّل فعاليتك القادمة إلى مركز قوة واستقطاب" : siteContent?.homepage?.featuresTitleEn || "Transform Your Next Event into a Powerhouse"}
+                {isRtl ? featuresSection.titleAr : featuresSection.titleEn}
               </h2>
               <p className="text-lg text-slate-500 max-w-2xl mx-auto font-medium">
-                {isRtl ? siteContent?.homepage?.featuresSubtitleAr || "كل ما تحتاجه لتنظيم وإدارة الفعاليات الكبرى في منصة واحدة متكاملة." : siteContent?.homepage?.featuresSubtitleEn || "Everything you need to organize and manage major events in one integrated platform."}
+                {isRtl ? featuresSection.descriptionAr : featuresSection.descriptionEn}
               </p>
             </div>
 
@@ -185,6 +186,7 @@ export default function Home() {
             </div>
           </div>
         </section>
+        ) : null}
 
         {/* Section 2: Benefits (Bento Grid - Redesigned to match Reference perfectly) */}
         <section id="why-us" className="py-32 bg-slate-50/50">
@@ -455,15 +457,16 @@ export default function Home() {
 
         <EventShowcaseSection />
 
+        <EventsInspireSection settings={siteContent?.homepage?.eventsInspireSection} />
+
         {/* Section B/C: Booking Form */}
-        <section id="booking-form">
-          <BookingForm />
-        </section>
+        <BookingForm requestSetupSettings={siteContent?.homepageRequestSetup} />
 
         {/* Section D: FAQ (New - Based on Reference) */}
         <FaqSection />
       </main>
 
+      <FinalCtaSection settings={siteContent?.homepageFinalCta} />
       <Footer />
     </div>
   )

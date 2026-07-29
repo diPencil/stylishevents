@@ -10,7 +10,9 @@ This folder contains the first MySQL schema for the expanded events platform.
 4. Import `002_phase1_annex_workflows.sql`.
 5. Import `003_auth_and_operational_hardening.sql`.
 6. Import `004_users_permissions.sql`.
-7. Add these values to `backend/.env.local`:
+7. Import `005_user_profile_fields.sql`.
+8. Import `006_contact_inquiries.sql`.
+9. Add these values to `backend/.env.local`:
 
 ```env
 DB_HOST=127.0.0.1
@@ -56,3 +58,10 @@ The schema is designed for:
 - Back Office and Doctor roles.
 - Avatar and notes fields for users.
 - Role permissions for admin, organizer, back office, employee, doctor, and customer accounts.
+
+`006_contact_inquiries.sql` adds:
+
+- Public Contact Inquiry storage.
+- Unique reference codes.
+- Consent timestamp and version storage.
+- Admin listing indexes for reference, status, inquiry type, and creation date.

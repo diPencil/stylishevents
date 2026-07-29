@@ -638,7 +638,7 @@ export function CertificateBuilder() {
               }
             >
               <div className="absolute left-[6%] top-[7%]">
-                <img src="/stylish-logo.svg" alt="Stylish Events" className="h-9 w-auto" />
+                <img src="/logo.png" alt="Stylish Events" className="h-9 w-auto" />
               </div>
               <div className="absolute right-[6%] top-[8%] rounded-full bg-white/80 px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-[hsl(var(--primary))]">
                 Verified Attendance

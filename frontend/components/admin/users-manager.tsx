@@ -350,14 +350,14 @@ export function UsersManager() {
     }
 
     try {
-      const saved = form.id ? await platformApi.updateUser(form.id, payload) : await platformApi.createUser({ ...payload, password: form.password || "StylishEvents@2026" })
+      const saved = form.id ? await platformApi.updateUser(form.id, payload as Record<string, unknown>) : await platformApi.createUser({ ...payload, password: form.password || "StylishEvents@2026" })
       setUsers((current) => {
         const normalized = saved || {
           id: form.id || Date.now(),
           ...payload,
           preferredLanguage: payload.preferredLanguage,
           avatarUrl: payload.avatarUrl,
-          role: { code: form.roleCode, nameEn: roleName(roles, form.roleCode) },
+          role: { code: form.roleCode, nameEn: roleName(roles, form.roleCode, "en") },
           createdAt: new Date().toISOString(),
           lastLoginAt: null,
         }

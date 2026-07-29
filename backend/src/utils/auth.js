@@ -85,12 +85,16 @@ export async function findAuthUserById(id) {
       u.preferred_language,
       u.avatar_url,
       u.last_login_at,
+      d.full_name AS customer_full_name,
       r.code AS role_code,
       r.name_en AS role_name_en,
       r.name_ar AS role_name_ar
     FROM users u
     JOIN roles r ON r.id = u.role_id
+    LEFT JOIN doctors d ON d.user_id = u.id
     WHERE u.id = :id
+    ORDER BY d.user_id = u.id DESC, d.id DESC
+    LIMIT 1
   `, { id });
 }
 

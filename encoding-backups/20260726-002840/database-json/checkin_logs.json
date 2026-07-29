@@ -1,0 +1,4 @@
+{
+  "createTable": "CREATE TABLE `checkin_logs` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `attendee_id` bigint(20) unsigned NOT NULL,\n  `event_id` bigint(20) unsigned NOT NULL,\n  `scanned_by_user_id` bigint(20) unsigned DEFAULT NULL,\n  `scan_result` enum('accepted','duplicate','revoked','invalid') NOT NULL,\n  `scanned_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `notes` varchar(255) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `fk_checkin_attendee` (`attendee_id`),\n  KEY `fk_checkin_event` (`event_id`),\n  KEY `fk_checkin_user` (`scanned_by_user_id`),\n  CONSTRAINT `fk_checkin_attendee` FOREIGN KEY (`attendee_id`) REFERENCES `attendees` (`id`),\n  CONSTRAINT `fk_checkin_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`),\n  CONSTRAINT `fk_checkin_user` FOREIGN KEY (`scanned_by_user_id`) REFERENCES `users` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+  "rows": []
+}

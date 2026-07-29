@@ -1,7 +1,0 @@
-
-> stylish-events-backend@1.0.0 start
-> node src/server.js
-
-Stylish Events Backend Started
-Server URL: http://localhost:5000
-Environment: development

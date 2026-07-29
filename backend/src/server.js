@@ -7,9 +7,11 @@ import attendeeRoutes from './routes/attendees.js';
 import authRoutes from './routes/auth.js';
 import bookingRoutes from './routes/booking.js';
 import certificateRoutes from './routes/certificates.js';
+import contactInquiryRoutes from './routes/contactInquiries.js';
 import doctorRoutes from './routes/doctors.js';
 import eventRoutes from './routes/events.js';
 import kioskRoutes from './routes/kiosk.js';
+import meRoutes from './routes/me.js';
 import platformRoutes from './routes/platform.js';
 import registrationRoutes from './routes/registrations.js';
 import reportRoutes from './routes/reports.js';
@@ -59,6 +61,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', rateLimit({ windowMs: 60_000, max: 20 }), authRoutes);
 app.use('/api/booking', bookingRoutes);
+app.use('/api/contact-inquiries', contactInquiryRoutes);
 app.use('/api/admin', platformRoutes);
 app.use('/api/platform', platformRoutes);
 app.use('/api/events', eventRoutes);
@@ -71,6 +74,7 @@ app.use('/api/registrations', registrationRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/kiosk', kioskRoutes);
 app.use('/api/certificates', certificateRoutes);
+app.use('/api/me', meRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -94,11 +98,13 @@ app.use((err, req, res, next) => {
     return;
   }
 
-  console.error('Server error:', err);
-  res.status(500).json({
+  const statusCode = Number(err.statusCode || err.status || 500);
+  if (statusCode >= 500) console.error('Server error:', err);
+  res.status(statusCode).json({
     success: false,
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined,
+    message: statusCode >= 500 ? 'Internal server error' : err.message || 'Request failed',
+    details: err.details,
+    error: statusCode >= 500 && process.env.NODE_ENV === 'development' ? err.message : undefined,
   });
 });
 

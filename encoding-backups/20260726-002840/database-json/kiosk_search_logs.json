@@ -1,0 +1,14 @@
+{
+  "createTable": "CREATE TABLE `kiosk_search_logs` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `event_id` bigint(20) unsigned DEFAULT NULL,\n  `search_type` enum('email','mobile','registration_number') NOT NULL,\n  `search_value` varchar(180) NOT NULL,\n  `result_status` enum('found','not_found') NOT NULL,\n  `matched_registration_id` bigint(20) unsigned DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `fk_kiosk_search_event` (`event_id`),\n  KEY `fk_kiosk_search_registration` (`matched_registration_id`),\n  CONSTRAINT `fk_kiosk_search_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`),\n  CONSTRAINT `fk_kiosk_search_registration` FOREIGN KEY (`matched_registration_id`) REFERENCES `registrations` (`id`)\n) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+  "rows": [
+    {
+      "id": 1,
+      "event_id": 3,
+      "search_type": "email",
+      "search_value": "eg-1784375041970@example.com",
+      "result_status": "found",
+      "matched_registration_id": 1,
+      "created_at": "2026-07-18T11:45:24.000Z"
+    }
+  ]
+}

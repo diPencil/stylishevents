@@ -1,0 +1,35 @@
+{
+  "createTable": "CREATE TABLE `certificates` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `attendee_id` bigint(20) unsigned NOT NULL,\n  `certificate_number` varchar(80) NOT NULL,\n  `template_key` varchar(80) NOT NULL DEFAULT 'default',\n  `file_url` varchar(500) DEFAULT NULL,\n  `status` enum('pending','issued','revoked') NOT NULL DEFAULT 'pending',\n  `issued_at` datetime DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `attendee_id` (`attendee_id`),\n  UNIQUE KEY `certificate_number` (`certificate_number`),\n  CONSTRAINT `fk_certificates_attendee` FOREIGN KEY (`attendee_id`) REFERENCES `attendees` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+  "rows": [
+    {
+      "id": 1,
+      "attendee_id": 2,
+      "certificate_number": "CERT-DTS-1001",
+      "template_key": "default",
+      "file_url": "https://stylish-events.com/certificates/CERT-DTS-1001.pdf",
+      "status": "issued",
+      "issued_at": "2026-07-18T11:35:00.000Z",
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 2,
+      "attendee_id": 5,
+      "certificate_number": "CERT-MED-1005",
+      "template_key": "default",
+      "file_url": "https://stylish-events.com/certificates/CERT-MED-1005.pdf",
+      "status": "issued",
+      "issued_at": "2026-07-18T11:35:00.000Z",
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 3,
+      "attendee_id": 7,
+      "certificate_number": "CERT-RTL-1009",
+      "template_key": "default",
+      "file_url": "https://stylish-events.com/certificates/CERT-RTL-1009.pdf",
+      "status": "issued",
+      "issued_at": "2026-07-18T11:35:00.000Z",
+      "created_at": "2026-07-18T19:43:55.000Z"
+    }
+  ]
+}

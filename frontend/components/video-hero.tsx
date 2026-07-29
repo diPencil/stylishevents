@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { motion } from "framer-motion"
 import { DotLottieReact } from "@lottiefiles/dotlottie-react"
@@ -44,12 +45,29 @@ function normalizeHeroSettings(payload: any): HeroSettings {
   return { ...defaultHeroSettings, ...(payload?.homepage || payload || {}) }
 }
 
+function hasCorruptedText(value: unknown): boolean {
+  return typeof value === "string" && /(Ãƒ|Ã‚|Ã˜|Ã™|Ã¢â‚¬|Ã¯Â¿Â½|ï¿½|�|\?{4,})/.test(value)
+}
+
+function hasCorruptedTree(value: unknown): boolean {
+  if (hasCorruptedText(value)) return true
+  if (Array.isArray(value)) return value.some(hasCorruptedTree)
+  if (value && typeof value === "object") return Object.values(value).some(hasCorruptedTree)
+  return false
+}
+
 function readSavedHeroSettings() {
   if (typeof window === "undefined") return defaultHeroSettings
 
   try {
     const saved = window.localStorage.getItem(siteContentStorageKey)
-    return saved ? normalizeHeroSettings(JSON.parse(saved)) : defaultHeroSettings
+    if (!saved) return defaultHeroSettings
+    const parsed = JSON.parse(saved)
+    if (hasCorruptedTree(parsed)) {
+      window.localStorage.removeItem(siteContentStorageKey)
+      return defaultHeroSettings
+    }
+    return normalizeHeroSettings(parsed)
   } catch {
     return defaultHeroSettings
   }
@@ -77,10 +95,8 @@ function mediaMimeType(url: string) {
 export function VideoHero() {
   const { isRtl } = useLanguage()
   const [settings, setSettings] = useState<HeroSettings>(defaultHeroSettings)
-  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
     setSettings(readSavedHeroSettings())
 
     platformApi
@@ -97,10 +113,6 @@ export function VideoHero() {
     return () => window.removeEventListener("stylish-events-site-content-settings-updated", syncSettings)
   }, [])
 
-  const scrollToForm = () => {
-    document.getElementById("booking-form")?.scrollIntoView({ behavior: "smooth" })
-  }
-
   const mediaUrl = apiAssetUrl(settings.heroMediaUrl) || "/eventsvideo-hero-section.mp4"
   const title = isRtl ? settings.titleAr : settings.titleEn
   const eyebrow = isRtl ? settings.eyebrowAr : settings.eyebrowEn
@@ -108,8 +120,6 @@ export function VideoHero() {
   const ctaLabel = isRtl ? settings.primaryCtaAr : settings.primaryCtaEn
   const secondaryCtaLabel = isRtl ? settings.secondaryCtaAr : settings.secondaryCtaEn
   const titleParts = useMemo(() => splitTitle(title), [title])
-
-  if (!mounted) return null
 
   return (
     <section className="relative z-10 min-h-[760px] overflow-hidden flex flex-col items-center justify-center pt-20 pb-10 md:min-h-[840px] md:pt-24">
@@ -182,9 +192,11 @@ export function VideoHero() {
             className="flex flex-col items-center gap-5 sm:flex-row"
           >
             {ctaLabel && (
-              <AnimatedCtaButton onClick={scrollToForm}>
-                {ctaLabel}
-              </AnimatedCtaButton>
+              <Link href="/upcoming-events/">
+                <AnimatedCtaButton>
+                  {ctaLabel}
+                </AnimatedCtaButton>
+              </Link>
             )}
             
             {secondaryCtaLabel && (

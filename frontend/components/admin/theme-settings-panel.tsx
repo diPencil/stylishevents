@@ -32,9 +32,13 @@ export function ThemeSettingsPanel() {
   useEffect(() => {
     const saved = localStorage.getItem(platformThemeStorageKey)
     if (saved) {
-      const parsed = cleanThemeAssets({ ...defaultTheme, ...JSON.parse(saved) })
-      setTheme(parsed)
-      applyTheme(parsed)
+      try {
+        const parsed = cleanThemeAssets({ ...defaultTheme, ...JSON.parse(saved) })
+        setTheme(parsed)
+        applyTheme(parsed)
+      } catch {
+        localStorage.removeItem(platformThemeStorageKey)
+      }
     }
     platformApi.getThemeSettings()
       .then((remote) => {
@@ -121,7 +125,7 @@ export function ThemeSettingsPanel() {
                 label={adminT(language, "settings.englishLogo")}
                 value={theme.logoEnUrl}
                 onChange={(value) => updateTheme("logoEnUrl", value)}
-                placeholder="/stylish-logo.svg"
+                placeholder="/logo.png"
                 className="md:col-span-2"
                 previewClassName="sm:w-[150px]"
               />
@@ -129,13 +133,13 @@ export function ThemeSettingsPanel() {
                 label={adminT(language, "settings.arabicLogo")}
                 value={theme.logoArUrl}
                 onChange={(value) => updateTheme("logoArUrl", value)}
-                placeholder="/stylish-logo-ar.svg"
+                placeholder="/LogoAR.png"
               />
               <ImageUrlDropzone
                 label={adminT(language, "settings.favicon")}
                 value={theme.faviconUrl}
                 onChange={(value) => updateTheme("faviconUrl", value)}
-                placeholder="/stylish-favicon.svg"
+                placeholder="/favicon.png"
               />
             </div>
           </section>
@@ -284,8 +288,8 @@ export function ThemeSettingsPanel() {
         <CardContent className="p-5">
           <div className="space-y-4 rounded-[24px] bg-slate-50 p-4" style={{ fontFamily: platformFontStack(theme.fontFamily) }}>
             <div className="flex items-center justify-between gap-3 rounded-[20px] bg-white p-3 shadow-sm">
-              <img src={apiAssetUrl(language === "ar" ? theme.logoArUrl : theme.logoEnUrl) || "/stylish-logo.svg"} alt={isAr ? "معاينة لوجو Stylish Events" : "Stylish Events logo preview"} className="h-10 max-w-[190px] object-contain" />
-              <img src={apiAssetUrl(theme.faviconUrl) || "/stylish-favicon.svg"} alt={isAr ? "معاينة أيقونة الموقع" : "Favicon preview"} className="h-8 w-8 rounded-xl object-contain" />
+              <img src={apiAssetUrl(language === "ar" ? theme.logoArUrl : theme.logoEnUrl) || (language === "ar" ? "/LogoAR.png" : "/logo.png")} alt={isAr ? "معاينة لوجو Stylish Events" : "Stylish Events logo preview"} className="h-10 max-w-[190px] object-contain" />
+              <img src={apiAssetUrl(theme.faviconUrl) || "/favicon.png"} alt={isAr ? "معاينة أيقونة الموقع" : "Favicon preview"} className="h-8 w-8 rounded-xl object-contain" />
             </div>
             <div className="min-h-[140px] rounded-[24px] p-5 text-white shadow-[0_18px_35px_rgba(15,23,42,0.14)]" style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.accentColor})` }}>
               <p className="text-sm font-extrabold opacity-80">Stylish Events</p>

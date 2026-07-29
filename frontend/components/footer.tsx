@@ -2,10 +2,7 @@
 
 import Link from "next/link"
 import { useLanguage } from "@/contexts/language-context"
-import { motion } from "framer-motion"
-import { DotLottieReact } from "@lottiefiles/dotlottie-react"
 import { Instagram, Linkedin, Facebook, Youtube, Music2 } from "lucide-react"
-import { AnimatedCtaButton } from "@/components/ui/animated-cta-button"
 import { useEffect, useState } from "react"
 import { apiAssetUrl } from "@/lib/platform-api"
 
@@ -16,18 +13,18 @@ const defaultSocialLinks = [
 ]
 
 const defaultFooterLinks = [
-  { id: "1", col: "services", labelEn: "Conference Booking", labelAr: "حجز المؤتمرات", href: "#" },
-  { id: "2", col: "services", labelEn: "Exhibition Management", labelAr: "تنظيم المعارض", href: "#" },
-  { id: "3", col: "services", labelEn: "Hotel Reservations", labelAr: "حجوزات الفنادق", href: "#" },
-  { id: "4", col: "services", labelEn: "Reception and Farewell", labelAr: "الاستقبال والتوديع", href: "#" },
-  { id: "5", col: "support", labelEn: "FAQ", labelAr: "الأسئلة الشائعة", href: "#" },
-  { id: "6", col: "support", labelEn: "Privacy Policy", labelAr: "سياسة الخصوصية", href: "#" },
-  { id: "7", col: "support", labelEn: "Terms and Conditions", labelAr: "الشروط والأحكام", href: "#" },
-  { id: "8", col: "support", labelEn: "Contact Us", labelAr: "تواصل معنا", href: "#" },
-  { id: "9", col: "company", labelEn: "About Company", labelAr: "عن الشركة", href: "#" },
-  { id: "10", col: "company", labelEn: "Partners", labelAr: "شركاء النجاح", href: "#" },
-  { id: "11", col: "company", labelEn: "Media Center", labelAr: "المركز الإعلامي", href: "#" },
-  { id: "12", col: "company", labelEn: "Careers", labelAr: "وظائف", href: "#" },
+  { id: "1", col: "services", labelEn: "Conference Booking", labelAr: "Ø­Ø¬Ø² Ø§Ù„Ù…Ø¤ØªÙ…Ø±Ø§Øª", href: "#" },
+  { id: "2", col: "services", labelEn: "Exhibition Management", labelAr: "ØªÙ†Ø¸ÙŠÙ… Ø§Ù„Ù…Ø¹Ø§Ø±Ø¶", href: "#" },
+  { id: "3", col: "services", labelEn: "Hotel Reservations", labelAr: "Ø­Ø¬ÙˆØ²Ø§Øª Ø§Ù„ÙÙ†Ø§Ø¯Ù‚", href: "#" },
+  { id: "4", col: "services", labelEn: "Reception and Farewell", labelAr: "Ø§Ù„Ø§Ø³ØªÙ‚Ø¨Ø§Ù„ ÙˆØ§Ù„ØªÙˆØ¯ÙŠØ¹", href: "#" },
+  { id: "5", col: "support", labelEn: "FAQ", labelAr: "Ø§Ù„Ø£Ø³Ø¦Ù„Ø© Ø§Ù„Ø´Ø§Ø¦Ø¹Ø©", href: "#" },
+  { id: "6", col: "support", labelEn: "Privacy Policy", labelAr: "سياسة الخصوصية", href: "/privacy" },
+  { id: "7", col: "support", labelEn: "Terms and Conditions", labelAr: "الشروط والأحكام", href: "/terms" },
+  { id: "8", col: "support", labelEn: "Contact Us", labelAr: "تواصل معنا", href: "/contact" },
+  { id: "9", col: "company", labelEn: "About Company", labelAr: "عن الشركة", href: "/about" },
+  { id: "10", col: "company", labelEn: "Partners", labelAr: "Ø´Ø±ÙƒØ§Ø¡ Ø§Ù„Ù†Ø¬Ø§Ø­", href: "#" },
+  { id: "11", col: "company", labelEn: "Media Center", labelAr: "Ø§Ù„Ù…Ø±ÙƒØ² Ø§Ù„Ø¥Ø¹Ù„Ø§Ù…ÙŠ", href: "#" },
+  { id: "12", col: "company", labelEn: "Careers", labelAr: "ÙˆØ¸Ø§Ø¦Ù", href: "#" },
 ]
 
 export function Footer() {
@@ -46,8 +43,23 @@ export function Footer() {
     })
   }, [])
 
+  const legalPages = siteContent?.legalPages || {}
+  const termsEnabled = legalPages.terms?.enabled !== false
+  const privacyEnabled = legalPages.privacy?.enabled !== false
+  const normalizeFooterLink = (link: any) => {
+    const label = `${link.labelEn || ""} ${link.labelAr || ""}`.toLowerCase()
+    if (label.includes("privacy") || label.includes("خصوص")) return { ...link, href: "/privacy" }
+    if (label.includes("terms") || label.includes("conditions") || label.includes("شروط")) return { ...link, href: "/terms" }
+    return link
+  }
+  const footerLinks = (siteContent?.footerLinks || defaultFooterLinks)
+    .map(normalizeFooterLink)
+    .filter((link: any) => link.href !== "/why-us")
+    .filter((link: any) => (link.href === "/terms" ? termsEnabled : true))
+    .filter((link: any) => (link.href === "/privacy" ? privacyEnabled : true))
+
   return (
-    <footer className="relative bg-white pt-24 pb-12 overflow-hidden">
+    <footer className="relative bg-white pt-12 pb-12 overflow-hidden">
       {/* Giant Watermark Background - Positioned behind all content */}
       <div className="absolute inset-x-0 bottom-12 flex justify-center pointer-events-none select-none z-0">
         <div className="relative">
@@ -61,62 +73,22 @@ export function Footer() {
       </div>
 
       <div className="container relative z-10 px-4 md:px-6 mx-auto">
-        {/* Large CTA Section */}
-        <div className="flex flex-col items-center text-center mb-32 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="flex items-center gap-2 px-4 py-1.5 mb-8 text-[11px] font-bold rounded-full bg-slate-50 border border-slate-100 text-slate-500"
-          >
-            <div className="w-4 h-4 rounded-full bg-brand-blue/10 flex items-center justify-center text-[10px]">✨</div>
-            {isRtl ? siteContent?.homepage?.footerEyebrowAr || "شريك في النجاح" : siteContent?.homepage?.footerEyebrowEn || "Partner for Your Success"}
-          </motion.div>
-          
-          <h2 className={`text-2xl md:text-7xl ${isRtl ? 'font-bold' : 'font-extrabold'} tracking-tight text-slate-900 mb-8 leading-[1.2] md:leading-[1.1]`}>
-            {isRtl ? siteContent?.homepage?.footerTitle1Ar || "أطلق العنان لقوة" : siteContent?.homepage?.footerTitle1En || "Unlock the Power of"} <br className="hidden md:block" />
-            <span className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
-              {t("common.brand")}
-              <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center overflow-hidden shrink-0">
-                <DotLottieReact 
-                  src="https://lottie.host/638d4dd8-7e5c-4e60-9313-7ad6928d848f/2jWx4KmHKg.lottie" 
-                  loop 
-                  autoplay 
-                  className="w-full h-full scale-125" 
-                />
-              </div>
-              {isRtl ? siteContent?.homepage?.footerTitle2Ar || "في فعاليتك القادمة" : siteContent?.homepage?.footerTitle2En || "for Your Next Event"}
-            </span>
-          </h2>
-          
-          <p className="text-lg text-slate-500 max-w-2xl mx-auto font-medium mb-12">
-            {isRtl ? siteContent?.homepage?.footerDescAr || "انضم إلى أكثر من 500 مؤسسة تثق بمنصتنا لتنظيم وإدارة أهم فعالياتها." : siteContent?.homepage?.footerDescEn || "Join over 500 organizations that trust our platform to organize and manage their most important events."}
-          </p>
-
-          <AnimatedCtaButton
-            onClick={() => document.getElementById("booking-form")?.scrollIntoView({ behavior: "smooth" })}
-            className="w-full md:w-auto text-base"
-          >
-            {isRtl ? siteContent?.homepage?.footerCtaAr || "ابدأ تنظيم فعاليتك" : siteContent?.homepage?.footerCtaEn || "Start Organizing Your Event"}
-          </AnimatedCtaButton>
-        </div>
-
         {/* Footer Main Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 mt-20 pt-16 border-t border-slate-100 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 pt-16 border-t border-slate-100 relative z-10">
           
           {/* Brand & Social Column */}
             <div className="lg:col-span-4 flex flex-col items-start text-start">
               <Link href="/" className="flex items-center gap-2 mb-6">
                 <div className="relative overflow-hidden transition-all duration-300 h-10 w-36 md:h-12 md:w-44">
                   <img
-                    src={isRtl ? (themeSettings?.logoArUrl ? apiAssetUrl(themeSettings.logoArUrl) : "/stylish-logo-ar.svg") : (themeSettings?.logoEnUrl ? apiAssetUrl(themeSettings.logoEnUrl) : "/stylish-logo.svg")}
+                    src={isRtl ? (themeSettings?.logoArUrl ? apiAssetUrl(themeSettings.logoArUrl) : "/LogoAR.png") : (themeSettings?.logoEnUrl ? apiAssetUrl(themeSettings.logoEnUrl) : "/logo.png")}
                     alt={t("common.brand")}
                     className="h-full w-full object-contain object-left"
                   />
                 </div>
               </Link>
             <p className="text-slate-500 font-medium mb-8 leading-relaxed max-w-sm">
-              {isRtl ? siteContent?.homepage?.footerLogoDescAr || "شريكك الاحترافي في تنظيم وإدارة المؤتمرات والمعارض والتذاكر والحضور والشهادات." : siteContent?.homepage?.footerLogoDescEn || "Your professional partner for conferences, exhibitions, tickets, attendance, and certificates."}
+              {isRtl ? siteContent?.homepage?.footerLogoDescAr || "Ø´Ø±ÙŠÙƒÙƒ Ø§Ù„Ø§Ø­ØªØ±Ø§ÙÙŠ ÙÙŠ ØªÙ†Ø¸ÙŠÙ… ÙˆØ¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø¤ØªÙ…Ø±Ø§Øª ÙˆØ§Ù„Ù…Ø¹Ø§Ø±Ø¶ ÙˆØ§Ù„ØªØ°Ø§ÙƒØ± ÙˆØ§Ù„Ø­Ø¶ÙˆØ± ÙˆØ§Ù„Ø´Ù‡Ø§Ø¯Ø§Øª." : siteContent?.homepage?.footerLogoDescEn || "Your professional partner for conferences, exhibitions, tickets, attendance, and certificates."}
             </p>
             <div className="flex items-center gap-3 flex-wrap">
               {(siteContent?.socialLinks || defaultSocialLinks).map((link: any, i: number) => {
@@ -161,9 +133,9 @@ export function Footer() {
           <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-8">
             <div className="flex flex-col gap-5">
               <h4 className="font-extrabold text-slate-900 mb-2">
-                {isRtl ? siteContent?.homepage?.footerServicesTitleAr || "خدماتنا" : siteContent?.homepage?.footerServicesTitleEn || "Services"}
+                {isRtl ? siteContent?.homepage?.footerServicesTitleAr || "Ø®Ø¯Ù…Ø§ØªÙ†Ø§" : siteContent?.homepage?.footerServicesTitleEn || "Services"}
               </h4>
-              {(siteContent?.footerLinks || defaultFooterLinks)?.filter((l: any) => l.col === "services").map((link: any, i: number) => (
+              {footerLinks.filter((l: any) => l.col === "services").map((link: any, i: number) => (
                 <Link key={i} href={link.href} className="text-sm font-bold text-slate-500 hover:text-brand-blue transition-colors w-fit">
                   {isRtl ? link.labelAr : link.labelEn}
                 </Link>
@@ -171,9 +143,9 @@ export function Footer() {
             </div>
             <div className="flex flex-col gap-5">
               <h4 className="font-extrabold text-slate-900 mb-2">
-                {isRtl ? siteContent?.homepage?.footerSupportTitleAr || "الدعم" : siteContent?.homepage?.footerSupportTitleEn || "Support"}
+                {isRtl ? siteContent?.homepage?.footerSupportTitleAr || "Ø§Ù„Ø¯Ø¹Ù…" : siteContent?.homepage?.footerSupportTitleEn || "Support"}
               </h4>
-              {(siteContent?.footerLinks || defaultFooterLinks)?.filter((l: any) => l.col === "support").map((link: any, i: number) => (
+              {footerLinks.filter((l: any) => l.col === "support").map((link: any, i: number) => (
                 <Link key={i} href={link.href} className="text-sm font-bold text-slate-500 hover:text-brand-blue transition-colors w-fit">
                   {isRtl ? link.labelAr : link.labelEn}
                 </Link>
@@ -181,9 +153,9 @@ export function Footer() {
             </div>
             <div className="flex flex-col gap-5">
               <h4 className="font-extrabold text-slate-900 mb-2">
-                {isRtl ? siteContent?.homepage?.footerCompanyTitleAr || "الشركة" : siteContent?.homepage?.footerCompanyTitleEn || "Company"}
+                {isRtl ? siteContent?.homepage?.footerCompanyTitleAr || "Ø§Ù„Ø´Ø±ÙƒØ©" : siteContent?.homepage?.footerCompanyTitleEn || "Company"}
               </h4>
-              {(siteContent?.footerLinks || defaultFooterLinks)?.filter((l: any) => l.col === "company").map((link: any, i: number) => (
+              {footerLinks.filter((l: any) => l.col === "company").map((link: any, i: number) => (
                 <Link key={i} href={link.href} className="text-sm font-bold text-slate-500 hover:text-brand-blue transition-colors w-fit">
                   {isRtl ? link.labelAr : link.labelEn}
                 </Link>
@@ -197,8 +169,8 @@ export function Footer() {
           <div className="flex flex-col md:flex-row items-center gap-3 text-center md:text-start">
             <p className="text-xs font-bold text-slate-400 tracking-widest">
               {isRtl 
-                ? siteContent?.homepage?.footerCopyrightAr || `© ${new Date().getFullYear()} ${t("common.brand")} ${t("common.brandSub")}. جميع الحقوق محفوظة.`
-                : siteContent?.homepage?.footerCopyrightEn || `© ${new Date().getFullYear()} ${t("common.brand")} ${t("common.brandSub")}. All rights reserved.`}
+                ? siteContent?.homepage?.footerCopyrightAr || `Â© ${new Date().getFullYear()} ${t("common.brand")} ${t("common.brandSub")}. Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©.`
+                : siteContent?.homepage?.footerCopyrightEn || `Â© ${new Date().getFullYear()} ${t("common.brand")} ${t("common.brandSub")}. All rights reserved.`}
             </p>
             <span className="hidden md:inline text-slate-300">|</span>
             <div className="flex items-center gap-1.5">
@@ -209,8 +181,8 @@ export function Footer() {
             </div>
           </div>
           <div className="flex gap-6 relative z-10">
-            <Link href="/terms" className="text-[10px] font-bold text-slate-400 hover:text-brand-blue uppercase tracking-widest transition-colors">{isRtl ? "الشروط والأحكام" : "Terms"}</Link>
-            <Link href="/privacy" className="text-[10px] font-bold text-slate-400 hover:text-brand-blue uppercase tracking-widest transition-colors">{isRtl ? "الخصوصية" : "Privacy"}</Link>
+            {termsEnabled ? <Link href="/terms" className="text-[10px] font-bold text-slate-400 hover:text-brand-blue uppercase tracking-widest transition-colors">{isRtl ? "الشروط والأحكام" : "Terms"}</Link> : null}
+            {privacyEnabled ? <Link href="/privacy" className="text-[10px] font-bold text-slate-400 hover:text-brand-blue uppercase tracking-widest transition-colors">{isRtl ? "الخصوصية" : "Privacy"}</Link> : null}
           </div>
         </div>
       </div>

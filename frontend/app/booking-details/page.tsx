@@ -69,7 +69,7 @@ function BookingDetailsContent() {
 
   const details = useMemo(() => {
     // Try 'd' (compact) then 'data' (old)
-    const raw = searchParams.get("d") || searchParams.get("data")
+    const raw = searchParams?.get("d") || searchParams?.get("data") || null
     return safeParseBookingData(raw)
   }, [searchParams])
 

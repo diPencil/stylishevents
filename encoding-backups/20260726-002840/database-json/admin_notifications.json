@@ -1,0 +1,55 @@
+{
+  "createTable": "CREATE TABLE `admin_notifications` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `title` varchar(180) NOT NULL,\n  `body` text DEFAULT NULL,\n  `type` enum('registration','payment','ticket','certificate','system') NOT NULL DEFAULT 'system',\n  `severity` enum('info','success','warning','danger') NOT NULL DEFAULT 'info',\n  `target_url` varchar(500) DEFAULT NULL,\n  `read_at` datetime DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+  "rows": [
+    {
+      "id": 1,
+      "title": "New payment proof pending",
+      "body": "Dr Laila Mansour uploaded a bank-transfer proof for Smoke Medical Conference.",
+      "type": "payment",
+      "severity": "warning",
+      "target_url": "/admin/orders",
+      "read_at": null,
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 2,
+      "title": "Certificate delivery completed",
+      "body": "Two certificates were issued after confirmed check-in.",
+      "type": "certificate",
+      "severity": "success",
+      "target_url": "/admin/certificates",
+      "read_at": null,
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 3,
+      "title": "Draft event needs review",
+      "body": "Founders Forum is ready for content review before publishing.",
+      "type": "system",
+      "severity": "info",
+      "target_url": "/admin/events",
+      "read_at": null,
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 4,
+      "title": "Rejected payment requires follow-up",
+      "body": "Daniel Brooks registration was cancelled after payment rejection.",
+      "type": "registration",
+      "severity": "danger",
+      "target_url": "/admin/tickets",
+      "read_at": null,
+      "created_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 5,
+      "title": "New event brief CONF-MS0VHAEK-0L21L",
+      "body": "Codex Test User submitted a general event brief.",
+      "type": "system",
+      "severity": "info",
+      "target_url": "/admin/settings",
+      "read_at": null,
+      "created_at": "2026-07-25T21:19:50.000Z"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "createTable": "CREATE TABLE `venues` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `name_en` varchar(180) NOT NULL,\n  `name_ar` varchar(180) NOT NULL,\n  `country_code` char(2) NOT NULL,\n  `city_en` varchar(120) NOT NULL,\n  `city_ar` varchar(120) NOT NULL,\n  `address_en` text DEFAULT NULL,\n  `address_ar` text DEFAULT NULL,\n  `capacity` int(10) unsigned DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+  "rows": [
+    {
+      "id": 1,
+      "name_en": "Cairo International Convention Center",
+      "name_ar": "مركز القاهرة الدولي للمؤتمرات",
+      "country_code": "EG",
+      "city_en": "Cairo",
+      "city_ar": "القاهرة",
+      "address_en": "Nasr City, Cairo, Egypt",
+      "address_ar": "مدينة نصر، القاهرة، مصر",
+      "capacity": 1800,
+      "created_at": "2026-07-18T19:43:55.000Z",
+      "updated_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 2,
+      "name_en": "Dubai World Trade Centre",
+      "name_ar": "مركز دبي التجاري العالمي",
+      "country_code": "AE",
+      "city_en": "Dubai",
+      "city_ar": "دبي",
+      "address_en": "Sheikh Zayed Road, Dubai",
+      "address_ar": "شارع الشيخ زايد، دبي",
+      "capacity": 2400,
+      "created_at": "2026-07-18T19:43:55.000Z",
+      "updated_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 3,
+      "name_en": "Riyadh Front Expo",
+      "name_ar": "واجهة الرياض للمعارض",
+      "country_code": "SA",
+      "city_en": "Riyadh",
+      "city_ar": "الرياض",
+      "address_en": "Riyadh Front, Saudi Arabia",
+      "address_ar": "واجهة الرياض، السعودية",
+      "capacity": 1200,
+      "created_at": "2026-07-18T19:43:55.000Z",
+      "updated_at": "2026-07-18T19:43:55.000Z"
+    },
+    {
+      "id": 4,
+      "name_en": "Bibliotheca Alexandrina Conference Center",
+      "name_ar": "مركز مؤتمرات مكتبة الإسكندرية",
+      "country_code": "EG",
+      "city_en": "Alexandria",
+      "city_ar": "الإسكندرية",
+      "address_en": "Corniche, Alexandria, Egypt",
+      "address_ar": "الكورنيش، الإسكندرية، مصر",
+      "capacity": 700,
+      "created_at": "2026-07-18T19:43:55.000Z",
+      "updated_at": "2026-07-18T19:43:55.000Z"
+    }
+  ]
+}

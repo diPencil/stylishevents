@@ -3,8 +3,6 @@
  * Usage: node test.js
  */
 
-import fetch from 'node-fetch';
-
 const API_URL = 'http://localhost:5000/api/booking';
 
 const testData = {
