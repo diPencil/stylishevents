@@ -2,8 +2,17 @@ node_modules/
 .env
 .env.local
 .next/
+.next-build/
+.next-dev/
 out/
 dist/
 .DS_Store
 
 .next.old/
+runtime-logs/
+*.log
+coverage/
+playwright-report/
+test-results/
+backend/uploads/avatars/
+backend/uploads/test-*/
