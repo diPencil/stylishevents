@@ -71,7 +71,7 @@ export function verifyToken(token = '') {
 }
 
 export async function findAuthUserById(id) {
-  return first(`
+  const user = await first(`
     SELECT
       u.id,
       u.name,
@@ -96,6 +96,22 @@ export async function findAuthUserById(id) {
     ORDER BY d.user_id = u.id DESC, d.id DESC
     LIMIT 1
   `, { id });
+
+  if (!user) return null;
+  user.permissions = await getRolePermissionKeys(user.role_code);
+  return user;
+}
+
+export async function getRolePermissionKeys(roleCode) {
+  const rows = await query(`
+    SELECT rp.permission_key
+    FROM role_permissions rp
+    JOIN roles r ON r.id = rp.role_id
+    WHERE r.code = :roleCode
+      AND rp.allowed = 1
+    ORDER BY rp.permission_key
+  `, { roleCode });
+  return rows.map((row) => row.permission_key);
 }
 
 export async function auditLog(req, action, entityType = null, entityId = null, metadata = null) {

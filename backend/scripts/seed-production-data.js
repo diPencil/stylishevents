@@ -20,6 +20,11 @@ const migrations = [
   '004_users_permissions.sql',
   '005_user_profile_fields.sql',
   '006_contact_inquiries.sql',
+  '007_roles_permissions_scope.sql',
+  '008_public_event_checkout.sql',
+  '009_public_checkout_confirmation_security.sql',
+  '010_capacity_reservation_expiry.sql',
+  '011_event_registration_policy.sql',
 ];
 
 const envAdminPassword = process.env.ADMIN_PASSWORD;

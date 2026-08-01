@@ -1,0 +1,25 @@
+export const permissionCatalog = [
+  { key: 'dashboard.view', label: 'Dashboard', labelAr: 'عرض لوحة التحكم', group: 'Workspace', action: 'view', critical: false, order: 10 },
+  { key: 'users.manage', label: 'Users management', labelAr: 'إدارة المستخدمين', group: 'Administration', action: 'manage', critical: true, order: 20 },
+  { key: 'roles.manage', label: 'Roles and permissions', labelAr: 'إدارة الأدوار والصلاحيات', group: 'Administration', action: 'manage', critical: true, order: 30 },
+  { key: 'events.manage', label: 'Events', labelAr: 'إدارة الفعاليات', group: 'Operations', action: 'manage', critical: false, order: 40 },
+  { key: 'tickets.manage', label: 'Ticket types', labelAr: 'إدارة أنواع التذاكر', group: 'Operations', action: 'manage', critical: false, order: 50 },
+  { key: 'pricing.manage', label: 'Pricing periods', labelAr: 'إدارة فترات التسعير', group: 'Operations', action: 'manage', critical: false, order: 60 },
+  { key: 'registrations.manage', label: 'Registrations', labelAr: 'إدارة التسجيلات', group: 'Operations', action: 'manage', critical: false, order: 70 },
+  { key: 'payments.verify', label: 'Payment verification', labelAr: 'مراجعة المدفوعات', group: 'Finance', action: 'approve', critical: false, order: 80 },
+  { key: 'attendees.manage', label: 'Attendees', labelAr: 'إدارة الحضور', group: 'Operations', action: 'manage', critical: false, order: 90 },
+  { key: 'checkin.manage', label: 'QR check-in', labelAr: 'تسجيل الحضور عبر QR', group: 'Event day', action: 'manage', critical: false, order: 100 },
+  { key: 'certificates.view', label: 'View certificates and cards', labelAr: 'عرض الشهادات والكروت', group: 'Delivery', action: 'view', critical: false, order: 110 },
+  { key: 'certificates.manage', label: 'Manage certificates and cards', labelAr: 'إدارة الشهادات والكروت', group: 'Delivery', action: 'manage', critical: false, order: 111 },
+  { key: 'reviews.view', label: 'View reviews', labelAr: 'عرض المراجعات', group: 'Quality', action: 'view', critical: false, order: 120 },
+  { key: 'reviews.manage', label: 'Moderate reviews', labelAr: 'إدارة المراجعات', group: 'Quality', action: 'manage', critical: false, order: 121 },
+  { key: 'reports.view', label: 'Reports', labelAr: 'عرض التقارير', group: 'Analytics', action: 'view', critical: false, order: 130 },
+  { key: 'settings.manage', label: 'Settings', labelAr: 'إدارة الإعدادات', group: 'Administration', action: 'manage', critical: false, order: 140 },
+  { key: 'contact_inquiries.manage', label: 'Contact inquiries', labelAr: 'إدارة رسائل التواصل', group: 'Administration', action: 'manage', critical: false, order: 150 },
+  { key: 'website_content.manage', label: 'Website content', labelAr: 'إدارة محتوى الموقع', group: 'Administration', action: 'manage', critical: false, order: 160 },
+  { key: 'theme_identity.manage', label: 'Theme identity', labelAr: 'إدارة الهوية البصرية', group: 'Administration', action: 'manage', critical: false, order: 170 },
+  { key: 'kiosk.use', label: 'Kiosk console', labelAr: 'استخدام كشك التسجيل', group: 'Event day', action: 'use', critical: false, order: 180 },
+  { key: 'profile.manage', label: 'Own profile', labelAr: 'إدارة الحساب الشخصي', group: 'Account', action: 'manage', critical: false, order: 190 },
+];
+
+export const permissionKeys = new Set(permissionCatalog.map((permission) => permission.key));

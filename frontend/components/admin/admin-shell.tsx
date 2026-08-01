@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -9,11 +9,11 @@ import {
   CalendarDays,
   ChevronDown,
   ClipboardList,
-  CreditCard,
   GalleryHorizontalEnd,
   Globe2,
   Inbox,
   LayoutDashboard,
+  LockKeyhole,
   Menu,
   MessageSquareText,
   PanelLeftClose,
@@ -28,6 +28,7 @@ import {
   UserCog,
   Users,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -38,9 +39,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { useLanguage } from "@/contexts/language-context"
 import { adminT } from "@/lib/admin-translations"
+import { canAccessAdminRoute, isAllowed, isStaffRole, userPermissionKeys, type PermissionKey, type PermissionRule } from "@/lib/admin-permissions"
 import { apiAssetUrl, platformApi } from "@/lib/platform-api"
 import { readSavedPlatformTheme, resolvePlatformTheme } from "@/lib/platform-theme"
 import { cn } from "@/lib/utils"
@@ -85,6 +87,22 @@ type AdminNotification = {
   time: string
   href?: string
   unread: boolean
+}
+
+type AdminPermissionContextValue = {
+  permissions: PermissionKey[]
+  can: (permission: PermissionKey) => boolean
+}
+
+type AuthState = "loading" | "authenticated" | "unauthenticated" | "forbidden"
+
+const AdminPermissionContext = createContext<AdminPermissionContextValue>({
+  permissions: [],
+  can: () => false,
+})
+
+export function useAdminPermissions() {
+  return useContext(AdminPermissionContext)
 }
 
 const defaultProfile: AdminProfile = {
@@ -245,25 +263,19 @@ function useAdminTheme() {
   return theme
 }
 
-const navItems = [
-  { href: "/admin", key: "overview", icon: LayoutDashboard },
-  { href: "/admin/events", key: "events", icon: CalendarDays },
-  { href: "/admin/tickets", key: "tickets", icon: Ticket },
-  { href: "/admin/orders", key: "orders", icon: ReceiptText },
-  { href: "/admin/contact-inquiries", key: "contactInquiries", icon: Inbox },
-  { href: "/admin/attendees", key: "attendees", icon: Users },
-  { href: "/admin/users", key: "users", icon: UserCog },
-  { href: "/admin/checkin", key: "checkin", icon: QrCode },
-  { href: "/admin/certificates", key: "certificates", icon: BadgeCheck },
-  { href: "/admin/reviews", key: "reviews", icon: MessageSquareText },
-  { href: "/admin/reports", key: "reports", icon: ClipboardList },
-  { href: "/admin/settings", key: "settings", icon: Settings },
-]
-
-const secondaryItems = [
-  { label: "Inbox", icon: Inbox },
-  { label: "Finance", icon: CreditCard },
-  { label: "Gallery", icon: GalleryHorizontalEnd },
+const navItems: Array<{ href: string; key: string; icon: LucideIcon; rule: PermissionRule }> = [
+  { href: "/admin", key: "overview", icon: LayoutDashboard, rule: { permissions: ["dashboard.view"] } },
+  { href: "/admin/events", key: "events", icon: CalendarDays, rule: { permissions: ["events.manage"] } },
+  { href: "/admin/tickets", key: "tickets", icon: Ticket, rule: { permissions: ["tickets.manage", "pricing.manage"] } },
+  { href: "/admin/orders", key: "orders", icon: ReceiptText, rule: { permissions: ["registrations.manage", "payments.verify"] } },
+  { href: "/admin/contact-inquiries", key: "contactInquiries", icon: Inbox, rule: { permissions: ["contact_inquiries.manage"] } },
+  { href: "/admin/attendees", key: "attendees", icon: Users, rule: { permissions: ["attendees.manage"] } },
+  { href: "/admin/users", key: "users", icon: UserCog, rule: { permissions: ["users.manage", "roles.manage"] } },
+  { href: "/admin/checkin", key: "checkin", icon: QrCode, rule: { permissions: ["checkin.manage"] } },
+  { href: "/admin/certificates", key: "certificates", icon: BadgeCheck, rule: { permissions: ["certificates.view", "certificates.manage"] } },
+  { href: "/admin/reviews", key: "reviews", icon: MessageSquareText, rule: { permissions: ["reviews.view", "reviews.manage"] } },
+  { href: "/admin/reports", key: "reports", icon: ClipboardList, rule: { permissions: ["reports.view"] } },
+  { href: "/admin/settings", key: "settings", icon: Settings, rule: { permissions: ["settings.manage", "website_content.manage", "theme_identity.manage"] } },
 ]
 
 const baseSearchItems = [
@@ -293,14 +305,14 @@ function StylishEventsMark({ collapsed, theme }: { collapsed?: boolean; theme: P
   )
 }
 
-function AdminNav({ collapsed }: { collapsed?: boolean }) {
+function AdminNav({ collapsed, permissions }: { collapsed?: boolean; permissions: readonly PermissionKey[] }) {
   const pathname = usePathname()
   const currentPath = pathname || ""
   const { language, isRtl } = useLanguage()
 
   return (
     <nav className="space-y-1">
-      {navItems.map((item) => {
+      {navItems.filter((item) => isAllowed(permissions, item.rule)).map((item) => {
         const Icon = item.icon
         const active = item.href === "/admin" ? currentPath === item.href : currentPath.startsWith(item.href)
 
@@ -331,11 +343,13 @@ function SidebarBody({
   onToggle,
   theme,
   profile = defaultProfile,
+  permissions = [],
 }: {
   collapsed?: boolean
   onToggle?: () => void
   theme: PlatformThemeSettings
   profile?: AdminProfile
+  permissions?: readonly PermissionKey[]
 }) {
   const { language } = useLanguage()
   const isRtl = language === "ar"
@@ -364,28 +378,7 @@ function SidebarBody({
 
       <div className={cn("admin-scrollbar min-h-0 flex-1 overflow-y-auto", collapsed ? "px-0" : isRtl ? "pl-1" : "pr-1")}>
         {!collapsed && <p className={cn("mb-3 px-3 text-[10px] font-extrabold uppercase tracking-[0.20em] text-slate-300", isRtl && "text-right")}>{adminT(language, "common.main")}</p>}
-        <AdminNav collapsed={collapsed} />
-
-        {!collapsed && <p className={cn("mb-3 mt-7 px-3 text-[10px] font-extrabold uppercase tracking-[0.20em] text-slate-300", isRtl && "text-right")}>{adminT(language, "common.workspace")}</p>}
-        <div className="space-y-1">
-          {secondaryItems.map((item) => {
-            const Icon = item.icon
-            return (
-              <button
-                key={item.label}
-                title={collapsed ? item.label : undefined}
-                className={cn(
-                  "admin-nav-item flex h-10 w-full cursor-pointer items-center gap-3 rounded-xl px-3 text-[13px] font-bold text-slate-500 transition hover:bg-white",
-                  isRtl && !collapsed && "text-right",
-                  collapsed && "justify-center px-0"
-                )}
-              >
-                <Icon className="h-4.5 w-4.5 text-slate-400" />
-                {!collapsed && item.label}
-              </button>
-            )
-          })}
-        </div>
+        <AdminNav collapsed={collapsed} permissions={permissions} />
       </div>
 
       <div className={cn("mt-5 rounded-[26px] bg-white shadow-[0_16px_35px_rgba(93,58,138,0.08)]", collapsed ? "p-2" : "p-4")}>
@@ -415,7 +408,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<AdminProfile>(defaultProfile)
   const [searchItems, setSearchItems] = useState<SearchItem[]>(baseSearchItems)
   const [notifications, setNotifications] = useState<AdminNotification[]>([])
-  const [authChecked, setAuthChecked] = useState(false)
+  const [authState, setAuthState] = useState<AuthState>("loading")
+  const [accessDenied, setAccessDenied] = useState(false)
+  const [permissions, setPermissions] = useState<PermissionKey[]>([])
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -436,13 +431,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (!authChecked) return
+    if (authState !== "authenticated" || accessDenied) return
     let active = true
     async function loadTopbarData() {
       try {
+        const canLoadEvents = isAllowed(permissions, { permissions: ["events.manage"] })
+        const canLoadRegistrations = isAllowed(permissions, { permissions: ["registrations.manage", "payments.verify"] })
         const [events, registrations] = await Promise.all([
-          platformApi.listEvents(),
-          platformApi.listRegistrations(),
+          canLoadEvents ? platformApi.listEvents() : Promise.resolve([]),
+          canLoadRegistrations ? platformApi.listRegistrations() : Promise.resolve([]),
         ])
         if (!active) return
 
@@ -482,7 +479,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     return () => {
       active = false
     }
-  }, [authChecked])
+  }, [authState, accessDenied, permissions])
 
   useEffect(() => {
     const storedProfile = readSavedProfile()
@@ -492,20 +489,31 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
     if (!token) {
       clearAdminSession()
+      setAuthState("unauthenticated")
       router.replace(`/login?next=${encodeURIComponent(pathname || "/admin")}`)
       return
     }
 
     platformApi.me(token)
       .then((user) => {
+        const roleCode = user?.role?.code || user?.roleCode || user?.role_code
+        const effectivePermissions = userPermissionKeys(user)
+        if (!isStaffRole(roleCode)) {
+          setAuthState("forbidden")
+          router.replace("/dashboard")
+          return
+        }
         const normalized = normalizeAdminProfile(user)
         setProfile(normalized)
+        setPermissions(effectivePermissions)
+        setAccessDenied(!canAccessAdminRoute(pathname || "/admin", effectivePermissions))
         window.localStorage.setItem(profileStorageKey, JSON.stringify(normalized))
-        setAuthChecked(true)
+        setAuthState("authenticated")
       })
       .catch(() => {
         clearAdminSession()
         setProfile(defaultProfile)
+        setAuthState("unauthenticated")
         router.replace(`/login?next=${encodeURIComponent(pathname || "/admin")}`)
       })
 
@@ -518,10 +526,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("stylish-events-admin-profile-updated", syncProfile)
   }, [pathname, router])
 
+  useEffect(() => {
+    if (authState !== "authenticated") return
+    setAccessDenied(!canAccessAdminRoute(pathname || "/admin", permissions))
+  }, [authState, pathname, permissions])
+
   const handleLogout = () => {
     clearAdminSession()
     setProfile(defaultProfile)
-    setAuthChecked(false)
+    setAuthState("unauthenticated")
+    setPermissions([])
+    setAccessDenied(false)
     window.dispatchEvent(new CustomEvent("stylish-events-admin-profile-updated", { detail: defaultProfile }))
     router.replace("/login")
   }
@@ -536,7 +551,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   if (!mounted) return null
 
-  if (!authChecked) {
+  if (authState !== "authenticated") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[hsl(var(--primary)/0.07)] px-4 text-center">
         <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_45px_rgba(93,58,138,0.08)]">
@@ -551,6 +566,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
+    <AdminPermissionContext.Provider value={{ permissions, can: (permission) => permissions.includes(permission) }}>
     <div className="admin-dashboard min-h-screen bg-[hsl(var(--primary)/0.07)] text-[#17172f]" dir={isRtl ? "rtl" : "ltr"}>
       <aside className={cn(
         "fixed inset-y-0 z-30 hidden border-[hsl(var(--primary)/0.08)] bg-white/65 p-5 backdrop-blur-xl transition-all duration-300 lg:block",
@@ -559,12 +575,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           : "left-0 border-r shadow-[18px_0_55px_rgba(15,23,42,0.04)]",
         sidebarCollapsed ? "w-[92px]" : "w-[252px]"
       )}>
-        <SidebarBody collapsed={sidebarCollapsed} onToggle={toggleSidebar} theme={theme} profile={profile} />
+        <SidebarBody collapsed={sidebarCollapsed} onToggle={toggleSidebar} theme={theme} profile={profile} permissions={permissions} />
       </aside>
 
       <div
         className={cn(
-          "min-h-screen overflow-x-hidden transition-[padding] duration-300",
+          "min-h-screen min-w-0 overflow-x-hidden transition-[padding] duration-300",
           sidebarCollapsed
             ? isRtl ? "lg:pr-[92px]" : "lg:pl-[92px]"
             : isRtl ? "lg:pr-[252px]" : "lg:pl-[252px]"
@@ -580,7 +596,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side={isRtl ? "right" : "left"} className="w-[292px] bg-white/90 p-5 backdrop-blur-xl">
-                  <SidebarBody theme={theme} profile={profile} />
+                  <SheetTitle className="sr-only">{adminT(language, "common.main")}</SheetTitle>
+                  <SidebarBody theme={theme} profile={profile} permissions={permissions} />
                 </SheetContent>
               </Sheet>
 
@@ -730,9 +747,24 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="px-4 py-5 md:px-6">{children}</main>
+        <main className="min-w-0 px-4 py-5 md:px-6">
+          {accessDenied ? (
+            <div className="flex min-h-[55vh] items-center justify-center">
+              <div className="max-w-md rounded-[28px] bg-white p-8 text-center shadow-[0_18px_45px_rgba(93,58,138,0.08)]">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                  <LockKeyhole className="h-5 w-5" />
+                </div>
+                <h1 className="text-xl font-extrabold text-[#17172f]">{language === "ar" ? "غير مصرح بالدخول" : "Access denied"}</h1>
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
+                  {language === "ar" ? "حسابك لا يملك الصلاحية المطلوبة لعرض هذه الصفحة." : "Your account does not have the required permission to view this page."}
+                </p>
+              </div>
+            </div>
+          ) : children}
+        </main>
       </div>
     </div>
+    </AdminPermissionContext.Provider>
   )
 }
 

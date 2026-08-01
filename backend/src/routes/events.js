@@ -1,6 +1,8 @@
 import express from 'express';
 import { z } from 'zod';
 import { first, query, transaction } from '../db/mysql.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
+import { eventScopeCondition, requireEventScope } from '../auth/scope.js';
 import { asyncRoute, fail, ok } from '../utils/apiResponse.js';
 
 const router = express.Router();
@@ -21,6 +23,12 @@ const eventSchema = z.object({
   endsAt: z.string().min(1),
   registrationStartsAt: z.string().optional().nullable(),
   registrationEndsAt: z.string().optional().nullable(),
+  publicRegistrationEnabled: z.boolean().default(true),
+  registrationApprovalMode: z.enum(['automatic', 'manual_review']).default('automatic'),
+  registrationAccess: z.enum(['guest_allowed', 'login_required']).default('guest_allowed'),
+  maxTicketsPerCheckout: z.number().int().positive().max(1).default(1),
+  capacityHoldHoursOverride: z.number().int().positive().max(720).optional().nullable(),
+  manualPaymentEnabled: z.boolean().default(true),
   timezone: z.string().default('Africa/Cairo'),
   maxAttendees: z.number().int().positive().optional().nullable(),
   coverImageUrl: z.string().optional().nullable(),
@@ -54,6 +62,12 @@ function eventSelect() {
       e.ends_at,
       e.registration_starts_at,
       e.registration_ends_at,
+      e.public_registration_enabled,
+      e.registration_approval_mode,
+      e.registration_access,
+      e.max_tickets_per_checkout,
+      e.capacity_hold_hours_override,
+      e.manual_payment_enabled,
       e.timezone,
       e.cover_image_url,
       e.banner_image_url,
@@ -97,6 +111,12 @@ function eventParams(event) {
     endsAt: event.endsAt,
     registrationStartsAt: event.registrationStartsAt || null,
     registrationEndsAt: event.registrationEndsAt || null,
+    publicRegistrationEnabled: event.publicRegistrationEnabled ? 1 : 0,
+    registrationApprovalMode: event.registrationApprovalMode || 'automatic',
+    registrationAccess: event.registrationAccess || 'guest_allowed',
+    maxTicketsPerCheckout: Math.max(1, Math.min(Number(event.maxTicketsPerCheckout || 1), 1)),
+    capacityHoldHoursOverride: event.capacityHoldHoursOverride || null,
+    manualPaymentEnabled: event.manualPaymentEnabled ? 1 : 0,
     timezone: event.timezone,
     maxAttendees: event.maxAttendees || null,
     coverImageUrl: event.coverImageUrl || null,
@@ -122,15 +142,34 @@ router.get('/', asyncRoute(async (req, res) => {
   const allowedPages = ['upcoming', 'previous'];
   if (page && !allowedPages.includes(page)) return fail(res, 400, 'Invalid page', { allowed: allowedPages })
 
-  let where = `WHERE (:status = '' OR e.status = :status) AND (:includeDeleted = 1 OR e.status <> 'deleted')`;
+  const canManageEvents = req.user?.permissions?.includes('events.manage');
+  let where = canManageEvents
+    ? `WHERE (:status = '' OR e.status = :status) AND (:includeDeleted = 1 OR e.status <> 'deleted')`
+    : `WHERE e.status = 'published' AND e.status <> 'deleted'`;
   let params = { status, includeDeleted: includeDeleted ? 1 : 0, limit };
+
+  if (canManageEvents) {
+    const scope = eventScopeCondition(req.user, 'e');
+    where += ` AND (${scope.clause})`;
+    params = { ...params, ...scope.params };
+  }
 
   if (page === 'upcoming') {
     // Only published and not ended
     where = `WHERE e.status = 'published' AND ((e.ends_at IS NOT NULL AND e.ends_at >= NOW()) OR (e.ends_at IS NULL AND e.starts_at >= NOW()))`;
+    if (canManageEvents) {
+      const scope = eventScopeCondition(req.user, 'e');
+      where += ` AND (${scope.clause})`;
+      params = { ...params, ...scope.params };
+    }
   } else if (page === 'previous') {
     // Only published and already ended
     where = `WHERE e.status = 'published' AND ((e.ends_at IS NOT NULL AND e.ends_at < NOW()) OR (e.ends_at IS NULL AND e.starts_at < NOW()))`;
+    if (canManageEvents) {
+      const scope = eventScopeCondition(req.user, 'e');
+      where += ` AND (${scope.clause})`;
+      params = { ...params, ...scope.params };
+    }
   }
 
   // Map sort modes to safe ORDER BY clauses
@@ -163,6 +202,9 @@ router.get('/:id', asyncRoute(async (req, res) => {
   `, { id: Number(req.params.id) });
 
   if (!event) return fail(res, 404, 'Event not found');
+  const canManageEvents = req.user?.permissions?.includes('events.manage');
+  if (event.status !== 'published' && !canManageEvents) return fail(res, 404, 'Event not found');
+  if (canManageEvents && !(await requireEventScope(req, res, event.id))) return;
 
   const [sessions, tickets, templates] = await Promise.all([
     query(`
@@ -199,11 +241,12 @@ router.get('/:id', asyncRoute(async (req, res) => {
   ok(res, { event, sessions, tickets, certificateTemplates: templates });
 }));
 
-router.post('/', asyncRoute(async (req, res) => {
+router.post('/', requireAuth, requirePermission('events.manage'), asyncRoute(async (req, res) => {
   const parsed = eventSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 
   const event = eventParams(parsed.data);
+  if (req.user.role_code === 'organizer') event.organizerId = req.user.id;
   const result = await query(`
     INSERT INTO events (
       organizer_id,
@@ -221,6 +264,12 @@ router.post('/', asyncRoute(async (req, res) => {
       ends_at,
       registration_starts_at,
       registration_ends_at,
+      public_registration_enabled,
+      registration_approval_mode,
+      registration_access,
+      max_tickets_per_checkout,
+      capacity_hold_hours_override,
+      manual_payment_enabled,
       timezone,
       cover_image_url,
       banner_image_url,
@@ -244,6 +293,12 @@ router.post('/', asyncRoute(async (req, res) => {
       :endsAt,
       :registrationStartsAt,
       :registrationEndsAt,
+      :publicRegistrationEnabled,
+      :registrationApprovalMode,
+      :registrationAccess,
+      :maxTicketsPerCheckout,
+      :capacityHoldHoursOverride,
+      :manualPaymentEnabled,
       :timezone,
       :coverImageUrl,
       :bannerImageUrl,
@@ -256,14 +311,17 @@ router.post('/', asyncRoute(async (req, res) => {
   ok(res, { id: result.insertId, ...parsed.data }, 'Event created');
 }));
 
-router.put('/:id', asyncRoute(async (req, res) => {
+router.put('/:id', requireAuth, requirePermission('events.manage'), asyncRoute(async (req, res) => {
   const parsed = eventSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 
   const id = Number(req.params.id);
   const existing = await first('SELECT id FROM events WHERE id = :id', { id });
   if (!existing) return fail(res, 404, 'Event not found');
+  if (!(await requireEventScope(req, res, id))) return;
 
+  const event = eventParams(parsed.data);
+  if (req.user.role_code === 'organizer') event.organizerId = req.user.id;
   await query(`
     UPDATE events
     SET
@@ -282,6 +340,12 @@ router.put('/:id', asyncRoute(async (req, res) => {
       ends_at = :endsAt,
       registration_starts_at = :registrationStartsAt,
       registration_ends_at = :registrationEndsAt,
+      public_registration_enabled = :publicRegistrationEnabled,
+      registration_approval_mode = :registrationApprovalMode,
+      registration_access = :registrationAccess,
+      max_tickets_per_checkout = :maxTicketsPerCheckout,
+      capacity_hold_hours_override = :capacityHoldHoursOverride,
+      manual_payment_enabled = :manualPaymentEnabled,
       timezone = :timezone,
       cover_image_url = :coverImageUrl,
       banner_image_url = :bannerImageUrl,
@@ -289,15 +353,16 @@ router.put('/:id', asyncRoute(async (req, res) => {
       google_maps_url = :googleMapsUrl,
       max_attendees = :maxAttendees
     WHERE id = :id
-  `, { id, ...eventParams(parsed.data) });
+  `, { id, ...event });
 
   ok(res, { id, ...parsed.data }, 'Event updated');
 }));
 
-router.patch('/:id/status', asyncRoute(async (req, res) => {
+router.patch('/:id/status', requireAuth, requirePermission('events.manage'), asyncRoute(async (req, res) => {
   const parsed = statusSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 
+  if (!(await requireEventScope(req, res, Number(req.params.id)))) return;
   await query('UPDATE events SET status = :status WHERE id = :id', {
     id: Number(req.params.id),
     status: parsed.data.status,
@@ -306,12 +371,14 @@ router.patch('/:id/status', asyncRoute(async (req, res) => {
   ok(res, { id: Number(req.params.id), status: parsed.data.status }, 'Event status updated');
 }));
 
-router.delete('/:id', asyncRoute(async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('events.manage'), asyncRoute(async (req, res) => {
+  if (!(await requireEventScope(req, res, Number(req.params.id)))) return;
   await query("UPDATE events SET status = 'deleted' WHERE id = :id", { id: Number(req.params.id) });
   ok(res, { id: Number(req.params.id), status: 'deleted' }, 'Event moved to deleted');
 }));
 
-router.post('/:id/restore', asyncRoute(async (req, res) => {
+router.post('/:id/restore', requireAuth, requirePermission('events.manage'), asyncRoute(async (req, res) => {
+  if (!(await requireEventScope(req, res, Number(req.params.id)))) return;
   await query("UPDATE events SET status = 'draft' WHERE id = :id AND status = 'deleted'", { id: Number(req.params.id) });
   ok(res, { id: Number(req.params.id), status: 'draft' }, 'Event restored to draft');
 }));

@@ -52,7 +52,6 @@ export function requirePermission(permissionKey) {
   return async (req, res, next) => {
     try {
       if (!req.user) return fail(res, 401, 'Authentication required');
-      if (req.user.role_code === 'admin') return next();
 
       const permission = await first(`
         SELECT rp.allowed
@@ -67,6 +66,31 @@ export function requirePermission(permissionKey) {
       });
 
       if (!permission || !permission.allowed) return fail(res, 403, 'Permission denied');
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  };
+}
+
+export function requireAnyPermission(permissionKeys) {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) return fail(res, 401, 'Authentication required');
+
+      const permissions = await first(`
+        SELECT COUNT(*) AS total
+        FROM role_permissions rp
+        JOIN roles r ON r.id = rp.role_id
+        WHERE r.code = :roleCode
+          AND rp.permission_key IN (${permissionKeys.map((_, index) => `:permission${index}`).join(',')})
+          AND rp.allowed = 1
+      `, {
+        roleCode: req.user.role_code,
+        ...Object.fromEntries(permissionKeys.map((permission, index) => [`permission${index}`, permission])),
+      });
+
+      if (!permissions || Number(permissions.total || 0) < 1) return fail(res, 403, 'Permission denied');
       return next();
     } catch (error) {
       return next(error);

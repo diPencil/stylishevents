@@ -36,6 +36,12 @@ type CreateEventForm = {
   endsAt: string
   registrationOpensAt: string
   registrationClosesAt: string
+  publicRegistrationEnabled: boolean
+  registrationApprovalMode: "automatic" | "manual_review"
+  registrationAccess: "guest_allowed" | "login_required"
+  maxTicketsPerCheckout: string
+  capacityHoldHoursOverride: string
+  manualPaymentEnabled: boolean
   summaryAr: string
   summaryEn: string
   agenda: string
@@ -73,6 +79,12 @@ const initialForm: CreateEventForm = {
   endsAt: "",
   registrationOpensAt: "",
   registrationClosesAt: "",
+  publicRegistrationEnabled: true,
+  registrationApprovalMode: "automatic",
+  registrationAccess: "guest_allowed",
+  maxTicketsPerCheckout: "1",
+  capacityHoldHoursOverride: "",
+  manualPaymentEnabled: true,
   summaryAr: "",
   summaryEn: "",
   agenda: "",
@@ -151,6 +163,12 @@ export function EventCreatePage() {
         endsAt: form.endsAt,
         registrationStartsAt: form.registrationOpensAt || null,
         registrationEndsAt: form.registrationClosesAt || null,
+        publicRegistrationEnabled: form.publicRegistrationEnabled,
+        registrationApprovalMode: form.registrationApprovalMode,
+        registrationAccess: form.registrationAccess,
+        maxTicketsPerCheckout: 1,
+        capacityHoldHoursOverride: Number(form.capacityHoldHoursOverride || 0) || null,
+        manualPaymentEnabled: form.manualPaymentEnabled,
         timezone: "Africa/Cairo",
         maxAttendees: Number(form.capacity || 0) || null,
         coverImageUrl: form.heroImage || null,
@@ -189,9 +207,9 @@ export function EventCreatePage() {
       }
 
       setSaveState("saved")
-      toast.success(language === "ar" ? "تم إنشاء الفعالية" : "Event created", { description: language === "ar" ? "تم حفظ الفعالية والتذكرة وسعر الافتتاح في MySQL." : "Event, ticket, and opening price were saved to MySQL." })
+      toast.success(language === "ar" ? "تم إنشاء الفعالية" : "Event created", { description: language === "ar" ? "تم حفظ الفعالية والتذكرة وسعر الافتتاح." : "Event, ticket, and opening price were saved." })
     } catch (error) {
-      toast.error(language === "ar" ? "فشل إنشاء الفعالية" : "Create event failed", { description: error instanceof Error ? error.message : (language === "ar" ? "راجع اتصال الباك إند و MySQL." : "Please check backend and MySQL.") })
+      toast.error(language === "ar" ? "فشل إنشاء الفعالية" : "Create event failed", { description: error instanceof Error ? error.message : (language === "ar" ? "راجع اتصال الباك إند." : "Please check the backend connection.") })
     }
   }
 
@@ -265,6 +283,40 @@ export function EventCreatePage() {
               <Field label="Event ends" value={form.endsAt} onChange={(value) => setField("endsAt", value)} type="datetime-local" />
               <Field label="Registration opens" value={form.registrationOpensAt} onChange={(value) => setField("registrationOpensAt", value)} type="datetime-local" />
               <Field label="Registration closes" value={form.registrationClosesAt} onChange={(value) => setField("registrationClosesAt", value)} type="datetime-local" />
+            </div>
+          </FormPanel>
+          <FormPanel icon={Settings2} title={language === "ar" ? "التسجيل والدفع" : "Registration & Checkout"} description={language === "ar" ? "تحكم في سلوك التسجيل العام والمراجعة والدفع لهذه الفعالية." : "Control public registration, review, and payment behavior for this event."}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Select value={form.publicRegistrationEnabled ? "enabled" : "disabled"} onValueChange={(value) => setField("publicRegistrationEnabled", value === "enabled")}>
+                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="enabled">{language === "ar" ? "تفعيل التسجيل العام" : "Public registration enabled"}</SelectItem>
+                  <SelectItem value="disabled">{language === "ar" ? "إيقاف التسجيل العام" : "Public registration disabled"}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={form.registrationApprovalMode} onValueChange={(value) => setField("registrationApprovalMode", value as CreateEventForm["registrationApprovalMode"])}>
+                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="automatic">{language === "ar" ? "اعتماد تلقائي" : "Automatic approval"}</SelectItem>
+                  <SelectItem value="manual_review">{language === "ar" ? "مراجعة يدوية" : "Manual review"}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={form.registrationAccess} onValueChange={(value) => setField("registrationAccess", value as CreateEventForm["registrationAccess"])}>
+                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="guest_allowed">{language === "ar" ? "السماح للضيف والعميل" : "Guest and customer checkout"}</SelectItem>
+                  <SelectItem value="login_required">{language === "ar" ? "تسجيل الدخول مطلوب" : "Login required"}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={form.manualPaymentEnabled ? "enabled" : "disabled"} onValueChange={(value) => setField("manualPaymentEnabled", value === "enabled")}>
+                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="enabled">{language === "ar" ? "تفعيل التحويل البنكي" : "Manual bank payment enabled"}</SelectItem>
+                  <SelectItem value="disabled">{language === "ar" ? "إيقاف التحويل البنكي" : "Manual bank payment disabled"}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Field label={language === "ar" ? "أقصى عدد تذاكر في الطلب" : "Maximum tickets per checkout"} value="1" onChange={() => setField("maxTicketsPerCheckout", "1")} type="number" disabled />
+              <Field label={language === "ar" ? "مدة حجز المقعد بالساعات" : "Seat reservation hours override"} value={form.capacityHoldHoursOverride} onChange={(value) => setField("capacityHoldHoursOverride", value)} type="number" />
             </div>
           </FormPanel>
 
@@ -374,11 +426,11 @@ function FormPanel({ icon: Icon, title, description, children }: { icon: LucideI
   )
 }
 
-function Field({ label, value, onChange, type = "text", className }: { label: string; value: string; onChange: (value: string) => void; type?: string; className?: string }) {
+function Field({ label, value, onChange, type = "text", className, disabled }: { label: string; value: string; onChange: (value: string) => void; type?: string; className?: string; disabled?: boolean }) {
   return (
     <div className={cn("space-y-2", className)}>
       <Label className="text-xs font-extrabold uppercase tracking-[0.08em] text-slate-500">{label}</Label>
-      <Input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold" />
+      <Input type={type} value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled} className="h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold disabled:opacity-70" />
     </div>
   )
 }

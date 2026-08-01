@@ -2,11 +2,14 @@
 import express from 'express';
 import { z } from 'zod';
 import { first, query, transaction } from '../db/mysql.js';
-import { requireAuth, requireRole } from '../middleware/auth.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
+import { eventScopeCondition, requireEventScope } from '../auth/scope.js';
 import { asyncRoute, fail, ok } from '../utils/apiResponse.js';
+import { countActiveReservations, releaseExpiredReservations } from '../utils/capacityReservations.js';
+import { paymentApprovalState } from '../utils/eventRegistrationPolicy.js';
 
 const router = express.Router();
-const requireRegistrationAdmin = [requireAuth, requireRole('admin', 'organizer', 'back_office', 'employee')];
+const requireRegistrationAdmin = [requireAuth, requirePermission('registrations.manage')];
 
 const registrationSchema = z.object({
   eventId: z.number().int().positive(),
@@ -127,6 +130,8 @@ router.get('/', ...requireRegistrationAdmin, asyncRoute(async (req, res) => {
   const limit = Math.min(1000, Math.max(1, Number(req.query.limit || 300)));
   const offset = Math.max(0, Number(req.query.offset || 0));
 
+  if (eventId && !(await requireEventScope(req, res, eventId))) return;
+  const scope = eventScopeCondition(req.user, 'e');
   const rows = await query(`
     SELECT
       r.id,
@@ -168,18 +173,21 @@ router.get('/', ...requireRegistrationAdmin, asyncRoute(async (req, res) => {
     LEFT JOIN generated_tickets gt ON gt.registration_id = r.id
     WHERE (:status = '' OR r.registration_status = :status OR r.payment_status = :status)
       AND (:eventId = 0 OR r.event_id = :eventId)
+      AND (${scope.clause})
     ORDER BY r.created_at DESC, r.id DESC
     LIMIT :limit OFFSET :offset
-  `, { status, eventId, limit, offset });
+  `, { status, eventId, limit, offset, ...scope.params });
 
   // If meta is requested, also return total count for pagination
   if (String(req.query.meta || '') === 'true') {
     const countRow = await first(`
       SELECT COUNT(*) AS total
       FROM registrations r
+      JOIN events e ON e.id = r.event_id
       WHERE (:status = '' OR r.registration_status = :status OR r.payment_status = :status)
         AND (:eventId = 0 OR r.event_id = :eventId)
-    `, { status, eventId });
+        AND (${scope.clause})
+    `, { status, eventId, ...scope.params });
     ok(res, { data: rows, pagination: { total: Number(countRow.total || 0), limit, offset } });
     return;
   }
@@ -223,6 +231,7 @@ router.get('/:id', ...requireRegistrationAdmin, asyncRoute(async (req, res) => {
   `, { id: Number(req.params.id) });
 
   if (!registration) return fail(res, 404, 'Registration not found');
+  if (!(await requireEventScope(req, res, registration.event_id))) return;
   ok(res, registration);
 }));
 
@@ -397,13 +406,28 @@ router.patch('/:id/payment-proof', asyncRoute(async (req, res) => {
   const parsed = proofSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 
+  const registration = await first(`
+    SELECT id, registration_status, capacity_reservation_status
+    FROM registrations
+    WHERE id = :id
+    LIMIT 1
+  `, { id: Number(req.params.id) });
+  if (!registration) return fail(res, 404, 'Registration not found');
+  if (registration.registration_status === 'expired' || registration.capacity_reservation_status === 'expired') {
+    return fail(res, 409, 'Reservation has expired. Please start a new checkout or contact support.');
+  }
+
   await query(`
     UPDATE registrations
     SET
       payment_reference = :paymentReference,
       payment_proof_url = :paymentProofUrl,
       registration_status = 'pending_verification',
-      payment_status = 'pending'
+      payment_status = 'pending',
+      reservation_expires_at = NULL,
+      capacity_reservation_status = 'active',
+      capacity_released_at = NULL,
+      capacity_release_reason = NULL
     WHERE id = :id
   `, {
     id: Number(req.params.id),
@@ -414,7 +438,7 @@ router.patch('/:id/payment-proof', asyncRoute(async (req, res) => {
   ok(res, { id: Number(req.params.id) }, 'Payment proof submitted');
 }));
 
-router.patch('/:id/payment-review', ...requireRegistrationAdmin, asyncRoute(async (req, res) => {
+router.patch('/:id/payment-review', requireAuth, requirePermission('payments.verify'), asyncRoute(async (req, res) => {
   const parsed = paymentReviewSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 
@@ -426,6 +450,8 @@ router.patch('/:id/payment-review', ...requireRegistrationAdmin, asyncRoute(asyn
       r.ticket_type_id,
       r.registration_status,
       r.payment_status,
+      r.capacity_reservation_status,
+      r.reservation_expires_at,
       d.full_name,
       d.email,
       d.mobile,
@@ -436,6 +462,7 @@ router.patch('/:id/payment-review', ...requireRegistrationAdmin, asyncRoute(asyn
   `, { id: Number(req.params.id) });
 
   if (!registration) return fail(res, 404, 'Registration not found');
+  if (!(await requireEventScope(req, res, registration.event_id))) return;
 
   const review = parsed.data;
   const reviewedByUserId = review.reviewedByUserId || null;
@@ -449,7 +476,10 @@ router.patch('/:id/payment-review', ...requireRegistrationAdmin, asyncRoute(asyn
         payment_status = 'rejected',
         payment_reviewed_by_user_id = :reviewedByUserId,
         payment_reviewed_at = NOW(),
-        payment_rejection_reason = :rejectionReason
+        payment_rejection_reason = :rejectionReason,
+        capacity_reservation_status = 'released',
+        capacity_released_at = COALESCE(capacity_released_at, NOW()),
+        capacity_release_reason = COALESCE(capacity_release_reason, 'payment_rejected')
       WHERE id = :id
     `, { id: registration.id, reviewedByUserId, rejectionReason });
 
@@ -458,18 +488,65 @@ router.patch('/:id/payment-review', ...requireRegistrationAdmin, asyncRoute(asyn
   }
 
   const approved = await transaction(async (connection) => {
+    const [[eventRow], [ticketRow]] = await Promise.all([
+      connection.execute('SELECT id, max_attendees, registration_approval_mode FROM events WHERE id = :eventId LIMIT 1 FOR UPDATE', { eventId: registration.event_id }),
+      connection.execute('SELECT id, quota FROM ticket_types WHERE id = :ticketTypeId LIMIT 1 FOR UPDATE', { ticketTypeId: registration.ticket_type_id }),
+    ]);
+    await releaseExpiredReservations(connection, { eventId: registration.event_id, ticketTypeId: registration.ticket_type_id });
+
+    const [freshRows] = await connection.execute(`
+      SELECT id, capacity_reservation_status, registration_status
+      FROM registrations
+      WHERE id = :id
+      LIMIT 1 FOR UPDATE
+    `, { id: registration.id });
+    const fresh = freshRows[0];
+    if (!fresh) throw new Error('Registration not found');
+    if (fresh.capacity_reservation_status === 'expired' || fresh.registration_status === 'expired') {
+      const { ticketReservedCount, eventReservedCount } = await countActiveReservations(connection, registration.event_id, registration.ticket_type_id);
+      const eventCapacityFull = Boolean(eventRow[0]?.max_attendees && eventReservedCount + 1 > Number(eventRow[0].max_attendees));
+      const ticketCapacityFull = Boolean(ticketRow[0]?.quota && ticketReservedCount + 1 > Number(ticketRow[0].quota));
+      if (eventCapacityFull || ticketCapacityFull) {
+        const error = new Error('Capacity is no longer available for this expired reservation');
+        error.statusCode = 409;
+        throw error;
+      }
+    }
+
+    const approvalState = paymentApprovalState({ approvalMode: eventRow[0]?.registration_approval_mode || 'automatic' });
+
     await connection.execute(`
       UPDATE registrations
       SET
-        registration_status = 'approved',
-        payment_status = 'approved',
+        registration_status = :registrationStatus,
+        payment_status = :paymentStatus,
+        capacity_reservation_status = 'active',
+        capacity_released_at = NULL,
+        capacity_release_reason = NULL,
+        reservation_expires_at = NULL,
         payment_reviewed_by_user_id = :reviewedByUserId,
         payment_reviewed_at = NOW(),
         payment_rejection_reason = NULL
       WHERE id = :id
-    `, { id: registration.id, reviewedByUserId });
+    `, {
+      id: registration.id,
+      reviewedByUserId,
+      registrationStatus: approvalState.registrationStatus,
+      paymentStatus: approvalState.paymentStatus,
+    });
 
-    await connection.execute("UPDATE orders SET status = 'paid' WHERE id = :orderId", { orderId: registration.order_id });
+    await connection.execute("UPDATE orders SET status = :status WHERE id = :orderId", {
+      orderId: registration.order_id,
+      status: approvalState.orderStatus,
+    });
+
+    if (!approvalState.shouldIssueTicket) {
+      return {
+        pendingReview: true,
+        registrationStatus: approvalState.registrationStatus,
+        paymentStatus: approvalState.paymentStatus,
+      };
+    }
 
     const [existingAttendees] = await connection.execute(
       'SELECT id, qr_token FROM attendees WHERE order_id = :orderId AND event_id = :eventId AND ticket_type_id = :ticketTypeId LIMIT 1',
@@ -568,7 +645,119 @@ router.patch('/:id/payment-review', ...requireRegistrationAdmin, asyncRoute(asyn
     };
   });
 
-  ok(res, { id: registration.id, status: 'approved', ...approved }, 'Payment approved and ticket generated');
+  ok(
+    res,
+    { id: registration.id, status: approved.pendingReview ? 'pending_review' : 'approved', ...approved },
+    approved.pendingReview ? 'Payment approved. Registration is pending manual review.' : 'Payment approved and ticket generated'
+  );
+}));
+
+router.patch('/:id/review', ...requireRegistrationAdmin, asyncRoute(async (req, res) => {
+  const parsed = z.object({
+    status: z.enum(['approved', 'rejected']),
+    rejectionReason: z.string().optional().nullable(),
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
+
+  const registration = await first(`
+    SELECT r.id, r.order_id, r.event_id, r.ticket_type_id, r.registration_status, r.payment_status,
+           d.full_name, d.email, d.mobile, d.specialty
+    FROM registrations r
+    JOIN doctors d ON d.id = r.doctor_id
+    WHERE r.id = :id
+  `, { id: Number(req.params.id) });
+
+  if (!registration) return fail(res, 404, 'Registration not found');
+  if (!(await requireEventScope(req, res, registration.event_id))) return;
+
+  if (parsed.data.status === 'rejected') {
+    await query(`
+      UPDATE registrations
+      SET registration_status = 'rejected',
+          capacity_reservation_status = 'released',
+          capacity_released_at = COALESCE(capacity_released_at, NOW()),
+          capacity_release_reason = COALESCE(capacity_release_reason, 'registration_rejected'),
+          payment_rejection_reason = :rejectionReason,
+          updated_at = NOW()
+      WHERE id = :id
+    `, { id: registration.id, rejectionReason: parsed.data.rejectionReason || null });
+    return ok(res, { id: registration.id, status: 'rejected' }, 'Registration rejected');
+  }
+
+  if (registration.payment_status !== 'approved') {
+    return fail(res, 409, 'Payment must be approved before registration approval can issue a ticket');
+  }
+
+  const approved = await transaction(async (connection) => {
+    const [existingAttendees] = await connection.execute(
+      'SELECT id, qr_token FROM attendees WHERE order_id = :orderId AND event_id = :eventId AND ticket_type_id = :ticketTypeId LIMIT 1',
+      {
+        orderId: registration.order_id,
+        eventId: registration.event_id,
+        ticketTypeId: registration.ticket_type_id,
+      }
+    );
+
+    let attendeeId = existingAttendees[0]?.id;
+    let token = existingAttendees[0]?.qr_token || qrToken();
+
+    if (!attendeeId) {
+      const [attendeeResult] = await connection.execute(`
+        INSERT INTO attendees (
+          order_id, event_id, ticket_type_id, attendee_number, full_name, email, phone, job_title, organization, qr_token
+        )
+        VALUES (
+          :orderId, :eventId, :ticketTypeId, :attendeeNumber, :fullName, :email, :mobile, :specialty, NULL, :qrToken
+        )
+      `, {
+        orderId: registration.order_id,
+        eventId: registration.event_id,
+        ticketTypeId: registration.ticket_type_id,
+        attendeeNumber: attendeeNumber(),
+        fullName: registration.full_name,
+        email: registration.email,
+        mobile: registration.mobile,
+        specialty: registration.specialty,
+        qrToken: token,
+      });
+      attendeeId = attendeeResult.insertId;
+    }
+
+    const [existingTickets] = await connection.execute(
+      'SELECT id, ticket_number FROM generated_tickets WHERE registration_id = :registrationId LIMIT 1',
+      { registrationId: registration.id }
+    );
+
+    let ticketId = existingTickets[0]?.id;
+    let generatedTicketNumber = existingTickets[0]?.ticket_number;
+    if (!ticketId) {
+      generatedTicketNumber = ticketNumber();
+      const [ticketResult] = await connection.execute(`
+        INSERT INTO generated_tickets (registration_id, attendee_id, ticket_number, qr_token, generated_at)
+        VALUES (:registrationId, :attendeeId, :ticketNumber, :qrToken, NOW())
+      `, {
+        registrationId: registration.id,
+        attendeeId,
+        ticketNumber: generatedTicketNumber,
+        qrToken: token,
+      });
+      ticketId = ticketResult.insertId;
+    }
+
+    await connection.execute(`
+      UPDATE registrations
+      SET registration_status = 'approved',
+          capacity_reservation_status = 'active',
+          capacity_released_at = NULL,
+          capacity_release_reason = NULL,
+          updated_at = NOW()
+      WHERE id = :id
+    `, { id: registration.id });
+
+    return { attendeeId, ticketId, ticketNumber: generatedTicketNumber };
+  });
+
+  ok(res, { id: registration.id, status: 'approved', ...approved }, 'Registration approved and ticket generated');
 }));
 
 router.patch('/:id/order-status', ...requireRegistrationAdmin, asyncRoute(async (req, res) => {

@@ -14,12 +14,17 @@ export function apiAssetUrl(url?: string | null) {
   return `/${url}`
 }
 
-function authHeaders(): Record<string, string> {
+export function currentAuthToken() {
   if (typeof window === "undefined") return {}
-  const token =
+  return (
     window.localStorage.getItem("stylish-events-admin-token") ||
     window.localStorage.getItem("stylish-events-auth-token") ||
     window.localStorage.getItem("stylish-events-token")
+  )
+}
+
+function authHeaders(): Record<string, string> {
+  const token = currentAuthToken()
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
@@ -36,6 +41,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
+      credentials: "include",
       headers: ({
         "Content-Type": "application/json",
         ...authHeaders(),
@@ -88,6 +94,12 @@ export const platformApi = {
     request<any>("/api/booking", { method: "POST", body: JSON.stringify(data) }),
   submitContactInquiry: (data: Record<string, unknown>) =>
     request<any>("/api/contact-inquiries", { method: "POST", body: JSON.stringify(data) }),
+  getPublicEvent: (slug: string) =>
+    request<any>(`/api/public/events/${encodeURIComponent(slug)}`),
+  createPublicCheckout: (slug: string, data: Record<string, unknown>) =>
+    request<any>(`/api/public/events/${encodeURIComponent(slug)}/checkout`, { method: "POST", body: JSON.stringify(data) }),
+  getPublicRegistration: (reference: string, token?: string) =>
+    request<any>(`/api/public/events/registrations/${encodeURIComponent(reference)}${token ? `?token=${encodeURIComponent(token)}` : ""}`),
   getMyDashboard: () => request<any>("/api/me/dashboard"),
   listMyRegistrations: (params?: { search?: string; status?: string; period?: string; page?: number; perPage?: number }) => {
     const searchParams = new URLSearchParams()
@@ -215,6 +227,8 @@ export const platformApi = {
     request<any>(`/api/registrations/${id}/payment-proof`, { method: "PATCH", body: JSON.stringify(data) }),
   reviewPayment: (id: number | string, data: Record<string, unknown>) =>
     request<any>(`/api/registrations/${id}/payment-review`, { method: "PATCH", body: JSON.stringify(data) }),
+  reviewRegistration: (id: number | string, data: Record<string, unknown>) =>
+    request<any>(`/api/registrations/${id}/review`, { method: "PATCH", body: JSON.stringify(data) }),
   updateRegistrationOrderStatus: (id: number | string, status: "paid" | "cancelled" | "refunded") =>
     request<any>(`/api/registrations/${id}/order-status`, { method: "PATCH", body: JSON.stringify({ status }) }),
   listReviews: () => request<any[]>("/api/reviews"),

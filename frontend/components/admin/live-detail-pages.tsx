@@ -38,6 +38,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { ConfirmAction } from "@/components/admin/confirm-action"
+import { useAdminPermissions } from "@/components/admin/admin-shell"
 import { ImageGalleryDropzone, ImageUrlDropzone } from "@/components/admin/image-url-dropzone"
 import { TableDateTime } from "@/components/admin/table-date-time"
 import { platformApi } from "@/lib/platform-api"
@@ -73,7 +74,7 @@ function money(amount: unknown, currency = "USD") {
 
 function statusClass(status: string) {
   if (["paid", "approved", "published", "checked in", "sent", "active"].includes(status)) return "bg-emerald-50 text-emerald-700 hover:bg-emerald-50"
-  if (["pending", "pending_payment", "pending_verification", "waiting", "draft"].includes(status)) return "bg-amber-50 text-amber-700 hover:bg-amber-50"
+  if (["pending", "pending_payment", "pending_verification", "pending_review", "waiting", "draft"].includes(status)) return "bg-amber-50 text-amber-700 hover:bg-amber-50"
   if (["refunded", "ready", "used"].includes(status)) return "bg-slate-100 text-slate-600 hover:bg-slate-100"
   return "bg-red-50 text-red-700 hover:bg-red-50"
 }
@@ -140,11 +141,11 @@ function Hero({ badge, title, subtitle }: { badge: string; title: string; subtit
   )
 }
 
-function Field({ label, inputValue, onChange, type = "text", className }: { label: string; inputValue: string; onChange: (next: string) => void; type?: string; className?: string }) {
+function Field({ label, inputValue, onChange, type = "text", className, disabled }: { label: string; inputValue: string; onChange: (next: string) => void; type?: string; className?: string; disabled?: boolean }) {
   return (
     <div className={cn("space-y-2", className)}>
       <Label className="text-xs font-extrabold uppercase tracking-[0.08em] text-slate-500">{label}</Label>
-      <Input type={type} value={inputValue} onChange={(event) => onChange(event.target.value)} className="h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold" />
+      <Input type={type} value={inputValue} onChange={(event) => onChange(event.target.value)} disabled={disabled} className="h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold disabled:opacity-70" />
     </div>
   )
 }
@@ -205,6 +206,12 @@ export function LiveEventDetailPage({ id, initialMode }: { id: string; initialMo
           bannerImageUrl: value(event, "banner_image_url"),
           gallery: JSON.parse(value(event, "gallery_json") || "[]").join("\n"),
           googleMapsUrl: value(event, "google_maps_url"),
+          publicRegistrationEnabled: Number(value(event, "public_registration_enabled") || 1) === 1,
+          registrationApprovalMode: value(event, "registration_approval_mode") || "automatic",
+          registrationAccess: value(event, "registration_access") || "guest_allowed",
+          maxTicketsPerCheckout: String(value(event, "max_tickets_per_checkout") || "1"),
+          capacityHoldHoursOverride: String(value(event, "capacity_hold_hours_override") || ""),
+          manualPaymentEnabled: Number(value(event, "manual_payment_enabled") || 1) === 1,
         })
       } catch (error) {
         if (active) setState({ loading: false, error: error instanceof Error ? error.message : "Request failed", data: null })
@@ -238,6 +245,12 @@ export function LiveEventDetailPage({ id, initialMode }: { id: string; initialMo
         endsAt: fromLocalInput(form.endsAt),
         registrationStartsAt: fromLocalInput(form.registrationStartsAt),
         registrationEndsAt: fromLocalInput(form.registrationEndsAt),
+        publicRegistrationEnabled: Boolean(form.publicRegistrationEnabled),
+        registrationApprovalMode: form.registrationApprovalMode || "automatic",
+        registrationAccess: form.registrationAccess || "guest_allowed",
+        maxTicketsPerCheckout: 1,
+        capacityHoldHoursOverride: Number(form.capacityHoldHoursOverride || 0) || null,
+        manualPaymentEnabled: Boolean(form.manualPaymentEnabled),
         timezone: "Africa/Cairo",
         maxAttendees: Number(form.maxAttendees || 0) || null,
         coverImageUrl: form.coverImageUrl || null,
@@ -247,7 +260,7 @@ export function LiveEventDetailPage({ id, initialMode }: { id: string; initialMo
         venueId: event?.venue_id || null,
         organizerId: event?.organizer_id || null,
       })
-      toast.success(language === "ar" ? "تم حفظ الفعالية" : "Event saved", { description: language === "ar" ? "تم تحديث سجل قاعدة البيانات الفعلي." : "Live database record was updated." })
+      toast.success(language === "ar" ? "تم حفظ الفعالية" : "Event saved", { description: language === "ar" ? "تم تحديث سجل قاعدة البيانات الفعلي." : "Event details were updated." })
     } catch (error) {
       toast.error(language === "ar" ? "فشل الحفظ" : "Save failed", { description: error instanceof Error ? error.message : (language === "ar" ? "تعذر تحديث الفعالية." : "Could not update event.") })
     }
@@ -265,9 +278,9 @@ export function LiveEventDetailPage({ id, initialMode }: { id: string; initialMo
             <Badge className={cn("rounded-xl capitalize", statusClass(form.status))}>{adminStatusT(language, form.status)}</Badge>
           </div>
           <h1 className="mt-3 text-xl font-extrabold tracking-tight text-[#17172f] md:text-2xl">{form.titleEn}</h1>
-          <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-slate-500">{language === "ar" ? (form.summaryAr || "سجل فعالية مباشر من MySQL.") : (form.summaryEn || "Live event record from MySQL.")}</p>
+          <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-slate-500">{language === "ar" ? (form.summaryAr || "تفاصيل الفعالية المباشرة.") : (form.summaryEn || "Live event details.")}</p>
         </div>
-        <ConfirmAction title={language === "ar" ? "حفظ تعديلات الفعالية؟" : "Save event changes?"} description={language === "ar" ? "سيتم تحديث سجل الفعالية الفعلي في MySQL." : "This will update the live event record in MySQL."} confirmLabel={language === "ar" ? "حفظ التعديلات" : "Save changes"} tone="success" onConfirm={saveEvent}>
+        <ConfirmAction title={language === "ar" ? "حفظ تعديلات الفعالية؟" : "Save event changes?"} description={language === "ar" ? "سيتم تحديث تفاصيل الفعالية." : "This will update the event details."} confirmLabel={language === "ar" ? "حفظ التعديلات" : "Save changes"} tone="success" onConfirm={saveEvent}>
           <Button className="h-10 rounded-2xl px-5 font-extrabold">
             <CheckCircle2 className="h-4 w-4" />
             {language === "ar" ? "حفظ التعديلات" : "Save Changes"}
@@ -391,6 +404,40 @@ export function LiveEventDetailPage({ id, initialMode }: { id: string; initialMo
               <Field label="Registration closes" inputValue={form.registrationEndsAt} type="datetime-local" onChange={(next) => setForm({ ...form, registrationEndsAt: next })} />
             </div>
           </EditorSection>
+          <EditorSection icon={ShieldCheck} title={language === "ar" ? "التسجيل والدفع" : "Registration & Checkout"}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Select value={form.publicRegistrationEnabled ? "enabled" : "disabled"} onValueChange={(next) => setForm({ ...form, publicRegistrationEnabled: next === "enabled" })}>
+                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="enabled">{language === "ar" ? "تفعيل التسجيل العام" : "Public registration enabled"}</SelectItem>
+                  <SelectItem value="disabled">{language === "ar" ? "إيقاف التسجيل العام" : "Public registration disabled"}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={form.registrationApprovalMode} onValueChange={(next) => setForm({ ...form, registrationApprovalMode: next })}>
+                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="automatic">{language === "ar" ? "اعتماد تلقائي" : "Automatic approval"}</SelectItem>
+                  <SelectItem value="manual_review">{language === "ar" ? "مراجعة يدوية" : "Manual review"}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={form.registrationAccess} onValueChange={(next) => setForm({ ...form, registrationAccess: next })}>
+                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="guest_allowed">{language === "ar" ? "السماح للضيف والعميل" : "Guest and customer checkout"}</SelectItem>
+                  <SelectItem value="login_required">{language === "ar" ? "تسجيل الدخول مطلوب" : "Login required"}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={form.manualPaymentEnabled ? "enabled" : "disabled"} onValueChange={(next) => setForm({ ...form, manualPaymentEnabled: next === "enabled" })}>
+                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="enabled">{language === "ar" ? "تفعيل التحويل البنكي" : "Manual bank payment enabled"}</SelectItem>
+                  <SelectItem value="disabled">{language === "ar" ? "إيقاف التحويل البنكي" : "Manual bank payment disabled"}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Field label={language === "ar" ? "أقصى عدد تذاكر في الطلب" : "Maximum tickets per checkout"} inputValue="1" type="number" onChange={() => setForm({ ...form, maxTicketsPerCheckout: "1" })} disabled />
+              <Field label={language === "ar" ? "مدة حجز المقعد بالساعات" : "Seat reservation hours override"} inputValue={form.capacityHoldHoursOverride} type="number" onChange={(next) => setForm({ ...form, capacityHoldHoursOverride: next })} />
+            </div>
+          </EditorSection>
           <EditorSection icon={ImageIcon} title="Media & Gallery">
             <div className="grid gap-4 lg:grid-cols-2">
               <ImageUrlDropzone label="Cover image URL" value={form.coverImageUrl} onChange={(next) => setForm({ ...form, coverImageUrl: next })} />
@@ -451,6 +498,28 @@ export function LiveRegistrationDetailPage({ id, variant }: { id: string; varian
     }
   }
 
+  async function reviewPayment(status: "approved" | "rejected") {
+    try {
+      await platformApi.reviewPayment(id, { status })
+      const data = await platformApi.getRegistration(id)
+      setState({ loading: false, error: "", data })
+      toast.success(language === "ar" ? "تمت مراجعة الدفع" : "Payment reviewed")
+    } catch (error) {
+      toast.error(language === "ar" ? "فشلت مراجعة الدفع" : "Payment review failed", { description: error instanceof Error ? error.message : "Could not review payment." })
+    }
+  }
+
+  async function reviewRegistration(status: "approved" | "rejected") {
+    try {
+      await platformApi.reviewRegistration(id, { status })
+      const data = await platformApi.getRegistration(id)
+      setState({ loading: false, error: "", data })
+      toast.success(language === "ar" ? "تمت مراجعة التسجيل" : "Registration reviewed")
+    } catch (error) {
+      toast.error(language === "ar" ? "فشلت مراجعة التسجيل" : "Registration review failed", { description: error instanceof Error ? error.message : "Could not review registration." })
+    }
+  }
+
   const row = state.data
   if (state.loading || state.error || !row) return <PageState backHref={variant === "ticket" ? "/admin/tickets" : "/admin/orders"} backLabel={variant === "ticket" ? (language === "ar" ? "رجوع للتذاكر" : "Back to Tickets") : (language === "ar" ? "رجوع للحجوزات" : "Back to Orders")} loading={state.loading} error={state.error} />
 
@@ -479,6 +548,9 @@ export function LiveRegistrationDetailPage({ id, variant }: { id: string; varian
             <Detail label={language === "ar" ? "الجنسية" : "Nationality"}>{row.nationality}</Detail>
             <Detail label={language === "ar" ? "التسجيل" : "Registration"}><TableDateTime value={row.created_at} /></Detail>
             <Detail label={language === "ar" ? "مرجع الدفع" : "Payment reference"}>{row.payment_reference || "-"}</Detail>
+            <Detail label={language === "ar" ? "موعد انتهاء حجز المقعد" : "Seat hold deadline"}><TableDateTime value={row.reservation_expires_at} /></Detail>
+            <Detail label={language === "ar" ? "حالة حجز المقعد" : "Capacity reservation state"}>{row.capacity_reservation_status || "-"}</Detail>
+            <Detail label={language === "ar" ? "سبب تحرير السعة" : "Capacity release reason"}>{row.capacity_release_reason || "-"}</Detail>
             <Detail label={language === "ar" ? "رمز QR" : "QR token"} wide>{row.qr_token || (language === "ar" ? "اعتماد الدفع لازم يولد تذكرة QR أولاً." : "Payment approval must generate a QR ticket first.")}</Detail>
           </CardContent>
         </Card>
@@ -486,6 +558,21 @@ export function LiveRegistrationDetailPage({ id, variant }: { id: string; varian
           <CardHeader><CardTitle className="flex items-center gap-2 text-base font-extrabold"><ReceiptText className="h-4 w-4 text-[hsl(var(--primary))]" />{adminT(language, "common.actions")}</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <Badge className={cn("rounded-xl capitalize", statusClass(status))}>{adminStatusT(language, status)}</Badge>
+            {row.payment_status !== "approved" ? (
+              <ConfirmAction title={language === "ar" ? "اعتماد الدفع؟" : "Approve payment?"} description={language === "ar" ? "سيتم تطبيق سياسة اعتماد التسجيل الخاصة بالفعالية." : "The event registration approval policy will be applied."} confirmLabel={language === "ar" ? "اعتماد الدفع" : "Approve payment"} tone="success" onConfirm={() => reviewPayment("approved")}>
+                <Button className="h-10 w-full rounded-xl font-bold"><BadgeCheck className="h-4 w-4" /> {language === "ar" ? "اعتماد الدفع" : "Approve payment"}</Button>
+              </ConfirmAction>
+            ) : null}
+            {row.registration_status === "pending_review" ? (
+              <ConfirmAction title={language === "ar" ? "اعتماد التسجيل؟" : "Approve registration?"} description={language === "ar" ? "سيتم إصدار التذكرة ورمز QR." : "This issues the ticket and QR code."} confirmLabel={language === "ar" ? "اعتماد التسجيل" : "Approve registration"} tone="success" onConfirm={() => reviewRegistration("approved")}>
+                <Button className="h-10 w-full rounded-xl font-bold"><UserCheck className="h-4 w-4" /> {language === "ar" ? "اعتماد التسجيل" : "Approve registration"}</Button>
+              </ConfirmAction>
+            ) : null}
+            {row.payment_status !== "rejected" && row.registration_status !== "rejected" ? (
+              <ConfirmAction title={language === "ar" ? "رفض التسجيل؟" : "Reject registration?"} description={language === "ar" ? "سيتم تحرير السعة وعدم إصدار التذكرة." : "This releases capacity and will not issue a ticket."} confirmLabel={language === "ar" ? "رفض" : "Reject"} tone="danger" onConfirm={() => row.payment_status !== "approved" ? reviewPayment("rejected") : reviewRegistration("rejected")}>
+                <Button variant="outline" className="h-10 w-full rounded-xl font-bold text-red-600"><XCircle className="h-4 w-4" /> {language === "ar" ? "رفض" : "Reject"}</Button>
+              </ConfirmAction>
+            ) : null}
             <ConfirmAction title={language === "ar" ? "تأكيد دفع هذا الطلب؟" : "Mark this order paid?"} description={language === "ar" ? "سيتم تحديث الحجز الفعلي وقد يتم إنشاء سجلات دخول العميل." : "This updates the live booking and can generate customer access records."} confirmLabel={adminT(language, "common.markPaid")} tone="success" onConfirm={() => updateStatus("paid")}>
               <Button className="h-10 w-full rounded-xl font-bold"><CheckCircle2 className="h-4 w-4" /> {adminT(language, "common.markPaid")}</Button>
             </ConfirmAction>
@@ -504,6 +591,9 @@ export function LiveRegistrationDetailPage({ id, variant }: { id: string; varian
 
 export function LiveAttendeeDetailPage({ id }: { id: string }) {
   const { language } = useLanguage()
+  const { can } = useAdminPermissions()
+  const canCheckIn = can("checkin.manage")
+  const canManageCertificates = can("certificates.manage")
   const [state, setState] = useState<DetailState<any>>(emptyState)
 
   async function load(active = true) {
@@ -572,8 +662,8 @@ export function LiveAttendeeDetailPage({ id }: { id: string }) {
         <Card className="rounded-[28px] border-0 bg-white shadow-[0_16px_35px_rgba(15,23,42,0.06)]">
           <CardHeader><CardTitle className="text-base font-extrabold">{adminT(language, "overview.quickActions")}</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <Button onClick={checkIn} className="h-10 w-full rounded-xl bg-[hsl(var(--primary))] font-bold text-white"><UserCheck className="h-4 w-4" /> {adminT(language, "attendees.checkin")}</Button>
-            <Button onClick={issueCertificate} variant="outline" className="h-10 w-full rounded-xl font-bold"><BadgeCheck className="h-4 w-4" /> {adminT(language, "certificates.sendCertificate")}</Button>
+            {canCheckIn && <Button onClick={checkIn} className="h-10 w-full rounded-xl bg-[hsl(var(--primary))] font-bold text-white"><UserCheck className="h-4 w-4" /> {adminT(language, "attendees.checkin")}</Button>}
+            {canManageCertificates && <Button onClick={issueCertificate} variant="outline" className="h-10 w-full rounded-xl font-bold"><BadgeCheck className="h-4 w-4" /> {adminT(language, "certificates.sendCertificate")}</Button>}
             <Button variant="outline" className="h-10 w-full rounded-xl font-bold"><Mail className="h-4 w-4" /> {language === "ar" ? "إرسال بريد للحضور" : "Email attendee"}</Button>
           </CardContent>
         </Card>
@@ -584,6 +674,8 @@ export function LiveAttendeeDetailPage({ id }: { id: string }) {
 
 export function LiveCustomerAssetPreviewPage({ id, kind }: { id: string; kind: "certificate" | "card" }) {
   const { language } = useLanguage()
+  const { can } = useAdminPermissions()
+  const canManageCertificates = can("certificates.manage")
   const [state, setState] = useState<DetailState<any>>(emptyState)
 
   useEffect(() => {
@@ -637,7 +729,7 @@ export function LiveCustomerAssetPreviewPage({ id, kind }: { id: string; kind: "
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={downloadAsset} variant="outline" className="h-10 rounded-2xl bg-white px-4 text-sm font-extrabold"><Download className="h-4 w-4" /> {adminT(language, "common.download")}</Button>
-          <Button onClick={sendAsset} className="h-10 rounded-2xl bg-[hsl(var(--primary))] px-4 text-sm font-extrabold text-white"><Mail className="h-4 w-4" /> {adminT(language, "common.send")}</Button>
+          {canManageCertificates && <Button onClick={sendAsset} className="h-10 rounded-2xl bg-[hsl(var(--primary))] px-4 text-sm font-extrabold text-white"><Mail className="h-4 w-4" /> {adminT(language, "common.send")}</Button>}
         </div>
       </div>
 
@@ -698,6 +790,8 @@ export function LiveCustomerAssetPreviewPage({ id, kind }: { id: string; kind: "
 
 export function LiveReviewDetailPage({ id }: { id: string }) {
   const { language } = useLanguage()
+  const { can } = useAdminPermissions()
+  const canManageReviews = can("reviews.manage")
   const [state, setState] = useState<DetailState<any>>(emptyState)
 
   async function load(active = true) {
@@ -776,6 +870,8 @@ export function LiveReviewDetailPage({ id }: { id: string }) {
           <CardHeader><CardTitle className="text-base font-extrabold">{language === "ar" ? "مراجعة الاعتماد" : "Moderation"}</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <Badge className={cn("rounded-xl capitalize", statusClass(normalizedStatus))}>{adminStatusT(language, normalizedStatus)}</Badge>
+            {canManageReviews && (
+              <>
             <ConfirmAction title={language === "ar" ? "نشر هذه المراجعة؟" : "Publish this review?"} description={language === "ar" ? "سيتم احتساب هذه المراجعة ضمن تقييمات الفعالية العامة." : "This review will count toward public event ratings."} confirmLabel={adminT(language, "common.publish")} tone="success" onConfirm={() => updateStatus("published")}>
               <Button className="h-10 w-full rounded-xl font-bold"><BadgeCheck className="h-4 w-4" /> {adminT(language, "common.publish")}</Button>
             </ConfirmAction>
@@ -785,6 +881,8 @@ export function LiveReviewDetailPage({ id }: { id: string }) {
             <ConfirmAction title={language === "ar" ? "حذف هذه المراجعة؟" : "Delete this review?"} description={language === "ar" ? "سيتم حذف المراجعة من قائمة الاعتماد." : "This removes the review from the moderation queue."} confirmLabel={adminT(language, "common.delete")} tone="danger" onConfirm={deleteReview}>
               <Button variant="outline" className="h-10 w-full rounded-xl font-bold text-red-600"><Trash2 className="h-4 w-4" /> {adminT(language, "common.delete")}</Button>
             </ConfirmAction>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

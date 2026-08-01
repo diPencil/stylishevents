@@ -110,12 +110,88 @@ async function createTicketFixture(customer, status = 'approved', qrStatus = 'ac
   return { doctorId: doctor.insertId, eventId: event.insertId, ticketTypeId: ticketType.insertId, orderId: order.insertId, registrationId: registration.insertId, attendeeId: attendee.insertId, ticketId: ticket.insertId, qrToken };
 }
 
+async function createPublicCheckoutFixture({
+  status = 'published',
+  quota = 10,
+  maxAttendees = 10,
+  startsOffset = 5,
+  registrationOpen = true,
+  priceEgp = 0,
+  priceUsd = 0,
+  approvalMode = 'automatic',
+  access = 'guest_allowed',
+  publicRegistrationEnabled = true,
+  maxTicketsPerCheckout = 1,
+  capacityHoldHoursOverride = null,
+  manualPaymentEnabled = true,
+} = {}) {
+  const slug = `${base}-public-${randomBytes(3).toString('hex')}`;
+  const event = await query(`
+    INSERT INTO events (
+      slug, title_en, title_ar, summary_en, summary_ar, description_en, description_ar,
+      type, status, starts_at, ends_at, registration_starts_at, registration_ends_at,
+      cover_image_url, max_attendees, public_registration_enabled, registration_approval_mode,
+      registration_access, max_tickets_per_checkout, capacity_hold_hours_override, manual_payment_enabled
+    )
+    VALUES (
+      :slug, 'Codex Public Checkout', 'تسجيل عام تجريبي', 'Safe public summary', 'ملخص عام آمن',
+      'Public description', 'وصف عام', 'conference', :status,
+      DATE_ADD(NOW(), INTERVAL :startsOffset DAY), DATE_ADD(NOW(), INTERVAL :endOffset DAY),
+      ${registrationOpen ? 'DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 3 DAY)' : 'DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 3 DAY)'},
+      '/uploads/assets/codex-public.png', :maxAttendees, :publicRegistrationEnabled, :approvalMode,
+      :access, :maxTicketsPerCheckout, :capacityHoldHoursOverride, :manualPaymentEnabled
+    )
+  `, {
+    slug,
+    status,
+    startsOffset,
+    endOffset: startsOffset + 1,
+    maxAttendees,
+    publicRegistrationEnabled: publicRegistrationEnabled ? 1 : 0,
+    approvalMode,
+    access,
+    maxTicketsPerCheckout,
+    capacityHoldHoursOverride,
+    manualPaymentEnabled: manualPaymentEnabled ? 1 : 0,
+  });
+  const ticket = await query(`
+    INSERT INTO ticket_types (event_id, name_en, name_ar, description_en, description_ar, quota, per_order_limit, is_active)
+    VALUES (:eventId, 'Public Pass', 'تذكرة عامة', 'Public checkout ticket', 'تذكرة تسجيل عام', :quota, 1, 1)
+  `, { eventId: event.insertId, quota });
+  await query(`
+    INSERT INTO ticket_price_periods (ticket_type_id, label_en, label_ar, price, price_egp, price_usd, currency, starts_at, ends_at, is_active)
+    VALUES (:ticketTypeId, 'Current', 'الحالي', :priceUsd, :priceEgp, :priceUsd, 'USD', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 2 DAY), 1)
+  `, { ticketTypeId: ticket.insertId, priceEgp, priceUsd });
+  return { slug, eventId: event.insertId, ticketTypeId: ticket.insertId };
+}
+
+function checkoutPayload(ticketTypeId, overrides = {}) {
+  const unique = randomBytes(4).toString('hex');
+  return {
+    idempotencyKey: `${base}-idem-${unique}`,
+    ticketTypeId,
+    quantity: 1,
+    fullName: 'Codex Public Guest',
+    mobile: '+201000000000',
+    email: `${base}.public.${unique}@example.com`,
+    address: 'Test address',
+    countryCode: 'EG',
+    countryName: 'Egypt',
+    city: 'Cairo',
+    specialty: 'QA',
+    nationality: 'Egyptian',
+    preferredLanguage: 'en',
+    ...overrides,
+  };
+}
+
 before(async () => {
   server = app.listen(0);
   await new Promise((resolve) => server.once('listening', resolve));
   baseUrl = `http://127.0.0.1:${server.address().port}`;
   fixture.customerA = await createUser('customer', 1);
   fixture.customerB = await createUser('customer', 2);
+  fixture.admin = await createUser('admin', 1);
   fixture.staff = await createUser('employee', 1);
   const employeeRole = await roleId('employee', 'Employee');
   await query(`
@@ -124,11 +200,23 @@ before(async () => {
     ON DUPLICATE KEY UPDATE allowed = 1
   `, { roleId: employeeRole });
   fixture.valid = await createTicketFixture(fixture.customerA);
+  await query(`
+    INSERT INTO event_staff_assignments (event_id, user_id, is_active)
+    VALUES (:eventId, :userId, 1)
+    ON DUPLICATE KEY UPDATE is_active = 1
+  `, { eventId: fixture.valid.eventId, userId: fixture.staff.id });
   fixture.pending = await createTicketFixture(fixture.customerA, 'pending_verification');
   fixture.revoked = await createTicketFixture(fixture.customerA, 'approved', 'revoked');
 });
 
 after(async () => {
+  const uploadedAvatars = await query('SELECT avatar_url FROM users WHERE email LIKE :prefix', { prefix: `${base}.%@example.com` }).catch(() => []);
+  for (const row of uploadedAvatars) {
+    const avatarPath = localUploadPath(row.avatar_url);
+    if (avatarPath) await fs.rm(avatarPath, { force: true }).catch(() => {});
+  }
+  await query('DELETE esa FROM event_staff_assignments esa JOIN events e ON e.id = esa.event_id WHERE e.slug LIKE :prefix', { prefix: `${base}-%` }).catch(() => {});
+  await query('DELETE FROM public_checkout_sessions WHERE customer_email LIKE :prefix OR session_key LIKE :sessionPrefix', { prefix: `${base}.%@example.com`, sessionPrefix: `${base}-%` }).catch(() => {});
   await query('DELETE FROM checkin_logs WHERE attendee_id IN (SELECT id FROM attendees WHERE attendee_number LIKE :prefix)', { prefix: `${base}-%` }).catch(() => {});
   await query('DELETE FROM generated_tickets WHERE ticket_number LIKE :prefix', { prefix: `${base}-%` }).catch(() => {});
   await query('DELETE FROM certificates WHERE attendee_id IN (SELECT id FROM attendees WHERE attendee_number LIKE :prefix)', { prefix: `${base}-%` }).catch(() => {});
@@ -236,6 +324,266 @@ test('customer event APIs return image fallback fields without private admin dat
     assert.equal(Object.prototype.hasOwnProperty.call(row, 'staff_notes'), false);
     assert.equal(Object.prototype.hasOwnProperty.call(row, 'supplier_information'), false);
   }
+});
+
+test('public event DTO is safe and draft events are denied', async () => {
+  const published = await createPublicCheckoutFixture({ priceEgp: 0, priceUsd: 0 });
+  const visible = await api(`/api/public/events/${published.slug}`);
+  assert.equal(visible.response.status, 200);
+  assert.equal(visible.body.data.event.slug, published.slug);
+  assert.equal(visible.body.data.event.registration_policy.approvalMode, 'automatic');
+  assert.equal(visible.body.data.event.registration_policy.access, 'guest_allowed');
+  assert.ok(Array.isArray(visible.body.data.tickets));
+  assert.equal(Object.prototype.hasOwnProperty.call(visible.body.data, 'certificateTemplates'), false);
+  assert.equal(JSON.stringify(visible.body.data).includes('qr_token'), false);
+  assert.equal(JSON.stringify(visible.body.data).includes('staff'), false);
+
+  const draft = await createPublicCheckoutFixture({ status: 'draft' });
+  const hidden = await api(`/api/public/events/${draft.slug}`);
+  assert.equal(hidden.response.status, 404);
+});
+
+test('event registration policy controls free automatic and free manual review checkout', async () => {
+  const freeAuto = await createPublicCheckoutFixture({ priceEgp: 0, priceUsd: 0, approvalMode: 'automatic' });
+  const autoPayload = checkoutPayload(freeAuto.ticketTypeId);
+  const autoCheckout = await api(`/api/public/events/${freeAuto.slug}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify(autoPayload),
+  });
+  assert.equal(autoCheckout.response.status, 200);
+  assert.equal(autoCheckout.body.data.registration.registration_status, 'approved');
+  assert.equal(autoCheckout.body.data.registration.payment_status, 'approved');
+  assert.equal(autoCheckout.body.data.registration.ticket_status, 'active');
+
+  const freeManual = await createPublicCheckoutFixture({ priceEgp: 0, priceUsd: 0, approvalMode: 'manual_review' });
+  const manualPayload = checkoutPayload(freeManual.ticketTypeId);
+  const manualCheckout = await api(`/api/public/events/${freeManual.slug}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify(manualPayload),
+  });
+  assert.equal(manualCheckout.response.status, 200);
+  assert.equal(manualCheckout.body.data.registration.registration_status, 'pending_review');
+  assert.equal(manualCheckout.body.data.registration.payment_status, 'approved');
+  assert.equal(manualCheckout.body.data.registration.ticket_status, 'not_issued');
+
+  const registration = await first('SELECT id FROM registrations WHERE registration_number = :reference', {
+    reference: manualCheckout.body.data.registration.registration_number,
+  });
+  const approved = await api(`/api/registrations/${registration.id}/review`, {
+    method: 'PATCH',
+    headers: auth(fixture.admin),
+    body: JSON.stringify({ status: 'approved' }),
+  });
+  assert.equal(approved.response.status, 200);
+  assert.equal(approved.body.data.status, 'approved');
+  const ticket = await first('SELECT id FROM generated_tickets WHERE registration_id = :registrationId', { registrationId: registration.id });
+  assert.ok(ticket?.id);
+});
+
+test('event registration policy controls paid payment verification and manual review', async () => {
+  const paidAuto = await createPublicCheckoutFixture({ priceEgp: 100, priceUsd: 2, approvalMode: 'automatic' });
+  const autoPayload = checkoutPayload(paidAuto.ticketTypeId, { paymentReference: 'BANK-AUTO', paymentProofUrl: '/uploads/payment-proof/auto.png' });
+  const autoCheckout = await api(`/api/public/events/${paidAuto.slug}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify(autoPayload),
+  });
+  assert.equal(autoCheckout.response.status, 200);
+  assert.equal(autoCheckout.body.data.registration.registration_status, 'pending_verification');
+  assert.equal(autoCheckout.body.data.registration.ticket_status, 'not_issued');
+  const autoRegistration = await first('SELECT id FROM registrations WHERE registration_number = :reference', {
+    reference: autoCheckout.body.data.registration.registration_number,
+  });
+  const autoVerify = await api(`/api/registrations/${autoRegistration.id}/payment-review`, {
+    method: 'PATCH',
+    headers: auth(fixture.admin),
+    body: JSON.stringify({ status: 'approved' }),
+  });
+  assert.equal(autoVerify.response.status, 200);
+  assert.equal(autoVerify.body.data.status, 'approved');
+
+  const paidManual = await createPublicCheckoutFixture({ priceEgp: 100, priceUsd: 2, approvalMode: 'manual_review' });
+  const manualPayload = checkoutPayload(paidManual.ticketTypeId, { paymentReference: 'BANK-MANUAL', paymentProofUrl: '/uploads/payment-proof/manual.png' });
+  const manualCheckout = await api(`/api/public/events/${paidManual.slug}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify(manualPayload),
+  });
+  assert.equal(manualCheckout.response.status, 200);
+  const manualRegistration = await first('SELECT id FROM registrations WHERE registration_number = :reference', {
+    reference: manualCheckout.body.data.registration.registration_number,
+  });
+  const manualVerify = await api(`/api/registrations/${manualRegistration.id}/payment-review`, {
+    method: 'PATCH',
+    headers: auth(fixture.admin),
+    body: JSON.stringify({ status: 'approved' }),
+  });
+  assert.equal(manualVerify.response.status, 200);
+  assert.equal(manualVerify.body.data.status, 'pending_review');
+  const beforeApprovalTicket = await first('SELECT id FROM generated_tickets WHERE registration_id = :registrationId', { registrationId: manualRegistration.id });
+  assert.equal(beforeApprovalTicket, null);
+  const manualApprove = await api(`/api/registrations/${manualRegistration.id}/review`, {
+    method: 'PATCH',
+    headers: auth(fixture.admin),
+    body: JSON.stringify({ status: 'approved' }),
+  });
+  assert.equal(manualApprove.response.status, 200);
+  const afterApprovalTicket = await first('SELECT id FROM generated_tickets WHERE registration_id = :registrationId', { registrationId: manualRegistration.id });
+  assert.ok(afterApprovalTicket?.id);
+});
+
+test('event registration policy enforces guest access, max tickets, and manual payment availability', async () => {
+  const loginOnly = await createPublicCheckoutFixture({ access: 'login_required' });
+  const guestAttempt = await api(`/api/public/events/${loginOnly.slug}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify(checkoutPayload(loginOnly.ticketTypeId)),
+  });
+  assert.equal(guestAttempt.response.status, 401);
+
+  const disabledPayment = await createPublicCheckoutFixture({ priceEgp: 100, priceUsd: 2, manualPaymentEnabled: false });
+  const paymentAttempt = await api(`/api/public/events/${disabledPayment.slug}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify(checkoutPayload(disabledPayment.ticketTypeId)),
+  });
+  assert.equal(paymentAttempt.response.status, 409);
+
+  const maxOne = await createPublicCheckoutFixture({ maxTicketsPerCheckout: 1 });
+  const tooMany = await api(`/api/public/events/${maxOne.slug}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify(checkoutPayload(maxOne.ticketTypeId, { quantity: 2 })),
+  });
+  assert.equal(tooMany.response.status, 400);
+});
+
+test('public checkout protects confirmation with opaque token and supports authenticated ownership', async () => {
+  const fixturePublic = await createPublicCheckoutFixture({ priceEgp: 0, priceUsd: 0 });
+  const payload = checkoutPayload(fixturePublic.ticketTypeId);
+  const checkout = await api(`/api/public/events/${fixturePublic.slug}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  assert.equal(checkout.response.status, 200);
+  assert.ok(checkout.body.data.confirmationToken);
+  const reference = checkout.body.data.registration.registration_number;
+
+  const noToken = await api(`/api/public/events/registrations/${reference}`);
+  assert.equal(noToken.response.status, 403);
+
+  const wrongToken = await api(`/api/public/events/registrations/${reference}?token=wrong-token`);
+  assert.equal(wrongToken.response.status, 403);
+
+  const token = checkout.body.data.confirmationToken;
+  const allowed = await api(`/api/public/events/registrations/${reference}?token=${encodeURIComponent(token)}`);
+  assert.equal(allowed.response.status, 200);
+  assert.equal(allowed.response.headers.get('cache-control'), 'no-store');
+  assert.equal(allowed.response.headers.get('referrer-policy'), 'no-referrer');
+  assert.equal(allowed.body.data.registration.registration_number, reference);
+  assert.equal(Object.prototype.hasOwnProperty.call(allowed.body.data.registration, 'id'), false);
+  assert.equal(JSON.stringify(allowed.body.data).includes('qr_token'), false);
+
+  await query(`
+    UPDATE public_checkout_sessions
+    SET confirmation_token_expires_at = DATE_SUB(NOW(), INTERVAL 1 MINUTE)
+    WHERE registration_id = (
+      SELECT id FROM registrations WHERE registration_number = :reference
+    )
+  `, { reference });
+  const expiredToken = await api(`/api/public/events/registrations/${reference}?token=${encodeURIComponent(token)}`);
+  assert.equal(expiredToken.response.status, 403);
+
+  await query(`
+    UPDATE doctors
+    SET user_id = :userId
+    WHERE email = :email
+  `, { userId: fixture.customerA.id, email: payload.email });
+  const owner = await api(`/api/public/events/registrations/${reference}`, { headers: auth(fixture.customerA) });
+  assert.equal(owner.response.status, 200);
+  const nonOwner = await api(`/api/public/events/registrations/${reference}`, { headers: auth(fixture.customerB) });
+  assert.equal(nonOwner.response.status, 403);
+});
+
+test('public checkout idempotency prevents duplicates and rejects changed payloads', async () => {
+  const fixturePublic = await createPublicCheckoutFixture({ priceEgp: 2500, priceUsd: 50 });
+  const payload = checkoutPayload(fixturePublic.ticketTypeId);
+
+  const firstCheckout = await api(`/api/public/events/${fixturePublic.slug}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  assert.equal(firstCheckout.response.status, 200);
+
+  const retry = await api(`/api/public/events/${fixturePublic.slug}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  assert.equal(retry.response.status, 200);
+  assert.equal(retry.body.data.registration.registration_number, firstCheckout.body.data.registration.registration_number);
+  assert.equal(retry.body.data.repeated, true);
+
+  const changed = await api(`/api/public/events/${fixturePublic.slug}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify({ ...payload, fullName: 'Changed Guest Name' }),
+  });
+  assert.equal(changed.response.status, 409);
+
+  const rows = await query(`
+    SELECT COUNT(*) AS total
+    FROM registrations r
+    JOIN doctors d ON d.id = r.doctor_id
+    WHERE d.email = :email
+  `, { email: payload.email });
+  assert.equal(Number(rows[0].total), 1);
+});
+
+test('public checkout enforces final-seat concurrency and registration windows', async () => {
+  const closed = await createPublicCheckoutFixture({ registrationOpen: false });
+  const closedPayload = checkoutPayload(closed.ticketTypeId);
+  const closedAttempt = await api(`/api/public/events/${closed.slug}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify(closedPayload),
+  });
+  assert.equal(closedAttempt.response.status, 409);
+
+  const finalSeat = await createPublicCheckoutFixture({ quota: 1, maxAttendees: 1, priceEgp: 100, priceUsd: 2 });
+  const payloadA = checkoutPayload(finalSeat.ticketTypeId);
+  const payloadB = checkoutPayload(finalSeat.ticketTypeId);
+  const [a, b] = await Promise.all([
+    api(`/api/public/events/${finalSeat.slug}/checkout`, { method: 'POST', body: JSON.stringify(payloadA) }),
+    api(`/api/public/events/${finalSeat.slug}/checkout`, { method: 'POST', body: JSON.stringify(payloadB) }),
+  ]);
+  const statuses = [a.response.status, b.response.status].sort();
+  assert.deepEqual(statuses, [200, 409]);
+  const count = await first(`
+    SELECT COUNT(*) AS total
+    FROM registrations
+    WHERE event_id = :eventId
+      AND ticket_type_id = :ticketTypeId
+      AND registration_status NOT IN ('rejected', 'cancelled', 'expired')
+      AND COALESCE(capacity_reservation_status, 'active') = 'active'
+  `, { eventId: finalSeat.eventId, ticketTypeId: finalSeat.ticketTypeId });
+  assert.equal(Number(count.total), 1);
+
+  await query(`
+    UPDATE registrations
+    SET reservation_expires_at = DATE_SUB(NOW(), INTERVAL 1 MINUTE)
+    WHERE event_id = :eventId AND ticket_type_id = :ticketTypeId
+  `, { eventId: finalSeat.eventId, ticketTypeId: finalSeat.ticketTypeId });
+
+  const failedPayload = a.response.status === 409 ? payloadA : payloadB;
+  const retry = await api(`/api/public/events/${finalSeat.slug}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify(failedPayload),
+  });
+  assert.equal(retry.response.status, 200);
+
+  const finalCounts = await first(`
+    SELECT
+      SUM(CASE WHEN registration_status = 'expired' THEN 1 ELSE 0 END) AS expired_total,
+      SUM(CASE WHEN registration_status NOT IN ('rejected', 'cancelled', 'expired')
+        AND COALESCE(capacity_reservation_status, 'active') = 'active' THEN 1 ELSE 0 END) AS active_total
+    FROM registrations
+    WHERE event_id = :eventId AND ticket_type_id = :ticketTypeId
+  `, { eventId: finalSeat.eventId, ticketTypeId: finalSeat.ticketTypeId });
+  assert.equal(Number(finalCounts.expired_total), 1);
+  assert.equal(Number(finalCounts.active_total), 1);
 });
 
 test('customer QR endpoint enforces ownership and eligibility', async () => {
