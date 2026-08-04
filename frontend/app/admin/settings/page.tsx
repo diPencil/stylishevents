@@ -8,12 +8,14 @@ import { ThemeSettingsPanel } from "@/components/admin/theme-settings-panel"
 import { SiteContentSettingsPanel } from "@/components/admin/site-content-settings-panel"
 import { CurrencySettingsPanel } from "@/components/admin/currency-settings-panel"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { cn } from "@/lib/utils"
 
 export default function AdminSettingsPage() {
   const { language } = useLanguage()
+  const isRtl = language === "ar"
 
   return (
-    <div className="space-y-5">
+    <div className={cn("admin-settings-page space-y-5", isRtl && "text-right")}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <Badge className="mb-3 rounded-xl bg-[hsl(var(--primary))] text-white hover:bg-[hsl(var(--primary))]">
@@ -27,11 +29,13 @@ export default function AdminSettingsPage() {
         </div>
       </div>
       <Tabs defaultValue="theme" className="space-y-5">
-        <TabsList className="grid h-auto w-full rounded-[20px] bg-white p-1 shadow-[0_12px_32px_rgba(15,23,42,0.06)] lg:w-[760px] lg:grid-cols-3">
+        <div className="settings-tabs-scroll w-full overflow-x-auto pb-1">
+        <TabsList className="grid h-auto min-w-[680px] rounded-[20px] bg-white p-1 shadow-[0_12px_32px_rgba(15,23,42,0.06)] lg:w-[760px] lg:grid-cols-3">
           <TabsTrigger value="theme" className="rounded-xl py-2.5 font-extrabold">{adminT(language, "settings.themeIdentity")}</TabsTrigger>
           <TabsTrigger value="website" className="rounded-xl py-2.5 font-extrabold">{adminT(language, "settings.websiteContent")}</TabsTrigger>
           <TabsTrigger value="currency" className="rounded-xl py-2.5 font-extrabold">{adminT(language, "settings.currencyRates")}</TabsTrigger>
         </TabsList>
+        </div>
         <TabsContent value="theme" className="mt-0">
           <ThemeSettingsPanel />
         </TabsContent>

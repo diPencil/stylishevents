@@ -19,6 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AdminPageHeader, MetricCard, TableSearch } from "@/components/admin/admin-primitives"
 import { ConfirmAction } from "@/components/admin/confirm-action"
+import { useAdminPermissions } from "@/components/admin/admin-shell"
 import { TableDateTime } from "@/components/admin/table-date-time"
 import { useLanguage } from "@/contexts/language-context"
 import { adminStatusT, adminT } from "@/lib/admin-translations"
@@ -72,6 +73,8 @@ function Stars({ value }: { value: number }) {
 
 export function ReviewsManager() {
   const { language } = useLanguage()
+  const { can } = useAdminPermissions()
+  const canManageReviews = can("reviews.manage")
   const [reviews, setReviews] = useState<Review[]>([])
   const [search, setSearch] = useState("")
 
@@ -82,7 +85,7 @@ export function ReviewsManager() {
         if (active) setReviews((rows || []).map(normalizeReview))
       })
       .catch((error) => {
-        if (active) toast.error("Could not load reviews", { description: error instanceof Error ? error.message : "Check backend and MySQL." })
+        if (active) toast.error("Could not load reviews", { description: error instanceof Error ? error.message : "Check the backend connection." })
       })
     return () => {
       active = false
@@ -177,25 +180,29 @@ export function ReviewsManager() {
                               {adminT(language, "common.viewDetails")}
                             </Link>
                           </DropdownMenuItem>
-                          <ConfirmAction title="Publish review?" description="This customer review will become visible in event ratings." confirmLabel="Publish" tone="success" onConfirm={() => setStatus(review.id, "published")}>
-                            <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700">
-                              <BadgeCheck className="h-4 w-4" />
-                              {adminT(language, "reviews.published")}
-                            </DropdownMenuItem>
-                          </ConfirmAction>
-                          <ConfirmAction title="Reject review?" description="This review will be hidden from public event ratings." confirmLabel="Reject" tone="danger" onConfirm={() => setStatus(review.id, "rejected")}>
-                            <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-red-600 focus:bg-red-50 focus:text-red-700">
-                              <ThumbsDown className="h-4 w-4" />
-                              {adminT(language, "reviews.rejected")}
-                            </DropdownMenuItem>
-                          </ConfirmAction>
-                          <DropdownMenuSeparator />
-                          <ConfirmAction title="Delete review?" description="This review will be removed from the moderation queue." confirmLabel="Delete" tone="danger" onConfirm={() => deleteReview(review.id)}>
-                            <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-red-600 focus:bg-red-50 focus:text-red-700">
-                              <Trash2 className="h-4 w-4" />
-                              {adminT(language, "common.delete")}
-                            </DropdownMenuItem>
-                          </ConfirmAction>
+                          {canManageReviews && (
+                            <>
+                              <ConfirmAction title="Publish review?" description="This customer review will become visible in event ratings." confirmLabel="Publish" tone="success" onConfirm={() => setStatus(review.id, "published")}>
+                                <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700">
+                                  <BadgeCheck className="h-4 w-4" />
+                                  {adminT(language, "reviews.published")}
+                                </DropdownMenuItem>
+                              </ConfirmAction>
+                              <ConfirmAction title="Reject review?" description="This review will be hidden from public event ratings." confirmLabel="Reject" tone="danger" onConfirm={() => setStatus(review.id, "rejected")}>
+                                <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-red-600 focus:bg-red-50 focus:text-red-700">
+                                  <ThumbsDown className="h-4 w-4" />
+                                  {adminT(language, "reviews.rejected")}
+                                </DropdownMenuItem>
+                              </ConfirmAction>
+                              <DropdownMenuSeparator />
+                              <ConfirmAction title="Delete review?" description="This review will be removed from the moderation queue." confirmLabel="Delete" tone="danger" onConfirm={() => deleteReview(review.id)}>
+                                <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-red-600 focus:bg-red-50 focus:text-red-700">
+                                  <Trash2 className="h-4 w-4" />
+                                  {adminT(language, "common.delete")}
+                                </DropdownMenuItem>
+                              </ConfirmAction>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>

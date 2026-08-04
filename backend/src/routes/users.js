@@ -7,6 +7,7 @@ import { first, query, transaction } from '../db/mysql.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { asyncRoute, fail, ok } from '../utils/apiResponse.js';
 import { auditLog, hashPassword } from '../utils/auth.js';
+import { permissionCatalog, permissionKeys } from '../auth/permissions.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -14,27 +15,6 @@ const __dirname = path.dirname(__filename);
 const uploadRoot = path.join(__dirname, '..', '..', 'uploads', 'avatars');
 
 router.use(requireAuth);
-router.use(requirePermission('users.manage'));
-
-const permissionCatalog = [
-  { key: 'dashboard.view', label: 'Dashboard', group: 'Workspace' },
-  { key: 'users.manage', label: 'Users management', group: 'Administration' },
-  { key: 'roles.manage', label: 'Roles and permissions', group: 'Administration' },
-  { key: 'events.manage', label: 'Events', group: 'Operations' },
-  { key: 'tickets.manage', label: 'Ticket types', group: 'Operations' },
-  { key: 'pricing.manage', label: 'Pricing periods', group: 'Operations' },
-  { key: 'registrations.manage', label: 'Registrations', group: 'Operations' },
-  { key: 'payments.verify', label: 'Payment verification', group: 'Finance' },
-  { key: 'attendees.manage', label: 'Attendees', group: 'Operations' },
-  { key: 'checkin.manage', label: 'QR check-in', group: 'Event day' },
-  { key: 'certificates.manage', label: 'Certificates and cards', group: 'Delivery' },
-  { key: 'reviews.manage', label: 'Reviews', group: 'Quality' },
-  { key: 'reports.view', label: 'Reports', group: 'Analytics' },
-  { key: 'settings.manage', label: 'Settings', group: 'Administration' },
-  { key: 'kiosk.use', label: 'Kiosk console', group: 'Event day' },
-  { key: 'profile.manage', label: 'Own profile', group: 'Account' },
-];
-const permissionKeys = new Set(permissionCatalog.map((permission) => permission.key));
 
 const userCreateSchema = z.object({
   name: z.string().min(2),
@@ -100,6 +80,19 @@ function mapUser(row) {
   };
 }
 
+function mapRole(row, permissions = []) {
+  return {
+    id: row.id,
+    code: row.code,
+    nameEn: row.name_en,
+    nameAr: row.name_ar,
+    permissions: permissionCatalog.map((item) => {
+      const saved = permissions.find((permission) => permission.permission_key === item.key);
+      return { ...item, allowed: Boolean(saved?.allowed) };
+    }),
+  };
+}
+
 async function getRole(roleCode) {
   return first('SELECT id, code, name_en, name_ar FROM roles WHERE code = :roleCode LIMIT 1', { roleCode });
 }
@@ -146,7 +139,7 @@ async function countOtherActiveAdmins(userId) {
   return Number(row?.total || 0);
 }
 
-router.get('/', asyncRoute(async (req, res) => {
+router.get('/', requirePermission('users.manage'), asyncRoute(async (req, res) => {
   const search = String(req.query.search || '').trim();
   const role = String(req.query.role || '').trim();
   const status = String(req.query.status || '').trim();
@@ -187,7 +180,7 @@ router.get('/', asyncRoute(async (req, res) => {
   ok(res, rows.map(mapUser));
 }));
 
-router.get('/roles', asyncRoute(async (req, res) => {
+router.get('/roles', requirePermission('roles.manage'), asyncRoute(async (req, res) => {
   const roles = await query(`
     SELECT id, code, name_en, name_ar, created_at
     FROM roles
@@ -205,13 +198,7 @@ router.get('/roles', asyncRoute(async (req, res) => {
 
   const byRole = new Map();
   for (const role of roles) {
-    byRole.set(role.code, {
-      id: role.id,
-      code: role.code,
-      nameEn: role.name_en,
-      nameAr: role.name_ar,
-      permissions: permissionCatalog.map((item) => ({ ...item, allowed: false })),
-    });
+    byRole.set(role.code, mapRole(role));
   }
 
   for (const permission of permissions) {
@@ -227,7 +214,7 @@ router.get('/roles', asyncRoute(async (req, res) => {
   });
 }));
 
-router.put('/roles/:roleCode/permissions', asyncRoute(async (req, res) => {
+router.put('/roles/:roleCode/permissions', requirePermission('roles.manage'), asyncRoute(async (req, res) => {
   const parsed = rolePermissionsSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 
@@ -237,7 +224,17 @@ router.put('/roles/:roleCode/permissions', asyncRoute(async (req, res) => {
   const unknownPermission = parsed.data.permissions.find((permission) => !permissionKeys.has(permission.key));
   if (unknownPermission) return fail(res, 400, `Unknown permission: ${unknownPermission.key}`);
 
-  await transaction(async (connection) => {
+  if (role.code === 'admin') {
+    const criticalAdminPermissions = new Set(['users.manage', 'roles.manage']);
+    const criticalDisabled = parsed.data.permissions.find((permission) => (
+      criticalAdminPermissions.has(permission.key) && !permission.allowed
+    ));
+    if (criticalDisabled) {
+      return fail(res, 400, `Admin role must keep ${criticalDisabled.key}`);
+    }
+  }
+
+  const finalPermissions = await transaction(async (connection) => {
     for (const permission of parsed.data.permissions) {
       await connection.execute(`
         INSERT INTO role_permissions (role_id, permission_key, allowed)
@@ -249,13 +246,23 @@ router.put('/roles/:roleCode/permissions', asyncRoute(async (req, res) => {
         allowed: permission.allowed ? 1 : 0,
       });
     }
+
+    const [permissions] = await connection.execute(`
+      SELECT permission_key, allowed
+      FROM role_permissions
+      WHERE role_id = :roleId
+    `, { roleId: role.id });
+    return permissions;
   });
 
-  await auditLog(req, 'users.role_permissions_update', 'role', role.id);
-  ok(res, { roleCode: role.code }, 'Permissions updated');
+  await auditLog(req, 'users.role_permissions_update', 'role', role.id, {
+    roleCode: role.code,
+    permissions: parsed.data.permissions,
+  });
+  ok(res, { role: mapRole(role, finalPermissions) }, 'Permissions updated');
 }));
 
-router.post('/avatar-upload', asyncRoute(async (req, res) => {
+router.post('/avatar-upload', requirePermission('users.manage'), asyncRoute(async (req, res) => {
   const parsed = avatarUploadSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 
@@ -286,18 +293,19 @@ router.post('/avatar-upload', asyncRoute(async (req, res) => {
   ok(res, { url: `/uploads/avatars/${fileName}` }, 'Avatar uploaded');
 }));
 
-router.get('/:id', asyncRoute(async (req, res) => {
+router.get('/:id', requirePermission('users.manage'), asyncRoute(async (req, res) => {
   const user = await getUser(req.params.id);
   if (!user) return fail(res, 404, 'User not found');
   ok(res, user);
 }));
 
-router.post('/', asyncRoute(async (req, res) => {
+router.post('/', requirePermission('users.manage'), asyncRoute(async (req, res) => {
   const parsed = userCreateSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 
   const role = await getRole(parsed.data.roleCode);
   if (!role) return fail(res, 400, 'Role not found');
+  if (role.code === 'doctor') return fail(res, 400, 'Doctor is a legacy customer role and cannot be assigned to new users');
 
   const passwordHash = await hashPassword(parsed.data.password);
   let result;
@@ -357,7 +365,7 @@ router.post('/', asyncRoute(async (req, res) => {
   ok(res, await getUser(result.insertId), 'User created');
 }));
 
-router.put('/:id', asyncRoute(async (req, res) => {
+router.put('/:id', requirePermission('users.manage'), asyncRoute(async (req, res) => {
   const parsed = userUpdateSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 
@@ -366,6 +374,9 @@ router.put('/:id', asyncRoute(async (req, res) => {
 
   const role = parsed.data.roleCode ? await getRole(parsed.data.roleCode) : await getRole(current.role.code);
   if (!role) return fail(res, 400, 'Role not found');
+  if (role.code === 'doctor' && current.role.code !== 'doctor') {
+    return fail(res, 400, 'Doctor is a legacy customer role and cannot be assigned to users');
+  }
 
   const nextStatus = parsed.data.status ?? current.status;
   if (current.id === req.user.id && nextStatus !== 'active') {
@@ -422,7 +433,7 @@ router.put('/:id', asyncRoute(async (req, res) => {
   ok(res, await getUser(current.id), 'User updated');
 }));
 
-router.patch('/:id/status', asyncRoute(async (req, res) => {
+router.patch('/:id/status', requirePermission('users.manage'), asyncRoute(async (req, res) => {
   const parsed = statusSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 
@@ -441,7 +452,7 @@ router.patch('/:id/status', asyncRoute(async (req, res) => {
   ok(res, await getUser(current.id), 'User status updated');
 }));
 
-router.patch('/:id/password', asyncRoute(async (req, res) => {
+router.patch('/:id/password', requirePermission('users.manage'), asyncRoute(async (req, res) => {
   const parsed = passwordSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 

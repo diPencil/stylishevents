@@ -86,7 +86,7 @@ export function AttendeesManager() {
         if (active) setAttendees((rows || []).map(normalizeAttendee))
       })
       .catch((error) => {
-        if (active) toast.error("Could not load attendees", { description: error instanceof Error ? error.message : "Check backend and MySQL." })
+        if (active) toast.error("Could not load attendees", { description: error instanceof Error ? error.message : "Check the backend connection." })
       })
     return () => {
       active = false
@@ -143,7 +143,7 @@ export function AttendeesManager() {
           <Badge className="mb-3 rounded-xl bg-[hsl(var(--primary))] text-white hover:bg-[hsl(var(--primary))]">{language === "ar" ? "عمليات الحضور" : "Attendees Operations"}</Badge>
           <h1 className="text-xl font-extrabold tracking-tight text-[#17172f] md:text-2xl">{adminT(language, "attendees.title")}</h1>
           <p className="mt-2 max-w-3xl text-sm font-medium text-slate-500">
-            {language === "ar" ? "ملفات الحضور والتذاكر وحالة QR والحضور وتسليم الشهادات من MySQL." : "Live attendee profiles, tickets, QR status, check-in state, and certificate delivery from MySQL."}
+            {language === "ar" ? "ملفات الحضور والتذاكر وحالة QR والحضور وتسليم الشهادات." : "Live attendee profiles, tickets, QR status, check-in state, and certificate delivery."}
           </p>
         </div>
         <Button className="h-10 rounded-2xl bg-[hsl(var(--primary))] px-4 text-sm font-extrabold text-white">

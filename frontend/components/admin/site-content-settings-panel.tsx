@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useMemo, useState } from "react"
 import { ArrowDown, ArrowUp, Eye, Globe2, ImageIcon, Menu, Plus, Save, Search, Trash2, Video, type LucideIcon } from "lucide-react"
@@ -16,7 +16,7 @@ import { ImageUrlDropzone } from "@/components/admin/image-url-dropzone"
 import { cn } from "@/lib/utils"
 import { publicNavLinks } from "@/lib/public-pages-content"
 import { apiAssetUrl, platformApi } from "@/lib/platform-api"
-import { normalizeSiteContentSettings, DEFAULT_FEATURES_SECTION, DEFAULT_INFORMATION_SECTION_UPCOMING, DEFAULT_INFORMATION_SECTION_PREVIOUS, DEFAULT_EVENTS_INSPIRE_SECTION, DEFAULT_CONTACT_PAGE_SETTINGS, DEFAULT_HOMEPAGE_FINAL_CTA, DEFAULT_HOMEPAGE_REQUEST_SETUP, DEFAULT_ABOUT_PAGE_SETTINGS, DEFAULT_LEGAL_PAGES_SETTINGS } from "@/lib/site-content-defaults"
+import { normalizeSiteContentSettings, DEFAULT_FEATURES_SECTION, DEFAULT_INFORMATION_SECTION_UPCOMING, DEFAULT_INFORMATION_SECTION_PREVIOUS, DEFAULT_EVENTS_INSPIRE_SECTION, DEFAULT_CONTACT_PAGE_SETTINGS, DEFAULT_HOMEPAGE_FINAL_CTA, DEFAULT_HOMEPAGE_REQUEST_SETUP, DEFAULT_ABOUT_PAGE_SETTINGS, DEFAULT_LEGAL_PAGES_SETTINGS, DEFAULT_FOOTER_LINKS, DEFAULT_FOOTER_LEGAL_LINKS, normalizeFooterLinks, normalizeFooterLegalLinks } from "@/lib/site-content-defaults"
 import type { EventInformationSectionSettings as TS_EventInformationSectionSettings, EventPageSettingsWithInfo as TS_EventPageSettings } from "@/types/platform"
 import type { AboutCapabilityCard, AboutImageItem, AboutPageSettings, AboutPrincipleItem, AboutTeamMember, AboutValuePoint, ContactBenefitCardSettings, ContactInformationCardSettings, ContactPageSettings, FeaturesSectionHeaderSettings, HomepageFinalCtaSettings, HomepageGalleryImage, HomepageInspireSectionSettings, HomepageRequestSetupSettings, HomepageRequestSetupStatCard, HomepageTimelineItem, LegalContentSection, LegalPageSettings, LegalPagesSettings } from "@/types/platform"
 import { useLanguage } from "@/contexts/language-context"
@@ -61,7 +61,14 @@ type EventInformationSectionSettings = TS_EventInformationSectionSettings
 
 export type FooterLink = {
   id: string
-  col: "services" | "support" | "company"
+  col: "services" | "support"
+  labelEn: string
+  labelAr: string
+  href: string
+}
+
+export type FooterLegalLink = {
+  id: "terms" | "privacy"
   labelEn: string
   labelAr: string
   href: string
@@ -133,6 +140,7 @@ type SiteContentSettings = {
   whyUsCards: WhyUsCard[]
   faqs: FaqItem[]
   footerLinks: FooterLink[]
+  footerLegalLinks: FooterLegalLink[]
   socialLinks: SocialLink[]
   menu: MenuItemSettings[]
   seo: {
@@ -175,22 +183,22 @@ const websiteContentPageTabs: { value: WebsiteContentPageTab; labelEn: string; l
 ]
 
 const aboutSectionTabs: { value: AboutSectionTab; labelEn: string; labelAr: string }[] = [
-  { value: "hero", labelEn: "Hero", labelAr: "Ø§Ù„Ù‡ÙŠØ±Ùˆ" },
-  { value: "overview", labelEn: "Platform Overview", labelAr: "Ù†Ø¸Ø±Ø© Ø¹Ù„Ù‰ Ø§Ù„Ù…Ù†ØµØ©" },
-  { value: "ecosystem", labelEn: "Event Ecosystem", labelAr: "Ù…Ù†Ø¸ÙˆÙ…Ø© Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª" },
-  { value: "team", labelEn: "Team", labelAr: "Ø§Ù„ÙØ±ÙŠÙ‚" },
-  { value: "vision", labelEn: "Vision & Principles", labelAr: "Ø§Ù„Ø±Ø¤ÙŠØ© ÙˆØ§Ù„Ù…Ø¨Ø§Ø¯Ø¦" },
+  { value: "hero", labelEn: "Hero", labelAr: "الهيرو" },
+  { value: "overview", labelEn: "Platform Overview", labelAr: "نظرة على المنصة" },
+  { value: "ecosystem", labelEn: "Event Ecosystem", labelAr: "منظومة الفعاليات" },
+  { value: "team", labelEn: "Team", labelAr: "الفريق" },
+  { value: "vision", labelEn: "Vision & Principles", labelAr: "الرؤية والمبادئ" },
 ]
 
 const homepageSectionTabs: { value: HomepageSectionTab; labelEn: string; labelAr: string }[] = [
-  { value: "hero", labelEn: "Hero", labelAr: "Ø§Ù„Ù‚Ø³Ù… Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ" },
-  { value: "features", labelEn: "Features", labelAr: "Ø§Ù„Ù…Ù…ÙŠØ²Ø§Øª" },
-  { value: "benefits", labelEn: "Benefits (Why Us)", labelAr: "Ù„Ù…Ø§Ø°Ø§ Ù†Ø­Ù†" },
-  { value: "available-events", labelEn: "Available Events", labelAr: "Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª Ø§Ù„Ù…ØªØ§Ø­Ø©" },
-  { value: "events-inspire", labelEn: "Events That Inspire", labelAr: "ÙØ¹Ø§Ù„ÙŠØ§Øª ØªÙ„Ù‡Ù…" },
-  { value: "request-setup", labelEn: "Request Setup", labelAr: "Ø·Ù„Ø¨ ØªØ¬Ù‡ÙŠØ² ÙØ¹Ø§Ù„ÙŠØ©" },
-  { value: "faq", labelEn: "FAQ", labelAr: "Ø§Ù„Ø£Ø³Ø¦Ù„Ø© Ø§Ù„Ø´Ø§Ø¦Ø¹Ø©" },
-  { value: "final-cta", labelEn: "Final CTA", labelAr: "Ø§Ù„Ø¯Ø¹ÙˆØ© Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠØ©" },
+  { value: "hero", labelEn: "Hero", labelAr: "القسم الرئيسي" },
+  { value: "features", labelEn: "Features", labelAr: "المميزات" },
+  { value: "benefits", labelEn: "Benefits (Why Us)", labelAr: "لماذا نحن" },
+  { value: "available-events", labelEn: "Available Events", labelAr: "الفعاليات المتاحة" },
+  { value: "events-inspire", labelEn: "Events That Inspire", labelAr: "فعاليات تلهم" },
+  { value: "request-setup", labelEn: "Request Setup", labelAr: "طلب تجهيز فعالية" },
+  { value: "faq", labelEn: "FAQ", labelAr: "الأسئلة الشائعة" },
+  { value: "final-cta", labelEn: "Final CTA", labelAr: "الدعوة النهائية" },
 ]
 
 function hasCorruptedText(value: unknown): boolean {
@@ -207,57 +215,57 @@ function hasCorruptedTree(value: unknown): boolean {
 const defaultSettings: SiteContentSettings = {
   homepage: {
     eyebrowEn: "Stylish Events Platform",
-    eyebrowAr: "Ù…Ù†ØµØ© Stylish Events",
+    eyebrowAr: "منصة Stylish Events",
     titleEn: "Professional event booking, tickets, and attendance operations",
-    titleAr: "Ù†Ø¸Ø§Ù… Ø§Ø­ØªØ±Ø§ÙÙŠ Ù„Ø¥Ø¯Ø§Ø±Ø© Ø­Ø¬ÙˆØ²Ø§Øª ÙˆØªØ°Ø§ÙƒØ± ÙˆØ­Ø¶ÙˆØ± Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª",
+    titleAr: "نظام احترافي لإدارة حجوزات وتذاكر وحضور الفعاليات",
     subtitleEn: "Create event pages, sell tickets by pricing periods, scan QR codes, and deliver certificates from one connected system.",
-    subtitleAr: "Ø£Ù†Ø´Ø¦ ØµÙØ­Ø§Øª Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§ØªØŒ Ø¨Ø¹ Ø§Ù„ØªØ°Ø§ÙƒØ± Ø­Ø³Ø¨ Ø§Ù„ÙØªØ±Ø§Øª Ø§Ù„Ø³Ø¹Ø±ÙŠØ©ØŒ Ø§ÙØ­Øµ Ø±Ù…ÙˆØ² QRØŒ ÙˆØ£Ø±Ø³Ù„ Ø§Ù„Ø´Ù‡Ø§Ø¯Ø§Øª Ù…Ù† Ù†Ø¸Ø§Ù… ÙˆØ§Ø­Ø¯ Ù…ØªÙƒØ§Ù…Ù„.",
+    subtitleAr: "أنشئ صفحات الفعاليات، بع التذاكر حسب الفترات السعرية، افحص رموز QR، وأرسل الشهادات من نظام واحد متكامل.",
     primaryCtaEn: "Book your event",
-    primaryCtaAr: "Ø§Ø­Ø¬Ø² ÙØ¹Ø§Ù„ÙŠØªÙƒ",
+    primaryCtaAr: "احجز فعاليتك",
     secondaryCtaEn: "Explore services",
-    secondaryCtaAr: "Ø§Ø³ØªÙƒØ´Ù Ø§Ù„Ø®Ø¯Ù…Ø§Øª",
+    secondaryCtaAr: "استكشف الخدمات",
     heroMediaType: "video",
     heroMediaUrl: "/eventsvideo-hero-section.mp4",
     whyUsTitleEn: "Our experience makes your event easier to run",
-    whyUsTitleAr: "Ø®Ø¨Ø±ØªÙ†Ø§ ØªØ¬Ø¹Ù„ ØªØ¬Ø±Ø¨Ø© ÙØ¹Ø§Ù„ÙŠØªÙƒ Ø£Ø³Ù‡Ù„ ÙˆØ£ÙƒØ«Ø± ØªÙ†Ø¸ÙŠÙ…Ø§",
+    whyUsTitleAr: "خبرتنا تجعل تجربة فعاليتك أسهل وأكثر تنظيما",
     whyUsSubtitleEn: "We help teams manage the full event journey from registration to post-event certificates.",
-    whyUsSubtitleAr: "Ù„Ø§ Ù†ÙƒØªÙÙŠ Ø¨Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø­Ø¬Ø² ÙÙ‚Ø·ØŒ Ø¨Ù„ Ù†ÙˆÙØ± ØªØ¬Ø±Ø¨Ø© ØªØ´ØºÙŠÙ„ ÙƒØ§Ù…Ù„Ø© Ù…Ù† Ù„Ø­Ø¸Ø© Ø§Ù„ØªØ³Ø¬ÙŠÙ„ ÙˆØ­ØªÙ‰ Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø´Ù‡Ø§Ø¯Ø§Øª Ø¨Ø¹Ø¯ Ø§Ù„Ø­Ø¶ÙˆØ±.",
+    whyUsSubtitleAr: "لا نكتفي بإدارة الحجز فقط، بل نوفر تجربة تشغيل كاملة من لحظة التسجيل وحتى إصدار الشهادات بعد الحضور.",
     showcaseTitleEn: "Upcoming Events",
-    showcaseTitleAr: "Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©",
+    showcaseTitleAr: "الفعاليات القادمة",
     showcaseDescEn: "Browse and book our upcoming conferences and exhibitions",
-    showcaseDescAr: "ØªØµÙØ­ ÙˆØ§Ø­Ø¬Ø² ÙÙŠ Ù…Ø¤ØªÙ…Ø±Ø§ØªÙ†Ø§ ÙˆÙ…Ø¹Ø§Ø±Ø¶Ù†Ø§ Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©",
+    showcaseDescAr: "تصفح واحجز في مؤتمراتنا ومعارضنا القادمة",
     showcaseCtaEn: "View All Events",
-    showcaseCtaAr: "Ø¹Ø±Ø¶ Ø¬Ù…ÙŠØ¹ Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª",
+    showcaseCtaAr: "عرض جميع الفعاليات",
     showcaseSortOrder: "default",
     faqEyebrowEn: "Frequently Asked Questions",
-    faqEyebrowAr: "Ø§Ù„Ø£Ø³Ø¦Ù„Ø© Ø§Ù„Ø´Ø§Ø¦Ø¹Ø©",
+    faqEyebrowAr: "الأسئلة الشائعة",
     faqTitleEn: "Have questions? We have answers",
-    faqTitleAr: "Ù„Ø¯ÙŠÙƒ Ø§Ø³ØªÙØ³Ø§Ø±ØŸ Ù„Ø¯ÙŠÙ†Ø§ Ø§Ù„Ø¥Ø¬Ø§Ø¨Ø©",
+    faqTitleAr: "لديك استفسار؟ لدينا الإجابة",
     faqSubtitleEn: "Everything you need to know about booking and managing events on our platform.",
-    faqSubtitleAr: "ÙƒÙ„ Ù…Ø§ ØªØ­ØªØ§Ø¬ Ù…Ø¹Ø±ÙØªÙ‡ Ø¹Ù† Ø§Ø³ØªØ®Ø¯Ø§Ù… Ù…Ù†ØµØªÙ†Ø§",
+    faqSubtitleAr: "كل ما تحتاج معرفته عن استخدام منصتنا",
     faqWhatsappTextEn: "Chat with us on WhatsApp",
-    faqWhatsappTextAr: "ØªÙˆØ§ØµÙ„ Ù…Ø¹Ù†Ø§ Ø¹Ø¨Ø± ÙˆØ§ØªØ³Ø§Ø¨",
+    faqWhatsappTextAr: "تواصل معنا عبر واتساب",
     faqWhatsappNumber: "201012345678",
-    footerEyebrowEn: "Partner for Your Success",
-    footerEyebrowAr: "Ø´Ø±ÙŠÙƒ ÙÙŠ Ø§Ù„Ù†Ø¬Ø§Ø­",
-    footerTitle1En: "Unlock the Power of",
-    footerTitle1Ar: "Ø£Ø·Ù„Ù‚ Ø§Ù„Ø¹Ù†Ø§Ù† Ù„Ù‚ÙˆØ©",
-    footerTitle2En: "for Your Next Event",
-    footerTitle2Ar: "ÙÙŠ ÙØ¹Ø§Ù„ÙŠØªÙƒ Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©",
-    footerDescEn: "Join over 500 organizations that trust our platform to organize and manage their most important events.",
-    footerDescAr: "Ø§Ù†Ø¶Ù… Ø¥Ù„Ù‰ Ø£ÙƒØ«Ø± Ù…Ù† 500 Ù…Ø¤Ø³Ø³Ø© ØªØ«Ù‚ Ø¨Ù…Ù†ØµØªÙ†Ø§ Ù„ØªÙ†Ø¸ÙŠÙ… ÙˆØ¥Ø¯Ø§Ø±Ø© Ø£Ù‡Ù… ÙØ¹Ø§Ù„ÙŠØ§ØªÙ‡Ø§.",
-    footerCtaEn: "Start Organizing Your Event",
-    footerCtaAr: "Ø§Ø¨Ø¯Ø£ ØªÙ†Ø¸ÙŠÙ… ÙØ¹Ø§Ù„ÙŠØªÙƒ",
+    footerEyebrowEn: "Contact Our Team",
+    footerEyebrowAr: "تواصل مع فريقنا",
+    footerTitle1En: "Tell Us About",
+    footerTitle1Ar: "حدثنا عن",
+    footerTitle2En: "Your Next Event",
+    footerTitle2Ar: "فعاليتك القادمة",
+    footerDescEn: "Send us your event brief and our team will help you choose the right setup, tickets, and attendee flow.",
+    footerDescAr: "أرسل لنا تفاصيل فعاليتك وسيساعدك فريقنا في اختيار الإعداد المناسب والتذاكر ومسار الحضور.",
+    footerCtaEn: "Contact Us",
+    footerCtaAr: "تواصل معنا",
     footerLogoDescEn: "Your professional partner for conferences, exhibitions, tickets, attendance, and certificates.",
-    footerLogoDescAr: "Ø´Ø±ÙŠÙƒÙƒ Ø§Ù„Ø§Ø­ØªØ±Ø§ÙÙŠ ÙÙŠ ØªÙ†Ø¸ÙŠÙ… ÙˆØ¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø¤ØªÙ…Ø±Ø§Øª ÙˆØ§Ù„Ù…Ø¹Ø§Ø±Ø¶ ÙˆØ§Ù„ØªØ°Ø§ÙƒØ± ÙˆØ§Ù„Ø­Ø¶ÙˆØ± ÙˆØ§Ù„Ø´Ù‡Ø§Ø¯Ø§Øª.",
+    footerLogoDescAr: "شريكك الاحترافي في تنظيم وإدارة المؤتمرات والمعارض والتذاكر والحضور والشهادات.",
     footerServicesTitleEn: "Services",
-    footerServicesTitleAr: "Ø®Ø¯Ù…Ø§ØªÙ†Ø§",
+    footerServicesTitleAr: "خدماتنا",
     footerSupportTitleEn: "Support",
-    footerSupportTitleAr: "Ø§Ù„Ø¯Ø¹Ù…",
-    footerCompanyTitleEn: "Company",
-    footerCompanyTitleAr: "Ø§Ù„Ø´Ø±ÙƒØ©",
-    footerCopyrightEn: "Â© 2026 Stylish Events. All rights reserved.",
-    footerCopyrightAr: "Â© 2026 Stylish Events. Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©.",
+    footerSupportTitleAr: "الدعم",
+    footerCompanyTitleEn: "",
+    footerCompanyTitleAr: "",
+    footerCopyrightEn: "© 2026 Stylish Events. All rights reserved.",
+    footerCopyrightAr: "© 2026 Stylish Events. جميع الحقوق محفوظة.",
     eventsInspireSection: DEFAULT_EVENTS_INSPIRE_SECTION,
   },
   featuresSection: DEFAULT_FEATURES_SECTION,
@@ -271,13 +279,13 @@ const defaultSettings: SiteContentSettings = {
     eyebrowEn: "",
     eyebrowAr: "",
     titleEn: "Upcoming Events",
-    titleAr: "Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©",
+    titleAr: "الفعاليات القادمة",
     descriptionEn: "Discover upcoming events ready for registration.",
-    descriptionAr: "Ø§ÙƒØªØ´Ù Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª Ø§Ù„Ù‚Ø§Ø¯Ù…Ø© Ø§Ù„Ù…ØªØ§Ø­Ø© Ù„Ù„ØªØ³Ø¬ÙŠÙ„.",
+    descriptionAr: "اكتشف الفعاليات القادمة المتاحة للتسجيل.",
     emptyTitleEn: "No upcoming events",
-    emptyTitleAr: "Ù„Ø§ ØªÙˆØ¬Ø¯ ÙØ¹Ø§Ù„ÙŠØ§Øª Ù‚Ø§Ø¯Ù…Ø©",
+    emptyTitleAr: "لا توجد فعاليات قادمة",
     emptyDescriptionEn: "There are no upcoming events at the moment.",
-    emptyDescriptionAr: "Ù„Ø§ ØªÙˆØ¬Ø¯ ÙØ¹Ø§Ù„ÙŠØ§Øª Ù‚Ø§Ø¯Ù…Ø© ÙÙŠ Ø§Ù„ÙˆÙ‚Øª Ø§Ù„Ø­Ø§Ù„ÙŠ.",
+    emptyDescriptionAr: "لا توجد فعاليات قادمة في الوقت الحالي.",
     sortMode: 'default',
     itemsPerPage: 24,
     informationSection: DEFAULT_INFORMATION_SECTION_UPCOMING,
@@ -287,13 +295,13 @@ const defaultSettings: SiteContentSettings = {
     eyebrowEn: "",
     eyebrowAr: "",
     titleEn: "Previous Events",
-    titleAr: "Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª Ø§Ù„Ø³Ø§Ø¨Ù‚Ø©",
+    titleAr: "الفعاليات السابقة",
     descriptionEn: "Browse past events and archives.",
-    descriptionAr: "ØªØµÙØ­ Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª Ø§Ù„Ø³Ø§Ø¨Ù‚Ø© ÙˆØ§Ù„Ø£Ø±Ø´ÙŠÙ.",
+    descriptionAr: "تصفح الفعاليات السابقة والأرشيف.",
     emptyTitleEn: "No previous events",
-    emptyTitleAr: "Ù„Ø§ ØªÙˆØ¬Ø¯ ÙØ¹Ø§Ù„ÙŠØ§Øª Ø³Ø§Ø¨Ù‚Ø©",
+    emptyTitleAr: "لا توجد فعاليات سابقة",
     emptyDescriptionEn: "There are no previous events available.",
-    emptyDescriptionAr: "Ù„Ø§ ØªÙˆØ¬Ø¯ ÙØ¹Ø§Ù„ÙŠØ§Øª Ø³Ø§Ø¨Ù‚Ø© Ù…ØªØ§Ø­Ø©.",
+    emptyDescriptionAr: "لا توجد فعاليات سابقة متاحة.",
     sortMode: 'nearest',
     itemsPerPage: 24,
     informationSection: DEFAULT_INFORMATION_SECTION_PREVIOUS,
@@ -302,62 +310,50 @@ const defaultSettings: SiteContentSettings = {
     {
       id: "card-1",
       titleEn: "Complete Event Operations",
-      titleAr: "Ø¥Ø¯Ø§Ø±Ø© ÙØ¹Ø§Ù„ÙŠØ© Ù…ØªÙƒØ§Ù…Ù„Ø©",
+      titleAr: "إدارة فعالية متكاملة",
       descEn: "Create event pages, manage tickets, pricing windows, and registrations from one workspace.",
-      descAr: "Ø¥Ù†Ø´Ø§Ø¡ ØµÙØ­Ø§Øª Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§ØªØŒ ØªØ­Ø¯ÙŠØ¯ Ø§Ù„ØªØ°Ø§ÙƒØ±ØŒ Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø£Ø³Ø¹Ø§Ø±ØŒ ÙˆÙ…ØªØ§Ø¨Ø¹Ø© Ø§Ù„ØªØ³Ø¬ÙŠÙ„Ø§Øª Ù…Ù† Ù„ÙˆØ­Ø© ÙˆØ§Ø­Ø¯Ø©.",
+      descAr: "إنشاء صفحات الفعاليات، تحديد التذاكر، إدارة الأسعار، ومتابعة التسجيلات من لوحة واحدة.",
     },
     {
       id: "card-2",
       titleEn: "Digital Tickets and QR",
-      titleAr: "ØªØ°Ø§ÙƒØ± ÙˆQR Ø¬Ø§Ù‡Ø²Ø©",
+      titleAr: "تذاكر وQR جاهزة",
       descEn: "Every confirmed booking can generate a ticket and QR code for event-day validation.",
-      descAr: "ÙƒÙ„ Ø­Ø¬Ø² Ù…Ø¤ÙƒØ¯ ÙŠÙ†ØªØ¬ Ø¹Ù†Ù‡ ØªØ°ÙƒØ±Ø© Ø±Ù‚Ù…ÙŠØ© ÙˆØ±Ù…Ø² QR Ù‚Ø§Ø¨Ù„ Ù„Ù„ØªØ­Ù‚Ù‚ ÙŠÙˆÙ… Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ©.",
+      descAr: "كل حجز مؤكد ينتج عنه تذكرة رقمية ورمز QR قابل للتحقق يوم الفعالية.",
     },
     {
       id: "card-3",
       titleEn: "Live Attendance Tracking",
-      titleAr: "Ù…ØªØ§Ø¨Ø¹Ø© Ø­Ø¶ÙˆØ± Ù…Ø¨Ø§Ø´Ø±Ø©",
+      titleAr: "متابعة حضور مباشرة",
       descEn: "Check attendees in, prevent duplicate scans, and monitor event-day flow in real time.",
-      descAr: "ØªØ³Ø¬ÙŠÙ„ Ø¯Ø®ÙˆÙ„ Ø§Ù„Ø­Ø¶ÙˆØ± Ù„Ø­Ø¸ÙŠØ§ ÙˆÙ…Ù†Ø¹ Ø§Ù„ØªÙƒØ±Ø§Ø± Ø£Ùˆ Ø§Ø³ØªØ®Ø¯Ø§Ù… QR ØºÙŠØ± ØµØ§Ù„Ø­.",
+      descAr: "تسجيل دخول الحضور لحظيا ومنع التكرار أو استخدام QR غير صالح.",
     },
   ],
   featuresCards: [
-    { id: 'f-1', titleEn: 'Conference Management', titleAr: 'Ø¥Ø¯Ø§Ø±Ø© ÙˆØªÙ†Ø¸ÙŠÙ… Ø§Ù„Ù…Ø¤ØªÙ…Ø±Ø§Øª', descEn: 'Integrated system for attendance registration and session management with ease.', descAr: 'Ù†Ø¸Ø§Ù… Ù…ØªÙƒØ§Ù…Ù„ Ù„ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø¶ÙˆØ± ÙˆØ¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø¬Ù„Ø³Ø§Øª Ø¨ÙƒÙ„ Ø³Ù‡ÙˆÙ„Ø© ÙˆØ§Ø­ØªØ±Ø§ÙÙŠØ©.' },
-    { id: 'f-2', titleEn: 'Smart Booking Strategies', titleAr: 'Ø§Ø³ØªØ±Ø§ØªÙŠØ¬ÙŠØ§Øª Ø§Ù„Ø­Ø¬Ø² Ø§Ù„Ø°ÙƒÙŠ', descEn: 'Convert visitors into participants through flexible and easy-to-use booking systems.', descAr: 'Ø­ÙˆÙ‘Ù„ Ø§Ù„Ø²ÙˆØ§Ø± Ø¥Ù„Ù‰ Ù…Ø´Ø§Ø±ÙƒÙŠÙ† Ù…Ù† Ø®Ù„Ø§Ù„ Ø£Ù†Ø¸Ù…Ø© Ø­Ø¬Ø² Ù…Ø±Ù†Ø© ÙˆØ³Ù‡Ù„Ø© Ø§Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù….' },
-    { id: 'f-3', titleEn: 'Immediate Support', titleAr: 'Ø§Ù„Ø§Ø³ØªØ¬Ø§Ø¨Ø© Ø§Ù„ÙÙˆØ±ÙŠØ©', descEn: 'A dedicated support team working around the clock to ensure a perfect guest experience.', descAr: 'ÙØ±ÙŠÙ‚ Ø¯Ø¹Ù… Ù…ØªØ®ØµØµ ÙŠØ¹Ù…Ù„ Ø¹Ù„Ù‰ Ù…Ø¯Ø§Ø± Ø§Ù„Ø³Ø§Ø¹Ø© Ù„Ø¶Ù…Ø§Ù† ØªØ¬Ø±Ø¨Ø© Ù…Ø«Ø§Ù„ÙŠØ© Ù„Ø¶ÙŠÙˆÙÙƒ.' },
+    { id: 'f-1', titleEn: 'Conference Management', titleAr: 'إدارة وتنظيم المؤتمرات', descEn: 'Integrated system for attendance registration and session management with ease.', descAr: 'نظام متكامل لتسجيل الحضور وإدارة الجلسات بكل سهولة واحترافية.' },
+    { id: 'f-2', titleEn: 'Smart Booking Strategies', titleAr: 'استراتيجيات الحجز الذكي', descEn: 'Convert visitors into participants through flexible and easy-to-use booking systems.', descAr: 'حوّل الزوار إلى مشاركين من خلال أنظمة حجز مرنة وسهلة الاستخدام.' },
+    { id: 'f-3', titleEn: 'Immediate Support', titleAr: 'الاستجابة الفورية', descEn: 'A dedicated support team working around the clock to ensure a perfect guest experience.', descAr: 'فريق دعم متخصص يعمل على مدار الساعة لضمان تجربة مثالية لضيوفك.' },
   ],
   faqs: [
-    { id: "faq-1", qEn: "How do I sign up?", qAr: "ÙƒÙŠÙ ÙŠÙ…ÙƒÙ†Ù†ÙŠ Ø§Ù„ØªØ³Ø¬ÙŠÙ„ØŸ", aEn: "You can easily sign up by clicking the Book Now button and filling in the required information.", aAr: "ÙŠÙ…ÙƒÙ†Ùƒ Ø§Ù„ØªØ³Ø¬ÙŠÙ„ Ø¨Ø³Ù‡ÙˆÙ„Ø© Ù…Ù† Ø®Ù„Ø§Ù„ Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ø²Ø± Ø§Ø·Ù„Ø¨ Ø­Ø¬Ø²Ùƒ ÙˆÙ…Ù„Ø¡ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø©." },
-    { id: "faq-2", qEn: "What makes us different?", qAr: "Ù…Ø§ Ø§Ù„Ø°ÙŠ ÙŠÙ…ÙŠØ²Ù†Ø§ Ø¹Ù† Ø§Ù„Ø¢Ø®Ø±ÙŠÙ†ØŸ", aEn: "We provide an integrated solution for event management with a focus on user experience and high professionalism.", aAr: "Ù†Ø­Ù† Ù†Ù‚Ø¯Ù… Ø­Ù„Ø§Ù‹ Ù…ØªÙƒØ§Ù…Ù„Ø§Ù‹ Ù„Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª Ù…Ø¹ Ø§Ù„ØªØ±ÙƒÙŠØ² Ø¹Ù„Ù‰ ØªØ¬Ø±Ø¨Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ÙˆØ§Ù„Ø§Ø­ØªØ±Ø§ÙÙŠØ© Ø§Ù„Ø¹Ø§Ù„ÙŠØ©." },
-    { id: "faq-3", qEn: "How much does it cost?", qAr: "Ù…Ø§ Ù‡ÙŠ ØªÙƒÙ„ÙØ© Ø§Ù„Ø®Ø¯Ù…Ø§ØªØŸ", aEn: "Cost varies based on the type of event and services required. You can request a custom quote.", aAr: "ØªØ®ØªÙ„Ù Ø§Ù„ØªÙƒÙ„ÙØ© Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ Ù†ÙˆØ¹ Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ© ÙˆØ§Ù„Ø®Ø¯Ù…Ø§Øª Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø©. ÙŠÙ…ÙƒÙ†Ùƒ Ø·Ù„Ø¨ Ø¹Ø±Ø¶ Ø³Ø¹Ø± Ù…Ø®ØµØµ." },
-    { id: "faq-4", qEn: "How long does it take to design a website?", qAr: "ÙƒÙ… ÙŠØ³ØªØºØ±Ù‚ ØªÙ†Ø¸ÙŠÙ… Ø§Ù„Ù…Ø¹Ø±Ø¶ØŸ", aEn: "Time depends on the size and requirements of the exhibition, usually taking two weeks to a month.", aAr: "ÙŠØ¹ØªÙ…Ø¯ Ø§Ù„ÙˆÙ‚Øª Ø¹Ù„Ù‰ Ø­Ø¬Ù… Ø§Ù„Ù…Ø¹Ø±Ø¶ ÙˆÙ…ØªØ·Ù„Ø¨Ø§ØªÙ‡ØŒ ÙˆØ¹Ø§Ø¯Ø© Ù…Ø§ ÙŠØ³ØªØºØ±Ù‚ Ù…Ù† Ø£Ø³Ø¨ÙˆØ¹ÙŠÙ† Ø¥Ù„Ù‰ Ø´Ù‡Ø±." },
-    { id: "faq-5", qEn: "What verticals/niches are supported?", qAr: "Ù‡Ù„ Ù†Ø¯Ø¹Ù… Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª Ø§Ù„Ø¯ÙˆÙ„ÙŠØ©ØŸ", aEn: "Yes, we support organizing events and conferences on both international and local levels.", aAr: "Ù†Ø¹Ù…ØŒ Ù†Ø­Ù† Ù†Ø¯Ø¹Ù… ØªÙ†Ø¸ÙŠÙ… Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª ÙˆØ§Ù„Ù…Ø¤ØªÙ…Ø±Ø§Øª Ø¹Ù„Ù‰ Ù…Ø³ØªÙˆÙ‰ Ø¯ÙˆÙ„ÙŠ ÙˆÙ…Ø­Ù„ÙŠ." },
-    { id: "faq-6", qEn: "Is it compliant and secure?", qAr: "Ù‡Ù„ Ø§Ù„Ù†Ø¸Ø§Ù… Ø¢Ù…Ù† ÙˆÙ…ØªÙˆØ§ÙÙ‚ØŸ", aEn: "Yes, we use the latest security standards to protect your data and participant data.", aAr: "Ù†Ø¹Ù…ØŒ Ù†Ø³ØªØ®Ø¯Ù… Ø£Ø­Ø¯Ø« Ù…Ø¹Ø§ÙŠÙŠØ± Ø§Ù„Ø£Ù…Ø§Ù† Ù„Ø­Ù…Ø§ÙŠØ© Ø¨ÙŠØ§Ù†Ø§ØªÙƒ ÙˆØ¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø´Ø§Ø±ÙƒÙŠÙ†." },
-    { id: "faq-7", qEn: "How does it work with my business?", qAr: "ÙƒÙŠÙ ÙŠØ¹Ù…Ù„ Ø§Ù„Ù†Ø¸Ø§Ù… Ù…Ø¹ Ù†Ø´Ø§Ø·ÙŠØŸ", aEn: "Our system is flexible and can be customized to fit the needs of any business sector or event type.", aAr: "Ù†Ø¸Ø§Ù…Ù†Ø§ Ù…Ø±Ù† ÙˆÙŠÙ…ÙƒÙ† ØªØ®ØµÙŠØµÙ‡ Ù„ÙŠØªÙ†Ø§Ø³Ø¨ Ù…Ø¹ Ø§Ø­ØªÙŠØ§Ø¬Ø§Øª Ø£ÙŠ Ù‚Ø·Ø§Ø¹ Ø£Ø¹Ù…Ø§Ù„ Ø£Ùˆ Ù†ÙˆØ¹ ÙØ¹Ø§Ù„ÙŠØ©." },
-    { id: "faq-8", qEn: "What if my competitor is using us?", qAr: "Ù…Ø§Ø°Ø§ Ù„Ùˆ Ù„Ù… ÙŠØ¹Ø¬Ø¨Ù†ÙŠ Ø§Ù„ØªØµÙ…ÙŠÙ…ØŸ", aEn: "We work with you step-by-step to ensure your complete satisfaction with all aspects of organization and design.", aAr: "Ù†Ø¹Ù…Ù„ Ù…Ø¹Ùƒ Ø®Ø·ÙˆØ© Ø¨Ø®Ø·ÙˆØ© Ù„Ø¶Ù…Ø§Ù† Ø±Ø¶Ø§Ùƒ Ø§Ù„ØªØ§Ù… Ø¹Ù† Ø¬Ù…ÙŠØ¹ Ø¬ÙˆØ§Ù†Ø¨ Ø§Ù„ØªÙ†Ø¸ÙŠÙ… ÙˆØ§Ù„ØªØµÙ…ÙŠÙ…." },
-    { id: "faq-9", qEn: "What if I don't like the designs or strategies?", qAr: "Ù‡Ù„ ÙŠÙ…ÙƒÙ†Ù†ÙŠ Ø§Ø®ØªÙŠØ§Ø± Ø§Ø³ØªØ±Ø§ØªÙŠØ¬ÙŠØ© Ù…Ø¹ÙŠÙ†Ø©ØŸ", aEn: "Certainly, our consulting team will help you choose the best strategies for your event.", aAr: "Ø¨Ø§Ù„ØªØ£ÙƒÙŠØ¯ØŒ ÙØ±ÙŠÙ‚Ù†Ø§ Ø§Ù„Ø§Ø³ØªØ´Ø§Ø±ÙŠ Ø³ÙŠØ³Ø§Ø¹Ø¯Ùƒ ÙÙŠ Ø§Ø®ØªÙŠØ§Ø± Ø£ÙØ¶Ù„ Ø§Ù„Ø§Ø³ØªØ±Ø§ØªÙŠØ¬ÙŠØ§Øª Ù„ÙØ¹Ø§Ù„ÙŠØªÙƒ." },
-    { id: "faq-10", qEn: "I can do this myself, why do I need you?", qAr: "Ù„Ù…Ø§Ø°Ø§ Ø£Ø­ØªØ§Ø¬ Ø¥Ù„Ù‰ Ø®Ø¯Ù…Ø§ØªÙƒÙ…ØŸ", aEn: "We save you time and effort and guarantee high professionalism and tangible results for your event.", aAr: "Ù†Ø­Ù† Ù†ÙˆÙØ± Ø¹Ù„ÙŠÙƒ Ø§Ù„ÙˆÙ‚Øª ÙˆØ§Ù„Ø¬Ù‡Ø¯ ÙˆÙ†Ø¶Ù…Ù† Ù„Ùƒ Ø§Ø­ØªØ±Ø§ÙÙŠØ© Ø¹Ø§Ù„ÙŠØ© ÙˆÙ†ØªØ§Ø¦Ø¬ Ù…Ù„Ù…ÙˆØ³Ø© Ù„ÙØ¹Ø§Ù„ÙŠØªÙƒ." },
-    { id: "faq-11", qEn: "How do we start working with you?", qAr: "ÙƒÙŠÙ Ù†Ø¨Ø¯Ø£ Ø§Ù„Ø¹Ù…Ù„ Ù…Ø¹ÙƒÙ…ØŸ", aEn: "You can start by filling out the booking request form, and our team will contact you within 24 hours to discuss all details and needs.", aAr: "ÙŠÙ…ÙƒÙ†Ùƒ Ø§Ù„Ø¨Ø¯Ø¡ Ø¨Ù…Ù„Ø¡ Ù†Ù…ÙˆØ°Ø¬ Ø·Ù„Ø¨ Ø§Ù„Ø­Ø¬Ø²ØŒ ÙˆØ³ÙŠÙ‚ÙˆÙ… ÙØ±ÙŠÙ‚Ù†Ø§ Ø¨Ø§Ù„ØªÙˆØ§ØµÙ„ Ù…Ø¹Ùƒ Ø®Ù„Ø§Ù„ 24 Ø³Ø§Ø¹Ø© Ù„Ù…Ù†Ø§Ù‚Ø´Ø© ÙƒØ§ÙØ© Ø§Ù„ØªÙØ§ØµÙŠÙ„ ÙˆØ§Ù„Ø§Ø­ØªÙŠØ§Ø¬Ø§Øª." },
+    { id: "faq-1", qEn: "How do I sign up?", qAr: "كيف يمكنني التسجيل؟", aEn: "You can easily sign up by clicking the Book Now button and filling in the required information.", aAr: "يمكنك التسجيل بسهولة من خلال الضغط على زر اطلب حجزك وملء البيانات المطلوبة." },
+    { id: "faq-2", qEn: "What makes us different?", qAr: "ما الذي يميزنا عن الآخرين؟", aEn: "We provide an integrated solution for event management with a focus on user experience and high professionalism.", aAr: "نحن نقدم حلاً متكاملاً لإدارة الفعاليات مع التركيز على تجربة المستخدم والاحترافية العالية." },
+    { id: "faq-3", qEn: "How much does it cost?", qAr: "ما هي تكلفة الخدمات؟", aEn: "Cost varies based on the type of event and services required. You can request a custom quote.", aAr: "تختلف التكلفة بناءً على نوع الفعالية والخدمات المطلوبة. يمكنك طلب عرض سعر مخصص." },
+    { id: "faq-4", qEn: "How long does it take to design a website?", qAr: "كم يستغرق تنظيم المعرض؟", aEn: "Time depends on the size and requirements of the exhibition, usually taking two weeks to a month.", aAr: "يعتمد الوقت على حجم المعرض ومتطلباته، وعادة ما يستغرق من أسبوعين إلى شهر." },
+    { id: "faq-5", qEn: "What verticals/niches are supported?", qAr: "هل ندعم الفعاليات الدولية؟", aEn: "Yes, we support organizing events and conferences on both international and local levels.", aAr: "نعم، نحن ندعم تنظيم الفعاليات والمؤتمرات على مستوى دولي ومحلي." },
+    { id: "faq-6", qEn: "Is it compliant and secure?", qAr: "هل النظام آمن ومتوافق؟", aEn: "Yes, we use the latest security standards to protect your data and participant data.", aAr: "نعم، نستخدم أحدث معايير الأمان لحماية بياناتك وبيانات المشاركين." },
+    { id: "faq-7", qEn: "How does it work with my business?", qAr: "كيف يعمل النظام مع نشاطي؟", aEn: "Our system is flexible and can be customized to fit the needs of any business sector or event type.", aAr: "نظامنا مرن ويمكن تخصيصه ليتناسب مع احتياجات أي قطاع أعمال أو نوع فعالية." },
+    { id: "faq-8", qEn: "What if my competitor is using us?", qAr: "ماذا لو لم يعجبني التصميم؟", aEn: "We work with you step-by-step to ensure your complete satisfaction with all aspects of organization and design.", aAr: "نعمل معك خطوة بخطوة لضمان رضاك التام عن جميع جوانب التنظيم والتصميم." },
+    { id: "faq-9", qEn: "What if I don't like the designs or strategies?", qAr: "هل يمكنني اختيار استراتيجية معينة؟", aEn: "Certainly, our consulting team will help you choose the best strategies for your event.", aAr: "بالتأكيد، فريقنا الاستشاري سيساعدك في اختيار أفضل الاستراتيجيات لفعاليتك." },
+    { id: "faq-10", qEn: "I can do this myself, why do I need you?", qAr: "لماذا أحتاج إلى خدماتكم؟", aEn: "We save you time and effort and guarantee high professionalism and tangible results for your event.", aAr: "نحن نوفر عليك الوقت والجهد ونضمن لك احترافية عالية ونتائج ملموسة لفعاليتك." },
+    { id: "faq-11", qEn: "How do we start working with you?", qAr: "كيف نبدأ العمل معكم؟", aEn: "You can start by filling out the booking request form, and our team will contact you within 24 hours to discuss all details and needs.", aAr: "يمكنك البدء بملء نموذج طلب الحجز، وسيقوم فريقنا بالتواصل معك خلال 24 ساعة لمناقشة كافة التفاصيل والاحتياجات." },
   ],
   socialLinks: [
     { id: "s1", platform: "twitter", url: "https://twitter.com" },
     { id: "s2", platform: "instagram", url: "https://instagram.com" },
     { id: "s3", platform: "linkedin", url: "https://linkedin.com" },
   ],
-  footerLinks: [
-    { id: "1", col: "services", labelEn: "Conference Booking", labelAr: "Ø­Ø¬Ø² Ø§Ù„Ù…Ø¤ØªÙ…Ø±Ø§Øª", href: "#" },
-    { id: "2", col: "services", labelEn: "Exhibition Management", labelAr: "ØªÙ†Ø¸ÙŠÙ… Ø§Ù„Ù…Ø¹Ø§Ø±Ø¶", href: "#" },
-    { id: "3", col: "services", labelEn: "Hotel Reservations", labelAr: "Ø­Ø¬ÙˆØ²Ø§Øª Ø§Ù„ÙÙ†Ø§Ø¯Ù‚", href: "#" },
-    { id: "4", col: "services", labelEn: "Reception and Farewell", labelAr: "Ø§Ù„Ø§Ø³ØªÙ‚Ø¨Ø§Ù„ ÙˆØ§Ù„ØªÙˆØ¯ÙŠØ¹", href: "#" },
-    { id: "5", col: "support", labelEn: "FAQ", labelAr: "Ø§Ù„Ø£Ø³Ø¦Ù„Ø© Ø§Ù„Ø´Ø§Ø¦Ø¹Ø©", href: "#" },
-    { id: "6", col: "support", labelEn: "Privacy Policy", labelAr: "Ø³ÙŠØ§Ø³Ø© Ø§Ù„Ø®ØµÙˆØµÙŠØ©", href: "#" },
-    { id: "7", col: "support", labelEn: "Terms and Conditions", labelAr: "Ø§Ù„Ø´Ø±ÙˆØ· ÙˆØ§Ù„Ø£Ø­ÙƒØ§Ù…", href: "#" },
-    { id: "8", col: "support", labelEn: "Contact Us", labelAr: "ØªÙˆØ§ØµÙ„ Ù…Ø¹Ù†Ø§", href: "#" },
-    { id: "9", col: "company", labelEn: "About Company", labelAr: "Ø¹Ù† Ø§Ù„Ø´Ø±ÙƒØ©", href: "#" },
-    { id: "10", col: "company", labelEn: "Partners", labelAr: "Ø´Ø±ÙƒØ§Ø¡ Ø§Ù„Ù†Ø¬Ø§Ø­", href: "#" },
-    { id: "11", col: "company", labelEn: "Media Center", labelAr: "Ø§Ù„Ù…Ø±ÙƒØ² Ø§Ù„Ø¥Ø¹Ù„Ø§Ù…ÙŠ", href: "#" },
-    { id: "12", col: "company", labelEn: "Careers", labelAr: "ÙˆØ¸Ø§Ø¦Ù", href: "#" },
-  ],
+  footerLinks: DEFAULT_FOOTER_LINKS,
+  footerLegalLinks: DEFAULT_FOOTER_LEGAL_LINKS,
   menu: publicNavLinks.filter((item) => item.href !== "/why-us").map((item, index) => ({ id: `page-${index + 1}`, ...item, visible: true })),
   seo: {
     metaTitle: "Stylish Events | Event Booking & Management Platform",
@@ -426,6 +422,8 @@ export function SiteContentSettingsPanel() {
   const [savedSettingsSnapshot, setSavedSettingsSnapshot] = useState("")
   const currentSettingsSnapshot = useMemo(() => JSON.stringify(settings), [settings])
   const hasUnsavedChanges = Boolean(savedSettingsSnapshot && currentSettingsSnapshot !== savedSettingsSnapshot)
+  const footerNavigationLinks = useMemo(() => normalizeFooterLinks(settings.footerLinks), [settings.footerLinks])
+  const footerLegalLinks = useMemo(() => normalizeFooterLegalLinks(settings.footerLegalLinks, settings.footerLinks), [settings.footerLegalLinks, settings.footerLinks])
 
   useEffect(() => {
     const localSettings = readSettings()
@@ -870,7 +868,7 @@ export function SiteContentSettingsPanel() {
         {
           id: `menu-${Date.now()}`,
           labelEn: "New link",
-          labelAr: "Ø±Ø§Ø¨Ø· Ø¬Ø¯ÙŠØ¯",
+          labelAr: "رابط جديد",
           href: "#",
           visible: true,
         },
@@ -893,21 +891,21 @@ export function SiteContentSettingsPanel() {
       localStorage.setItem(storageKey, JSON.stringify(normalized))
       window.dispatchEvent(new Event("stylish-events-site-content-settings-updated"))
       setSaveState("saved")
-      toast.success(isAr ? "ØªÙ… Ø­ÙØ¸ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹" : "Website settings saved", { description: isAr ? "ØªÙ… Ø­ÙØ¸ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ ÙˆØ§Ù„Ù‚Ø§Ø¦Ù…Ø© ÙˆØ§Ù„Ø³ÙŠÙˆ ÙÙŠ MySQL." : "Content, menu, and SEO are stored in MySQL." })
+      toast.success(isAr ? "تم حفظ إعدادات الموقع" : "Website settings saved", { description: isAr ? "تم حفظ المحتوى والقائمة والسيو." : "Content, menu, and SEO are saved." })
     } catch (error) {
       // Do NOT persist failed server updates locally as successful saves.
       setSaveState("idle")
       const status = (error as any)?.status
       if (status === 401) {
-        toast.error(isAr ? 'Ø§Ù†ØªÙ‡Øª Ø§Ù„Ø¬Ù„Ø³Ø©. Ø§Ù„Ø±Ø¬Ø§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ù…Ø¬Ø¯Ø¯Ø§Ù‹.' : 'Your session has expired. Please sign in again.')
+        toast.error(isAr ? 'انتهت الجلسة. الرجاء تسجيل الدخول مجدداً.' : 'Your session has expired. Please sign in again.')
         return
       }
       if (status === 403) {
-        toast.error(isAr ? 'Ù„ÙŠØ³ Ù„Ø¯ÙŠÙƒ ØµÙ„Ø§Ø­ÙŠØ© Ù„Ø­ÙØ¸ Ù‡Ø°Ù‡ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª.' : 'You do not have permission to save these settings.')
+        toast.error(isAr ? 'ليس لديك صلاحية لحفظ هذه الإعدادات.' : 'You do not have permission to save these settings.')
         return
       }
-      const message = error instanceof Error ? error.message : (isAr ? "ÙˆØ§Ø¬Ù‡Ø© Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø¨Ø§Ùƒ Ø¥Ù†Ø¯ ØºÙŠØ± Ù…ØªØ§Ø­Ø© Ø­Ø§Ù„ÙŠØ§." : "Backend settings API is not reachable.")
-      toast.error(isAr ? `ÙØ´Ù„ Ø§Ù„Ø­ÙØ¸: ${message}` : `Save failed: ${message}`)
+      const message = error instanceof Error ? error.message : (isAr ? "واجهة إعدادات الباك إند غير متاحة حاليا." : "Backend settings API is not reachable.")
+      toast.error(isAr ? `فشل الحفظ: ${message}` : `Save failed: ${message}`)
     }
   }
 
@@ -920,16 +918,16 @@ export function SiteContentSettingsPanel() {
           <div>
             <CardTitle className="flex items-center gap-2 text-xl font-extrabold text-[#17172f]">
               <Globe2 className="h-5 w-5 text-[hsl(var(--primary))]" />
-              {isAr ? "Ù…Ø­ØªÙˆÙ‰ Ø§Ù„Ù…ÙˆÙ‚Ø¹ ÙˆØ§Ù„Ù‚Ø§Ø¦Ù…Ø© ÙˆØ§Ù„Ø³ÙŠÙˆ" : "Website Content, Menu & SEO"}
+              {isAr ? "محتوى الموقع والقائمة والسيو" : "Website Content, Menu & SEO"}
             </CardTitle>
             <CardDescription className="mt-2 text-sm font-medium text-slate-500">
-              {isAr ? "ØªØ­ÙƒÙ… ÙÙŠ Ù…Ø­ØªÙˆÙ‰ Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©ØŒ Ø±ÙˆØ§Ø¨Ø· Ø§Ù„Ù‚Ø§Ø¦Ù…Ø©ØŒ ÙˆØ¨ÙŠØ§Ù†Ø§Øª Ù…Ø­Ø±ÙƒØ§Øª Ø§Ù„Ø¨Ø­Ø« Ù…Ù† Ù…ÙƒØ§Ù† ÙˆØ§Ø­Ø¯." : "Control the public homepage copy, navigation links, and search engine metadata from one workspace."}
+              {isAr ? "تحكم في محتوى الصفحة الرئيسية، روابط القائمة، وبيانات محركات البحث من مكان واحد." : "Control the public homepage copy, navigation links, and search engine metadata from one workspace."}
             </CardDescription>
           </div>
           <ConfirmAction
-            title={isAr ? "ØªØ£ÙƒÙŠØ¯ Ø­ÙØ¸ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹" : "Confirm website settings save"}
-            description={isAr ? "Ø³ÙŠØªÙ… Ø­ÙØ¸ Ù…Ø­ØªÙˆÙ‰ Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ© ÙˆØ±ÙˆØ§Ø¨Ø· Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© ÙˆØ¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø³ÙŠÙˆ Ù„Ù„Ù…ÙˆÙ‚Ø¹." : "Homepage content, menu links, and SEO settings will be saved for the website configuration."}
-            confirmLabel={isAr ? "Ø­ÙØ¸ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹" : "Save website settings"}
+            title={isAr ? "تأكيد حفظ إعدادات الموقع" : "Confirm website settings save"}
+            description={isAr ? "سيتم حفظ محتوى الصفحة الرئيسية وروابط القائمة وإعدادات السيو للموقع." : "Homepage content, menu links, and SEO settings will be saved for the website configuration."}
+            confirmLabel={isAr ? "حفظ إعدادات الموقع" : "Save website settings"}
             onConfirm={saveSettings}
             tone="success"
           >
@@ -943,7 +941,7 @@ export function SiteContentSettingsPanel() {
 
       <CardContent className="border-t border-slate-100 bg-white p-5">
         <Tabs value={contentPageTab} onValueChange={(value) => setContentPageTab(value as WebsiteContentPageTab)} className="space-y-5 w-full">
-          <div className="w-full overflow-x-auto pb-2">
+          <div className="settings-tabs-scroll w-full overflow-x-auto pb-2">
             <TabsList className="inline-flex h-auto min-w-max flex-wrap items-center justify-start rounded-2xl bg-slate-100 p-1 shadow-inner">
               {websiteContentPageTabs.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value} className="rounded-xl px-5 py-2.5 font-extrabold">
@@ -955,7 +953,7 @@ export function SiteContentSettingsPanel() {
 
           <TabsContent value="homepage" className="mt-0">
             <Tabs value={homepageSectionTab} onValueChange={(value) => setHomepageSectionTab(value as HomepageSectionTab)} className="space-y-4">
-              <div className="w-full overflow-x-auto pb-2">
+              <div className="settings-tabs-scroll w-full overflow-x-auto pb-2">
                 <TabsList className="inline-flex h-auto min-w-max flex-wrap items-center justify-start rounded-2xl bg-white p-1 shadow-[0_10px_26px_rgba(15,23,42,0.06)]">
                   {homepageSectionTabs.map((tab) => (
                     <TabsTrigger key={tab.value} value={tab.value} className="rounded-xl px-4 py-2 text-xs font-extrabold data-[state=active]:bg-[hsl(var(--primary))] data-[state=active]:text-white">
@@ -967,19 +965,19 @@ export function SiteContentSettingsPanel() {
 <TabsContent value="hero" className="mt-0">
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 xl:grid-cols-[1fr_380px]">
               <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                <Field label={isAr ? "Ø§Ù„Ø¹Ø¨Ø§Ø±Ø© Ø§Ù„ØªÙ…Ù‡ÙŠØ¯ÙŠØ© Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©" : "English eyebrow"} value={settings.homepage.eyebrowEn} onChange={(value) => updateHomepage("eyebrowEn", value)} />
-                <Field label={isAr ? "Ø§Ù„Ø¹Ø¨Ø§Ø±Ø© Ø§Ù„ØªÙ…Ù‡ÙŠØ¯ÙŠØ© Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©" : "Arabic eyebrow"} value={settings.homepage.eyebrowAr} onChange={(value) => updateHomepage("eyebrowAr", value)} />
-                <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ" : "English title"} value={settings.homepage.titleEn} onChange={(value) => updateHomepage("titleEn", value)} />
-                <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ø¹Ø±Ø¨ÙŠ" : "Arabic title"} value={settings.homepage.titleAr} onChange={(value) => updateHomepage("titleAr", value)} />
-                <TextAreaField label={isAr ? "Ø§Ù„ÙˆØµÙ Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ" : "English subtitle"} value={settings.homepage.subtitleEn} onChange={(value) => updateHomepage("subtitleEn", value)} />
-                <TextAreaField label={isAr ? "Ø§Ù„ÙˆØµÙ Ø§Ù„Ø¹Ø±Ø¨ÙŠ" : "Arabic subtitle"} value={settings.homepage.subtitleAr} onChange={(value) => updateHomepage("subtitleAr", value)} />
-                <Field label={isAr ? "Ø²Ø± Ø±Ø¦ÙŠØ³ÙŠ Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ" : "Primary CTA English"} value={settings.homepage.primaryCtaEn} onChange={(value) => updateHomepage("primaryCtaEn", value)} />
-                <Field label={isAr ? "Ø²Ø± Ø±Ø¦ÙŠØ³ÙŠ Ø¹Ø±Ø¨ÙŠ" : "Primary CTA Arabic"} value={settings.homepage.primaryCtaAr} onChange={(value) => updateHomepage("primaryCtaAr", value)} />
-                <Field label={isAr ? "Ø²Ø± Ø«Ø§Ù†ÙˆÙŠ Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ" : "Secondary CTA English"} value={settings.homepage.secondaryCtaEn} onChange={(value) => updateHomepage("secondaryCtaEn", value)} />
-                <Field label={isAr ? "Ø²Ø± Ø«Ø§Ù†ÙˆÙŠ Ø¹Ø±Ø¨ÙŠ" : "Secondary CTA Arabic"} value={settings.homepage.secondaryCtaAr} onChange={(value) => updateHomepage("secondaryCtaAr", value)} />
+                <Field label={isAr ? "العبارة التمهيدية بالإنجليزية" : "English eyebrow"} value={settings.homepage.eyebrowEn} onChange={(value) => updateHomepage("eyebrowEn", value)} />
+                <Field label={isAr ? "العبارة التمهيدية بالعربية" : "Arabic eyebrow"} value={settings.homepage.eyebrowAr} onChange={(value) => updateHomepage("eyebrowAr", value)} />
+                <Field label={isAr ? "العنوان الإنجليزي" : "English title"} value={settings.homepage.titleEn} onChange={(value) => updateHomepage("titleEn", value)} />
+                <Field label={isAr ? "العنوان العربي" : "Arabic title"} value={settings.homepage.titleAr} onChange={(value) => updateHomepage("titleAr", value)} />
+                <TextAreaField label={isAr ? "الوصف الإنجليزي" : "English subtitle"} value={settings.homepage.subtitleEn} onChange={(value) => updateHomepage("subtitleEn", value)} />
+                <TextAreaField label={isAr ? "الوصف العربي" : "Arabic subtitle"} value={settings.homepage.subtitleAr} onChange={(value) => updateHomepage("subtitleAr", value)} />
+                <Field label={isAr ? "زر رئيسي إنجليزي" : "Primary CTA English"} value={settings.homepage.primaryCtaEn} onChange={(value) => updateHomepage("primaryCtaEn", value)} />
+                <Field label={isAr ? "زر رئيسي عربي" : "Primary CTA Arabic"} value={settings.homepage.primaryCtaAr} onChange={(value) => updateHomepage("primaryCtaAr", value)} />
+                <Field label={isAr ? "زر ثانوي إنجليزي" : "Secondary CTA English"} value={settings.homepage.secondaryCtaEn} onChange={(value) => updateHomepage("secondaryCtaEn", value)} />
+                <Field label={isAr ? "زر ثانوي عربي" : "Secondary CTA Arabic"} value={settings.homepage.secondaryCtaAr} onChange={(value) => updateHomepage("secondaryCtaAr", value)} />
                 <div className="space-y-2">
                   <Label className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">
-                    {isAr ? "Ù†ÙˆØ¹ Ù…ÙŠØ¯ÙŠØ§ Ø§Ù„Ù‡ÙŠØ±Ùˆ" : "Hero media type"}
+                    {isAr ? "نوع ميديا الهيرو" : "Hero media type"}
                   </Label>
                   <Select value={settings.homepage.heroMediaType} onValueChange={(value) => updateHomepage("heroMediaType", value as "video" | "image")}>
                     <SelectTrigger className="h-12 rounded-2xl border-slate-200 bg-slate-50 font-extrabold">
@@ -987,19 +985,19 @@ export function SiteContentSettingsPanel() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="video">
-                        <span className="inline-flex items-center gap-2"><Video className="h-4 w-4" /> {isAr ? "ÙÙŠØ¯ÙŠÙˆ" : "Video"}</span>
+                        <span className="inline-flex items-center gap-2"><Video className="h-4 w-4" /> {isAr ? "فيديو" : "Video"}</span>
                       </SelectItem>
                       <SelectItem value="image">
-                        <span className="inline-flex items-center gap-2"><ImageIcon className="h-4 w-4" /> {isAr ? "ØµÙˆØ±Ø©" : "Image"}</span>
+                        <span className="inline-flex items-center gap-2"><ImageIcon className="h-4 w-4" /> {isAr ? "صورة" : "Image"}</span>
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <ImageUrlDropzone
-                  label={isAr ? "Ø±Ø§Ø¨Ø· Ø£Ùˆ Ø±ÙØ¹ Ù…ÙŠØ¯ÙŠØ§ Ø§Ù„Ù‡ÙŠØ±Ùˆ" : "Hero media URL or upload"}
+                  label={isAr ? "رابط أو رفع ميديا الهيرو" : "Hero media URL or upload"}
                   value={settings.homepage.heroMediaUrl}
                   onChange={(value) => updateHomepage("heroMediaUrl", value)}
-                  helperText={isAr ? "Ø§Ø®ØªØ± ÙÙŠØ¯ÙŠÙˆ Ø£Ùˆ ØµÙˆØ±Ø© Ù…Ù† Ø§Ù„Ù†ÙˆØ¹ Ø¨Ø§Ù„Ø£Ø¹Ù„Ù‰ØŒ Ø«Ù… Ø£Ø¶Ù Ø§Ù„Ø±Ø§Ø¨Ø· Ø£Ùˆ Ø§Ø±ÙØ¹ Ø§Ù„Ù…Ù„Ù." : "Choose video or image above, then paste a URL or upload a file."}
+                  helperText={isAr ? "اختر فيديو أو صورة من النوع بالأعلى، ثم أضف الرابط أو ارفع الملف." : "Choose video or image above, then paste a URL or upload a file."}
                   accept="media"
                 />
               </div>
@@ -1010,7 +1008,7 @@ export function SiteContentSettingsPanel() {
                     {settings.homepage.heroMediaType === "video" ? (
                       <video src={apiAssetUrl(settings.homepage.heroMediaUrl)} className="h-full w-full object-cover" muted playsInline loop />
                     ) : (
-                      <img src={apiAssetUrl(settings.homepage.heroMediaUrl || "/og-image.jpg")} alt={isAr ? "Ù…Ø¹Ø§ÙŠÙ†Ø© Ù…ÙŠØ¯ÙŠØ§ Ø§Ù„Ù‡ÙŠØ±Ùˆ" : "Hero media preview"} className="h-full w-full object-cover" />
+                      <img src={apiAssetUrl(settings.homepage.heroMediaUrl || "/og-image.jpg")} alt={isAr ? "معاينة ميديا الهيرو" : "Hero media preview"} className="h-full w-full object-cover" />
                     )}
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.10),rgba(15,23,42,0.42))]" />
                     <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase text-slate-600">
@@ -1034,41 +1032,41 @@ export function SiteContentSettingsPanel() {
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 xl:grid-cols-[1fr_380px]">
               <div className="space-y-5">
                 <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Ø±Ø£Ø³ Ù‚Ø³Ù… Ø§Ù„Ù…Ù…ÙŠØ²Ø§Øª" : "Features Section Header"}</h3>
-                  <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± Ù‚Ø³Ù… Ø§Ù„Ù…Ù…ÙŠØ²Ø§Øª" : "Enable Features section"} checked={!!settings.featuresSection.enabled} onChange={(value) => updateFeaturesSection({ enabled: value })} />
-                  <Field label={isAr ? "Eyebrow (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "English eyebrow"} value={settings.featuresSection.eyebrowEn} onChange={(value) => updateFeaturesSection({ eyebrowEn: value })} dir="ltr" />
-                  <Field label={isAr ? "Eyebrow (Ø¹Ø±Ø¨ÙŠ)" : "Arabic eyebrow"} value={settings.featuresSection.eyebrowAr} onChange={(value) => updateFeaturesSection({ eyebrowAr: value })} dir="rtl" />
-                  <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "English title"} value={settings.featuresSection.titleEn} onChange={(value) => updateFeaturesSection({ titleEn: value })} dir="ltr" />
-                  <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¹Ø±Ø¨ÙŠ)" : "Arabic title"} value={settings.featuresSection.titleAr} onChange={(value) => updateFeaturesSection({ titleAr: value })} dir="rtl" />
-                  <TextAreaField label={isAr ? "Ø§Ù„ÙˆØµÙ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "English description"} value={settings.featuresSection.descriptionEn} onChange={(value) => updateFeaturesSection({ descriptionEn: value })} dir="ltr" />
-                  <TextAreaField label={isAr ? "Ø§Ù„ÙˆØµÙ (Ø¹Ø±Ø¨ÙŠ)" : "Arabic description"} value={settings.featuresSection.descriptionAr} onChange={(value) => updateFeaturesSection({ descriptionAr: value })} dir="rtl" />
+                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "رأس قسم المميزات" : "Features Section Header"}</h3>
+                  <ToggleCard label={isAr ? "إظهار قسم المميزات" : "Enable Features section"} checked={!!settings.featuresSection.enabled} onChange={(value) => updateFeaturesSection({ enabled: value })} />
+                  <Field label={isAr ? "Eyebrow (إنجليزي)" : "English eyebrow"} value={settings.featuresSection.eyebrowEn} onChange={(value) => updateFeaturesSection({ eyebrowEn: value })} dir="ltr" />
+                  <Field label={isAr ? "Eyebrow (عربي)" : "Arabic eyebrow"} value={settings.featuresSection.eyebrowAr} onChange={(value) => updateFeaturesSection({ eyebrowAr: value })} dir="rtl" />
+                  <Field label={isAr ? "العنوان (إنجليزي)" : "English title"} value={settings.featuresSection.titleEn} onChange={(value) => updateFeaturesSection({ titleEn: value })} dir="ltr" />
+                  <Field label={isAr ? "العنوان (عربي)" : "Arabic title"} value={settings.featuresSection.titleAr} onChange={(value) => updateFeaturesSection({ titleAr: value })} dir="rtl" />
+                  <TextAreaField label={isAr ? "الوصف (إنجليزي)" : "English description"} value={settings.featuresSection.descriptionEn} onChange={(value) => updateFeaturesSection({ descriptionEn: value })} dir="ltr" />
+                  <TextAreaField label={isAr ? "الوصف (عربي)" : "Arabic description"} value={settings.featuresSection.descriptionAr} onChange={(value) => updateFeaturesSection({ descriptionAr: value })} dir="rtl" />
                 </div>
 
                 <div className="space-y-3 rounded-[22px] bg-white p-4 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-black text-[#17172f]">{isAr ? "ÙƒØ±ÙˆØª Ø§Ù„Ù…Ù…ÙŠØ²Ø§Øª" : "Feature Cards"}</h3>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">{isAr ? "Ø§Ù„ÙƒØ±ÙˆØª Ø§Ù„ØªÙŠ ØªØ¸Ù‡Ø± Ø¨Ø¹Ø¯ Ø§Ù„Ù‡ÙŠØ±Ùˆ ÙÙŠ Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©." : "Cards shown after the hero section on the public homepage."}</p>
+                    <h3 className="text-lg font-black text-[#17172f]">{isAr ? "كروت المميزات" : "Feature Cards"}</h3>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">{isAr ? "الكروت التي تظهر بعد الهيرو في الصفحة الرئيسية." : "Cards shown after the hero section on the public homepage."}</p>
                   </div>
-                  <Button variant="outline" onClick={() => setSettings((current) => ({ ...current, featuresCards: [...current.featuresCards, { id: `feature-${Date.now()}`, titleEn: "New Feature", titleAr: "Ù…ÙŠØ²Ø© Ø¬Ø¯ÙŠØ¯Ø©", descEn: "", descAr: "" }] }))} className="h-11 rounded-2xl font-extrabold">
+                  <Button variant="outline" onClick={() => setSettings((current) => ({ ...current, featuresCards: [...current.featuresCards, { id: `feature-${Date.now()}`, titleEn: "New Feature", titleAr: "ميزة جديدة", descEn: "", descAr: "" }] }))} className="h-11 rounded-2xl font-extrabold">
                     <Plus className="h-4 w-4" />
-                    {isAr ? "Ø¥Ø¶Ø§ÙØ© Ù…ÙŠØ²Ø©" : "Add feature"}
+                    {isAr ? "إضافة ميزة" : "Add feature"}
                   </Button>
                 </div>
                 {settings.featuresCards.map((card, index) => (
                   <div key={card.id} className="relative grid gap-3 rounded-[22px] border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-2">
-                    <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† Ø§Ù„ÙƒØ§Ø±Øª (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Card Title (English)"} value={card.titleEn} onChange={(value) => setSettings((current) => ({ ...current, featuresCards: current.featuresCards.map((item) => item.id === card.id ? { ...item, titleEn: value } : item) }))} />
-                    <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† Ø§Ù„ÙƒØ§Ø±Øª (Ø¹Ø±Ø¨ÙŠ)" : "Card Title (Arabic)"} value={card.titleAr} onChange={(value) => setSettings((current) => ({ ...current, featuresCards: current.featuresCards.map((item) => item.id === card.id ? { ...item, titleAr: value } : item) }))} />
-                    <TextAreaField label={isAr ? "ÙˆØµÙ Ø§Ù„ÙƒØ§Ø±Øª (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Card Description (English)"} value={card.descEn} onChange={(value) => setSettings((current) => ({ ...current, featuresCards: current.featuresCards.map((item) => item.id === card.id ? { ...item, descEn: value } : item) }))} />
-                    <TextAreaField label={isAr ? "ÙˆØµÙ Ø§Ù„ÙƒØ§Ø±Øª (Ø¹Ø±Ø¨ÙŠ)" : "Card Description (Arabic)"} value={card.descAr} onChange={(value) => setSettings((current) => ({ ...current, featuresCards: current.featuresCards.map((item) => item.id === card.id ? { ...item, descAr: value } : item) }))} />
+                    <Field label={isAr ? "عنوان الكارت (إنجليزي)" : "Card Title (English)"} value={card.titleEn} onChange={(value) => setSettings((current) => ({ ...current, featuresCards: current.featuresCards.map((item) => item.id === card.id ? { ...item, titleEn: value } : item) }))} />
+                    <Field label={isAr ? "عنوان الكارت (عربي)" : "Card Title (Arabic)"} value={card.titleAr} onChange={(value) => setSettings((current) => ({ ...current, featuresCards: current.featuresCards.map((item) => item.id === card.id ? { ...item, titleAr: value } : item) }))} />
+                    <TextAreaField label={isAr ? "وصف الكارت (إنجليزي)" : "Card Description (English)"} value={card.descEn} onChange={(value) => setSettings((current) => ({ ...current, featuresCards: current.featuresCards.map((item) => item.id === card.id ? { ...item, descEn: value } : item) }))} />
+                    <TextAreaField label={isAr ? "وصف الكارت (عربي)" : "Card Description (Arabic)"} value={card.descAr} onChange={(value) => setSettings((current) => ({ ...current, featuresCards: current.featuresCards.map((item) => item.id === card.id ? { ...item, descAr: value } : item) }))} />
                     <div className="absolute right-3 top-3 flex gap-1 rounded-xl border border-slate-100 bg-white p-1 shadow-sm">
-                      <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø¹Ù„Ù‰" : "Move up"} disabled={index === 0} icon={ArrowUp} onClick={() => setSettings((current) => {
+                      <IconButton label={isAr ? "تحريك لأعلى" : "Move up"} disabled={index === 0} icon={ArrowUp} onClick={() => setSettings((current) => {
                         const cards = [...current.featuresCards]
                         const [moved] = cards.splice(index, 1)
                         cards.splice(index - 1, 0, moved)
                         return { ...current, featuresCards: cards }
                       })} />
-                      <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø³ÙÙ„" : "Move down"} disabled={index === settings.featuresCards.length - 1} icon={ArrowDown} onClick={() => setSettings((current) => {
+                      <IconButton label={isAr ? "تحريك لأسفل" : "Move down"} disabled={index === settings.featuresCards.length - 1} icon={ArrowDown} onClick={() => setSettings((current) => {
                         const cards = [...current.featuresCards]
                         const [moved] = cards.splice(index, 1)
                         cards.splice(index + 1, 0, moved)
@@ -1084,7 +1082,7 @@ export function SiteContentSettingsPanel() {
               <div className="rounded-[24px] bg-white p-4 shadow-sm">
                 <div className="rounded-[22px] bg-[hsl(var(--primary)/0.05)] p-5 shadow-sm ring-1 ring-slate-100">
                   {!settings.featuresSection.enabled ? (
-                    <div className="rounded-2xl bg-white p-5 text-sm font-bold text-slate-500 shadow-sm">{isAr ? "Ù‚Ø³Ù… Ø§Ù„Ù…Ù…ÙŠØ²Ø§Øª Ù…Ø®ÙÙŠ Ø­Ø§Ù„ÙŠØ§" : "Features section is currently hidden"}</div>
+                    <div className="rounded-2xl bg-white p-5 text-sm font-bold text-slate-500 shadow-sm">{isAr ? "قسم المميزات مخفي حاليا" : "Features section is currently hidden"}</div>
                   ) : (
                     <>
                       <div className="text-center">
@@ -1115,21 +1113,21 @@ export function SiteContentSettingsPanel() {
 <TabsContent value="benefits" className="mt-0">
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4">
               <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Title (English)"} value={settings.homepage.whyUsTitleEn} onChange={(value) => updateHomepage("whyUsTitleEn", value)} />
-                <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† (Ø¹Ø±Ø¨ÙŠ)" : "Title (Arabic)"} value={settings.homepage.whyUsTitleAr} onChange={(value) => updateHomepage("whyUsTitleAr", value)} />
-                <TextAreaField label={isAr ? "ÙˆØµÙ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Subtitle (English)"} value={settings.homepage.whyUsSubtitleEn} onChange={(value) => updateHomepage("whyUsSubtitleEn", value)} />
-                <TextAreaField label={isAr ? "ÙˆØµÙ (Ø¹Ø±Ø¨ÙŠ)" : "Subtitle (Arabic)"} value={settings.homepage.whyUsSubtitleAr} onChange={(value) => updateHomepage("whyUsSubtitleAr", value)} />
+                <Field label={isAr ? "عنوان (إنجليزي)" : "Title (English)"} value={settings.homepage.whyUsTitleEn} onChange={(value) => updateHomepage("whyUsTitleEn", value)} />
+                <Field label={isAr ? "عنوان (عربي)" : "Title (Arabic)"} value={settings.homepage.whyUsTitleAr} onChange={(value) => updateHomepage("whyUsTitleAr", value)} />
+                <TextAreaField label={isAr ? "وصف (إنجليزي)" : "Subtitle (English)"} value={settings.homepage.whyUsSubtitleEn} onChange={(value) => updateHomepage("whyUsSubtitleEn", value)} />
+                <TextAreaField label={isAr ? "وصف (عربي)" : "Subtitle (Arabic)"} value={settings.homepage.whyUsSubtitleAr} onChange={(value) => updateHomepage("whyUsSubtitleAr", value)} />
               </div>
               <div className="space-y-3 rounded-[22px] bg-white p-4 shadow-sm">
-                <h4 className="font-extrabold text-[#17172f]">{isAr ? "Ø§Ù„Ø¨Ø·Ø§Ù‚Ø§Øª" : "Cards"}</h4>
+                <h4 className="font-extrabold text-[#17172f]">{isAr ? "البطاقات" : "Cards"}</h4>
                 {settings.whyUsCards.map((card, index) => (
                   <div key={card.id} className="grid gap-3 rounded-[22px] border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-2 relative group">
-                    <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ø¨Ø·Ø§Ù‚Ø© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Card Title (English)"} value={card.titleEn} onChange={(value) => setSettings(s => ({ ...s, whyUsCards: s.whyUsCards.map(c => c.id === card.id ? { ...c, titleEn: value } : c) }))} />
-                    <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ø¨Ø·Ø§Ù‚Ø© (Ø¹Ø±Ø¨ÙŠ)" : "Card Title (Arabic)"} value={card.titleAr} onChange={(value) => setSettings(s => ({ ...s, whyUsCards: s.whyUsCards.map(c => c.id === card.id ? { ...c, titleAr: value } : c) }))} />
-                    <TextAreaField label={isAr ? "ÙˆØµÙ Ø§Ù„Ø¨Ø·Ø§Ù‚Ø© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Card Desc (English)"} value={card.descEn} onChange={(value) => setSettings(s => ({ ...s, whyUsCards: s.whyUsCards.map(c => c.id === card.id ? { ...c, descEn: value } : c) }))} />
-                    <TextAreaField label={isAr ? "ÙˆØµÙ Ø§Ù„Ø¨Ø·Ø§Ù‚Ø© (Ø¹Ø±Ø¨ÙŠ)" : "Card Desc (Arabic)"} value={card.descAr} onChange={(value) => setSettings(s => ({ ...s, whyUsCards: s.whyUsCards.map(c => c.id === card.id ? { ...c, descAr: value } : c) }))} />
+                    <Field label={isAr ? "عنوان البطاقة (إنجليزي)" : "Card Title (English)"} value={card.titleEn} onChange={(value) => setSettings(s => ({ ...s, whyUsCards: s.whyUsCards.map(c => c.id === card.id ? { ...c, titleEn: value } : c) }))} />
+                    <Field label={isAr ? "عنوان البطاقة (عربي)" : "Card Title (Arabic)"} value={card.titleAr} onChange={(value) => setSettings(s => ({ ...s, whyUsCards: s.whyUsCards.map(c => c.id === card.id ? { ...c, titleAr: value } : c) }))} />
+                    <TextAreaField label={isAr ? "وصف البطاقة (إنجليزي)" : "Card Desc (English)"} value={card.descEn} onChange={(value) => setSettings(s => ({ ...s, whyUsCards: s.whyUsCards.map(c => c.id === card.id ? { ...c, descEn: value } : c) }))} />
+                    <TextAreaField label={isAr ? "وصف البطاقة (عربي)" : "Card Desc (Arabic)"} value={card.descAr} onChange={(value) => setSettings(s => ({ ...s, whyUsCards: s.whyUsCards.map(c => c.id === card.id ? { ...c, descAr: value } : c) }))} />
                     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white p-1 rounded-xl shadow-sm border border-slate-100">
-                      <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø¹Ù„Ù‰" : "Move up"} disabled={index === 0} onClick={() => {
+                      <IconButton label={isAr ? "تحريك لأعلى" : "Move up"} disabled={index === 0} onClick={() => {
                         setSettings(s => {
                           const newCards = [...s.whyUsCards];
                           const [item] = newCards.splice(index, 1);
@@ -1137,7 +1135,7 @@ export function SiteContentSettingsPanel() {
                           return { ...s, whyUsCards: newCards };
                         });
                       }} icon={ArrowUp} />
-                      <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø³ÙÙ„" : "Move down"} disabled={index === settings.whyUsCards.length - 1} onClick={() => {
+                      <IconButton label={isAr ? "تحريك لأسفل" : "Move down"} disabled={index === settings.whyUsCards.length - 1} onClick={() => {
                         setSettings(s => {
                           const newCards = [...s.whyUsCards];
                           const [item] = newCards.splice(index, 1);
@@ -1149,9 +1147,9 @@ export function SiteContentSettingsPanel() {
                     </div>
                   </div>
                 ))}
-                <Button variant="outline" onClick={() => setSettings(s => ({ ...s, whyUsCards: [...s.whyUsCards, { id: `card-${Date.now()}`, titleEn: "New Card", titleAr: "Ø¨Ø·Ø§Ù‚Ø© Ø¬Ø¯ÙŠØ¯Ø©", descEn: "", descAr: "" }] }))} className="h-11 rounded-2xl font-extrabold w-full">
+                <Button variant="outline" onClick={() => setSettings(s => ({ ...s, whyUsCards: [...s.whyUsCards, { id: `card-${Date.now()}`, titleEn: "New Card", titleAr: "بطاقة جديدة", descEn: "", descAr: "" }] }))} className="h-11 rounded-2xl font-extrabold w-full">
                   <Plus className="h-4 w-4" />
-                  {isAr ? "Ø¥Ø¶Ø§ÙØ© Ø¨Ø·Ø§Ù‚Ø© Ø¬Ø¯ÙŠØ¯Ø©" : "Add new card"}
+                  {isAr ? "إضافة بطاقة جديدة" : "Add new card"}
                 </Button>
               </div>
             </div>
@@ -1159,12 +1157,12 @@ export function SiteContentSettingsPanel() {
 <TabsContent value="available-events" className="mt-0">
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4">
               <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Title (English)"} value={settings.homepage.showcaseTitleEn} onChange={(value) => updateHomepage("showcaseTitleEn", value)} />
-                <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† (Ø¹Ø±Ø¨ÙŠ)" : "Title (Arabic)"} value={settings.homepage.showcaseTitleAr} onChange={(value) => updateHomepage("showcaseTitleAr", value)} />
-                <TextAreaField label={isAr ? "ÙˆØµÙ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Subtitle (English)"} value={settings.homepage.showcaseDescEn} onChange={(value) => updateHomepage("showcaseDescEn", value)} />
-                <TextAreaField label={isAr ? "ÙˆØµÙ (Ø¹Ø±Ø¨ÙŠ)" : "Subtitle (Arabic)"} value={settings.homepage.showcaseDescAr} onChange={(value) => updateHomepage("showcaseDescAr", value)} />
-                <Field label={isAr ? "Ø²Ø± Ø§Ù„Ø¹Ø±Ø¶ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "CTA (English)"} value={settings.homepage.showcaseCtaEn} onChange={(value) => updateHomepage("showcaseCtaEn", value)} />
-                <Field label={isAr ? "Ø²Ø± Ø§Ù„Ø¹Ø±Ø¶ (Ø¹Ø±Ø¨ÙŠ)" : "CTA (Arabic)"} value={settings.homepage.showcaseCtaAr} onChange={(value) => updateHomepage("showcaseCtaAr", value)} />
+                <Field label={isAr ? "عنوان (إنجليزي)" : "Title (English)"} value={settings.homepage.showcaseTitleEn} onChange={(value) => updateHomepage("showcaseTitleEn", value)} />
+                <Field label={isAr ? "عنوان (عربي)" : "Title (Arabic)"} value={settings.homepage.showcaseTitleAr} onChange={(value) => updateHomepage("showcaseTitleAr", value)} />
+                <TextAreaField label={isAr ? "وصف (إنجليزي)" : "Subtitle (English)"} value={settings.homepage.showcaseDescEn} onChange={(value) => updateHomepage("showcaseDescEn", value)} />
+                <TextAreaField label={isAr ? "وصف (عربي)" : "Subtitle (Arabic)"} value={settings.homepage.showcaseDescAr} onChange={(value) => updateHomepage("showcaseDescAr", value)} />
+                <Field label={isAr ? "زر العرض (إنجليزي)" : "CTA (English)"} value={settings.homepage.showcaseCtaEn} onChange={(value) => updateHomepage("showcaseCtaEn", value)} />
+                <Field label={isAr ? "زر العرض (عربي)" : "CTA (Arabic)"} value={settings.homepage.showcaseCtaAr} onChange={(value) => updateHomepage("showcaseCtaAr", value)} />
               </div>
             </div>
           </TabsContent>
@@ -1172,9 +1170,9 @@ export function SiteContentSettingsPanel() {
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 xl:grid-cols-[1fr_420px]">
               <div className="space-y-5">
                 <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Events That Inspire - Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ" : "Events That Inspire - Main Content"}</h3>
-                  <ToggleCard label={isAr ? "ØªÙ…ÙƒÙŠÙ† Ø§Ù„Ù‚Ø³Ù…" : "Enable section"} checked={!!settings.homepage.eventsInspireSection.enabled} onChange={(value) => updateEventsInspire({ enabled: value })} />
-                  <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø®Ø· Ø§Ù„Ø²Ø®Ø±ÙÙŠ" : "Show accent line"} checked={!!settings.homepage.eventsInspireSection.showAccentLine} onChange={(value) => updateEventsInspire({ showAccentLine: value })} />
+                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Events That Inspire - المحتوى الرئيسي" : "Events That Inspire - Main Content"}</h3>
+                  <ToggleCard label={isAr ? "تمكين القسم" : "Enable section"} checked={!!settings.homepage.eventsInspireSection.enabled} onChange={(value) => updateEventsInspire({ enabled: value })} />
+                  <ToggleCard label={isAr ? "إظهار الخط الزخرفي" : "Show accent line"} checked={!!settings.homepage.eventsInspireSection.showAccentLine} onChange={(value) => updateEventsInspire({ showAccentLine: value })} />
                   <Field label={isAr ? "Eyebrow (English)" : "Eyebrow (English)"} value={settings.homepage.eventsInspireSection.eyebrowEn} onChange={(value) => updateEventsInspire({ eyebrowEn: value })} />
                   <div className="space-y-1.5">
                     <Label className="text-xs font-bold text-slate-500">{isAr ? "Eyebrow (Arabic)" : "Eyebrow (Arabic)"}</Label>
@@ -1196,7 +1194,7 @@ export function SiteContentSettingsPanel() {
                 <div className="space-y-3 rounded-[22px] bg-white p-4 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <h3 className="text-lg font-black text-[#17172f]">{isAr ? "Horizontal Timeline" : "Horizontal Timeline"}</h3>
-                    <ToggleCard label={isAr ? "ØªÙ…ÙƒÙŠÙ† Ø§Ù„ØªØ§ÙŠÙ…Ù„Ø§ÙŠÙ†" : "Enable timeline"} checked={!!settings.homepage.eventsInspireSection.timeline.enabled} onChange={(value) => updateEventsInspireTimeline({ enabled: value })} />
+                    <ToggleCard label={isAr ? "تمكين التايملاين" : "Enable timeline"} checked={!!settings.homepage.eventsInspireSection.timeline.enabled} onChange={(value) => updateEventsInspireTimeline({ enabled: value })} />
                   </div>
                   {settings.homepage.eventsInspireSection.timeline.items.map((item, index) => (
                     <div key={item.id} className="relative grid gap-3 rounded-[20px] border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-3">
@@ -1216,13 +1214,13 @@ export function SiteContentSettingsPanel() {
                         <Textarea value={item.descriptionAr} onChange={(event) => updateEventsInspireTimelineItems(settings.homepage.eventsInspireSection.timeline.items.map((entry) => entry.id === item.id ? { ...entry, descriptionAr: event.target.value } : entry))} dir="rtl" className="rounded-xl bg-slate-50/50 text-right" />
                       </div>
                       <div className="absolute right-3 top-3 flex gap-1 rounded-xl border border-slate-100 bg-white p-1 shadow-sm">
-                        <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø¹Ù„Ù‰" : "Move up"} disabled={index === 0} icon={ArrowUp} onClick={() => {
+                        <IconButton label={isAr ? "تحريك لأعلى" : "Move up"} disabled={index === 0} icon={ArrowUp} onClick={() => {
                           const items = [...settings.homepage.eventsInspireSection.timeline.items]
                           const [moved] = items.splice(index, 1)
                           items.splice(index - 1, 0, moved)
                           updateEventsInspireTimelineItems(items)
                         }} />
-                        <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø³ÙÙ„" : "Move down"} disabled={index === settings.homepage.eventsInspireSection.timeline.items.length - 1} icon={ArrowDown} onClick={() => {
+                        <IconButton label={isAr ? "تحريك لأسفل" : "Move down"} disabled={index === settings.homepage.eventsInspireSection.timeline.items.length - 1} icon={ArrowDown} onClick={() => {
                           const items = [...settings.homepage.eventsInspireSection.timeline.items]
                           const [moved] = items.splice(index, 1)
                           items.splice(index + 1, 0, moved)
@@ -1235,18 +1233,18 @@ export function SiteContentSettingsPanel() {
                   <Button
                     variant="outline"
                     disabled={settings.homepage.eventsInspireSection.timeline.items.length >= 6}
-                    onClick={() => updateEventsInspireTimelineItems([...settings.homepage.eventsInspireSection.timeline.items, { id: `inspire-${Date.now()}`, labelEn: "04", labelAr: "04", titleEn: "New step", titleAr: "Ø®Ø·ÙˆØ© Ø¬Ø¯ÙŠØ¯Ø©", descriptionEn: "", descriptionAr: "" }])}
+                    onClick={() => updateEventsInspireTimelineItems([...settings.homepage.eventsInspireSection.timeline.items, { id: `inspire-${Date.now()}`, labelEn: "04", labelAr: "04", titleEn: "New step", titleAr: "خطوة جديدة", descriptionEn: "", descriptionAr: "" }])}
                     className="h-11 w-full rounded-2xl font-extrabold"
                   >
                     <Plus className="h-4 w-4" />
-                    {isAr ? "Ø¥Ø¶Ø§ÙØ© Ø¹Ù†ØµØ± Timeline" : "Add timeline item"}
+                    {isAr ? "إضافة عنصر Timeline" : "Add timeline item"}
                   </Button>
                 </div>
 
                 <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
                   <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "CTA Button" : "CTA Button"}</h3>
-                  <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø²Ø±" : "Show CTA"} checked={!!settings.homepage.eventsInspireSection.cta.enabled} onChange={(value) => updateEventsInspireCta({ enabled: value })} />
-                  <ToggleCard label={isAr ? "ÙØªØ­ ÙÙŠ ØªØ¨ÙˆÙŠØ¨ Ø¬Ø¯ÙŠØ¯" : "Open in new tab"} checked={!!settings.homepage.eventsInspireSection.cta.openInNewTab} onChange={(value) => updateEventsInspireCta({ openInNewTab: value })} />
+                  <ToggleCard label={isAr ? "إظهار الزر" : "Show CTA"} checked={!!settings.homepage.eventsInspireSection.cta.enabled} onChange={(value) => updateEventsInspireCta({ enabled: value })} />
+                  <ToggleCard label={isAr ? "فتح في تبويب جديد" : "Open in new tab"} checked={!!settings.homepage.eventsInspireSection.cta.openInNewTab} onChange={(value) => updateEventsInspireCta({ openInNewTab: value })} />
                   <Field label={isAr ? "Label EN" : "Label EN"} value={settings.homepage.eventsInspireSection.cta.labelEn} onChange={(value) => updateEventsInspireCta({ labelEn: value })} />
                   <div className="space-y-1.5">
                     <Label className="text-xs font-bold text-slate-500">Label AR</Label>
@@ -1254,14 +1252,14 @@ export function SiteContentSettingsPanel() {
                   </div>
                   <Field label={isAr ? "CTA URL" : "CTA URL"} value={settings.homepage.eventsInspireSection.cta.url} onChange={(value) => updateEventsInspireCta({ url: value })} />
                   <div className="space-y-2">
-                    <Label className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">{isAr ? "Ù†ÙˆØ¹ Ø§Ù„Ø±Ø§Ø¨Ø·" : "Link type"}</Label>
+                    <Label className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">{isAr ? "نوع الرابط" : "Link type"}</Label>
                     <Select value={settings.homepage.eventsInspireSection.cta.linkType} onValueChange={(value) => updateEventsInspireCta({ linkType: value as "internal" | "external" })}>
                       <SelectTrigger className="h-12 rounded-2xl border-slate-200 bg-slate-50 font-extrabold">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="internal">{isAr ? "Ø¯Ø§Ø®Ù„ÙŠ" : "Internal"}</SelectItem>
-                        <SelectItem value="external">{isAr ? "Ø®Ø§Ø±Ø¬ÙŠ" : "External"}</SelectItem>
+                        <SelectItem value="internal">{isAr ? "داخلي" : "Internal"}</SelectItem>
+                        <SelectItem value="external">{isAr ? "خارجي" : "External"}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1272,7 +1270,7 @@ export function SiteContentSettingsPanel() {
                   {settings.homepage.eventsInspireSection.gallery.slice(0, 4).map((image, index) => (
                     <div key={image.id} className="grid gap-3 rounded-[20px] border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-2">
                       <ImageUrlDropzone
-                        label={`${isAr ? "Ø§Ù„ØµÙˆØ±Ø©" : "Image"} ${index + 1}`}
+                        label={`${isAr ? "الصورة" : "Image"} ${index + 1}`}
                         value={image.imageUrl}
                         onChange={(value) => updateEventsInspireGallery(settings.homepage.eventsInspireSection.gallery.map((entry) => entry.id === image.id ? { ...entry, imageUrl: value } : entry))}
                         previewClassName="bg-slate-50"
@@ -1284,7 +1282,7 @@ export function SiteContentSettingsPanel() {
                           <Input value={image.altAr} onChange={(event) => updateEventsInspireGallery(settings.homepage.eventsInspireSection.gallery.map((entry) => entry.id === image.id ? { ...entry, altAr: event.target.value } : entry))} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">{isAr ? "Ù…ÙˆØ¶Ø¹ Ø§Ù„ØªØ±ÙƒÙŠØ²" : "Focal position"}</Label>
+                          <Label className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">{isAr ? "موضع التركيز" : "Focal position"}</Label>
                           <Select value={image.focalPosition} onValueChange={(value) => updateEventsInspireGallery(settings.homepage.eventsInspireSection.gallery.map((entry) => entry.id === image.id ? { ...entry, focalPosition: value as HomepageGalleryImage["focalPosition"] } : entry))}>
                             <SelectTrigger className="h-12 rounded-2xl border-slate-200 bg-slate-50 font-extrabold">
                               <SelectValue />
@@ -1298,7 +1296,7 @@ export function SiteContentSettingsPanel() {
                         </div>
                         <Button variant="outline" onClick={() => updateEventsInspireGallery(settings.homepage.eventsInspireSection.gallery.map((entry) => entry.id === image.id ? { ...entry, imageUrl: "" } : entry))} className="h-10 rounded-2xl font-extrabold text-red-600">
                           <Trash2 className="h-4 w-4" />
-                          {isAr ? "Ø¥Ø²Ø§Ù„Ø© Ø§Ù„ØµÙˆØ±Ø©" : "Remove image"}
+                          {isAr ? "إزالة الصورة" : "Remove image"}
                         </Button>
                       </div>
                     </div>
@@ -1310,7 +1308,7 @@ export function SiteContentSettingsPanel() {
                 <div className={cn("rounded-[22px] bg-slate-50 p-4", isAr && "text-right")} dir={isAr ? "rtl" : "ltr"}>
                   {!settings.homepage.eventsInspireSection.enabled ? (
                     <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white text-sm font-extrabold text-slate-400">
-                      {isAr ? "Ø§Ù„Ù‚Ø³Ù… Ù…Ø®ÙÙŠ Ø­Ø§Ù„ÙŠØ§" : "Section is currently hidden"}
+                      {isAr ? "القسم مخفي حاليا" : "Section is currently hidden"}
                     </div>
                   ) : (
                     <>
@@ -1365,38 +1363,38 @@ export function SiteContentSettingsPanel() {
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 xl:grid-cols-[1fr_380px]">
               <div className="space-y-5">
                 <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Ù…Ø­ØªÙˆÙ‰ Request Setup" : "Request Setup Content"}</h3>
-                  <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ù‚Ø³Ù…" : "Enable section"} checked={!!settings.homepageRequestSetup.enabled} onChange={(value) => updateHomepageRequestSetup({ enabled: value })} />
-                  <Field label={isAr ? "Eyebrow (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Eyebrow (English)"} value={settings.homepageRequestSetup.eyebrowEn} onChange={(value) => updateHomepageRequestSetup({ eyebrowEn: value })} />
-                  <Field label={isAr ? "Eyebrow (Ø¹Ø±Ø¨ÙŠ)" : "Eyebrow (Arabic)"} value={settings.homepageRequestSetup.eyebrowAr} onChange={(value) => updateHomepageRequestSetup({ eyebrowAr: value })} />
-                  <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Title (English)"} value={settings.homepageRequestSetup.titleEn} onChange={(value) => updateHomepageRequestSetup({ titleEn: value })} />
-                  <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¹Ø±Ø¨ÙŠ)" : "Title (Arabic)"} value={settings.homepageRequestSetup.titleAr} onChange={(value) => updateHomepageRequestSetup({ titleAr: value })} />
-                  <TextAreaField label={isAr ? "Ø§Ù„ÙˆØµÙ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Description (English)"} value={settings.homepageRequestSetup.descriptionEn} onChange={(value) => updateHomepageRequestSetup({ descriptionEn: value })} />
-                  <TextAreaField label={isAr ? "Ø§Ù„ÙˆØµÙ (Ø¹Ø±Ø¨ÙŠ)" : "Description (Arabic)"} value={settings.homepageRequestSetup.descriptionAr} onChange={(value) => updateHomepageRequestSetup({ descriptionAr: value })} />
-                  <TextAreaField label={isAr ? "Ù†Øµ Ù…Ø³Ø§Ø¹Ø¯ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Supporting text (English)"} value={settings.homepageRequestSetup.supportingTextEn} onChange={(value) => updateHomepageRequestSetup({ supportingTextEn: value })} />
-                  <TextAreaField label={isAr ? "Ù†Øµ Ù…Ø³Ø§Ø¹Ø¯ (Ø¹Ø±Ø¨ÙŠ)" : "Supporting text (Arabic)"} value={settings.homepageRequestSetup.supportingTextAr} onChange={(value) => updateHomepageRequestSetup({ supportingTextAr: value })} />
+                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "محتوى Request Setup" : "Request Setup Content"}</h3>
+                  <ToggleCard label={isAr ? "إظهار القسم" : "Enable section"} checked={!!settings.homepageRequestSetup.enabled} onChange={(value) => updateHomepageRequestSetup({ enabled: value })} />
+                  <Field label={isAr ? "Eyebrow (إنجليزي)" : "Eyebrow (English)"} value={settings.homepageRequestSetup.eyebrowEn} onChange={(value) => updateHomepageRequestSetup({ eyebrowEn: value })} />
+                  <Field label={isAr ? "Eyebrow (عربي)" : "Eyebrow (Arabic)"} value={settings.homepageRequestSetup.eyebrowAr} onChange={(value) => updateHomepageRequestSetup({ eyebrowAr: value })} />
+                  <Field label={isAr ? "العنوان (إنجليزي)" : "Title (English)"} value={settings.homepageRequestSetup.titleEn} onChange={(value) => updateHomepageRequestSetup({ titleEn: value })} />
+                  <Field label={isAr ? "العنوان (عربي)" : "Title (Arabic)"} value={settings.homepageRequestSetup.titleAr} onChange={(value) => updateHomepageRequestSetup({ titleAr: value })} />
+                  <TextAreaField label={isAr ? "الوصف (إنجليزي)" : "Description (English)"} value={settings.homepageRequestSetup.descriptionEn} onChange={(value) => updateHomepageRequestSetup({ descriptionEn: value })} />
+                  <TextAreaField label={isAr ? "الوصف (عربي)" : "Description (Arabic)"} value={settings.homepageRequestSetup.descriptionAr} onChange={(value) => updateHomepageRequestSetup({ descriptionAr: value })} />
+                  <TextAreaField label={isAr ? "نص مساعد (إنجليزي)" : "Supporting text (English)"} value={settings.homepageRequestSetup.supportingTextEn} onChange={(value) => updateHomepageRequestSetup({ supportingTextEn: value })} />
+                  <TextAreaField label={isAr ? "نص مساعد (عربي)" : "Supporting text (Arabic)"} value={settings.homepageRequestSetup.supportingTextAr} onChange={(value) => updateHomepageRequestSetup({ supportingTextAr: value })} />
                 </div>
 
                 <div className="space-y-4 rounded-[22px] bg-white p-4 shadow-sm">
-                  <h3 className="text-lg font-black text-[#17172f]">{isAr ? "ÙƒØ±ÙˆØª Ø§Ù„Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª Ø¨Ø¬Ø§Ù†Ø¨ Ø§Ù„ÙÙˆØ±Ù…" : "Stat Cards Beside Form"}</h3>
+                  <h3 className="text-lg font-black text-[#17172f]">{isAr ? "كروت الإحصائيات بجانب الفورم" : "Stat Cards Beside Form"}</h3>
                   {settings.homepageRequestSetup.statCards.map((card, index) => (
                     <div key={card.id} className="grid gap-3 rounded-[20px] border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-[0.7fr_1fr_1fr_auto]">
-                      <Field label={isAr ? "Ø§Ù„Ù‚ÙŠÙ…Ø©" : "Value"} value={card.value} onChange={(value) => updateHomepageRequestSetupStats(settings.homepageRequestSetup.statCards.map((item) => item.id === card.id ? { ...item, value } : item))} />
-                      <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Label (English)"} value={card.labelEn} onChange={(value) => updateHomepageRequestSetupStats(settings.homepageRequestSetup.statCards.map((item) => item.id === card.id ? { ...item, labelEn: value } : item))} />
-                      <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¹Ø±Ø¨ÙŠ)" : "Label (Arabic)"} value={card.labelAr} onChange={(value) => updateHomepageRequestSetupStats(settings.homepageRequestSetup.statCards.map((item) => item.id === card.id ? { ...item, labelAr: value } : item))} />
+                      <Field label={isAr ? "القيمة" : "Value"} value={card.value} onChange={(value) => updateHomepageRequestSetupStats(settings.homepageRequestSetup.statCards.map((item) => item.id === card.id ? { ...item, value } : item))} />
+                      <Field label={isAr ? "العنوان (إنجليزي)" : "Label (English)"} value={card.labelEn} onChange={(value) => updateHomepageRequestSetupStats(settings.homepageRequestSetup.statCards.map((item) => item.id === card.id ? { ...item, labelEn: value } : item))} />
+                      <Field label={isAr ? "العنوان (عربي)" : "Label (Arabic)"} value={card.labelAr} onChange={(value) => updateHomepageRequestSetupStats(settings.homepageRequestSetup.statCards.map((item) => item.id === card.id ? { ...item, labelAr: value } : item))} />
                       <div className="flex items-end">
                         <IconButton label={adminT(language, "common.delete")} onClick={() => updateHomepageRequestSetupStats(settings.homepageRequestSetup.statCards.filter((_, i) => i !== index))} icon={Trash2} tone="danger" />
                       </div>
                     </div>
                   ))}
-                  <Button variant="outline" onClick={() => updateHomepageRequestSetupStats([...(settings.homepageRequestSetup.statCards || []), { id: `setup-stat-${Date.now()}`, value: "0+", labelEn: "New stat", labelAr: "Ø¥Ø­ØµØ§Ø¦ÙŠØ© Ø¬Ø¯ÙŠØ¯Ø©" }])} className="h-11 rounded-2xl font-extrabold w-full" disabled={(settings.homepageRequestSetup.statCards || []).length >= 4}>
+                  <Button variant="outline" onClick={() => updateHomepageRequestSetupStats([...(settings.homepageRequestSetup.statCards || []), { id: `setup-stat-${Date.now()}`, value: "0+", labelEn: "New stat", labelAr: "إحصائية جديدة" }])} className="h-11 rounded-2xl font-extrabold w-full" disabled={(settings.homepageRequestSetup.statCards || []).length >= 4}>
                     <Plus className="h-4 w-4" />
-                    {isAr ? "Ø¥Ø¶Ø§ÙØ© ÙƒØ§Ø±Øª" : "Add stat card"}
+                    {isAr ? "إضافة كارت" : "Add stat card"}
                   </Button>
                 </div>
 
                 <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Labels Ø§Ù„ÙÙˆØ±Ù… Ø§Ù„Ø¢Ù…Ù†Ø©" : "Safe Form Labels"}</h3>
+                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Labels الفورم الآمنة" : "Safe Form Labels"}</h3>
                   {[0, 1, 2].map((index) => (
                     <div key={`setup-step-${index}`} className="grid gap-3 rounded-[18px] border border-slate-100 p-3 md:grid-cols-2 md:col-span-2">
                       <Field label={`${isAr ? "Step EN" : "Step label EN"} #${index + 1}`} value={settings.homepageRequestSetup.stepsEn[index]} onChange={(value) => {
@@ -1411,29 +1409,29 @@ export function SiteContentSettingsPanel() {
                       }} />
                     </div>
                   ))}
-                  <Field label={isAr ? "Ø²Ø± Ø§Ù„ØªØ§Ù„ÙŠ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Next button (English)"} value={settings.homepageRequestSetup.nextLabelEn} onChange={(value) => updateHomepageRequestSetup({ nextLabelEn: value })} />
-                  <Field label={isAr ? "Ø²Ø± Ø§Ù„ØªØ§Ù„ÙŠ (Ø¹Ø±Ø¨ÙŠ)" : "Next button (Arabic)"} value={settings.homepageRequestSetup.nextLabelAr} onChange={(value) => updateHomepageRequestSetup({ nextLabelAr: value })} />
-                  <Field label={isAr ? "Ø²Ø± Ø§Ù„Ø³Ø§Ø¨Ù‚ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Back button (English)"} value={settings.homepageRequestSetup.backLabelEn} onChange={(value) => updateHomepageRequestSetup({ backLabelEn: value })} />
-                  <Field label={isAr ? "Ø²Ø± Ø§Ù„Ø³Ø§Ø¨Ù‚ (Ø¹Ø±Ø¨ÙŠ)" : "Back button (Arabic)"} value={settings.homepageRequestSetup.backLabelAr} onChange={(value) => updateHomepageRequestSetup({ backLabelAr: value })} />
-                  <Field label={isAr ? "Ø²Ø± Ø§Ù„Ø¥Ø±Ø³Ø§Ù„ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Submit button (English)"} value={settings.homepageRequestSetup.submitLabelEn} onChange={(value) => updateHomepageRequestSetup({ submitLabelEn: value })} />
-                  <Field label={isAr ? "Ø²Ø± Ø§Ù„Ø¥Ø±Ø³Ø§Ù„ (Ø¹Ø±Ø¨ÙŠ)" : "Submit button (Arabic)"} value={settings.homepageRequestSetup.submitLabelAr} onChange={(value) => updateHomepageRequestSetup({ submitLabelAr: value })} />
-                  <Field label={isAr ? "Ø­Ø§Ù„Ø© Ø§Ù„Ø¥Ø±Ø³Ø§Ù„ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Sending label (English)"} value={settings.homepageRequestSetup.sendingLabelEn} onChange={(value) => updateHomepageRequestSetup({ sendingLabelEn: value })} />
-                  <Field label={isAr ? "Ø­Ø§Ù„Ø© Ø§Ù„Ø¥Ø±Ø³Ø§Ù„ (Ø¹Ø±Ø¨ÙŠ)" : "Sending label (Arabic)"} value={settings.homepageRequestSetup.sendingLabelAr} onChange={(value) => updateHomepageRequestSetup({ sendingLabelAr: value })} />
+                  <Field label={isAr ? "زر التالي (إنجليزي)" : "Next button (English)"} value={settings.homepageRequestSetup.nextLabelEn} onChange={(value) => updateHomepageRequestSetup({ nextLabelEn: value })} />
+                  <Field label={isAr ? "زر التالي (عربي)" : "Next button (Arabic)"} value={settings.homepageRequestSetup.nextLabelAr} onChange={(value) => updateHomepageRequestSetup({ nextLabelAr: value })} />
+                  <Field label={isAr ? "زر السابق (إنجليزي)" : "Back button (English)"} value={settings.homepageRequestSetup.backLabelEn} onChange={(value) => updateHomepageRequestSetup({ backLabelEn: value })} />
+                  <Field label={isAr ? "زر السابق (عربي)" : "Back button (Arabic)"} value={settings.homepageRequestSetup.backLabelAr} onChange={(value) => updateHomepageRequestSetup({ backLabelAr: value })} />
+                  <Field label={isAr ? "زر الإرسال (إنجليزي)" : "Submit button (English)"} value={settings.homepageRequestSetup.submitLabelEn} onChange={(value) => updateHomepageRequestSetup({ submitLabelEn: value })} />
+                  <Field label={isAr ? "زر الإرسال (عربي)" : "Submit button (Arabic)"} value={settings.homepageRequestSetup.submitLabelAr} onChange={(value) => updateHomepageRequestSetup({ submitLabelAr: value })} />
+                  <Field label={isAr ? "حالة الإرسال (إنجليزي)" : "Sending label (English)"} value={settings.homepageRequestSetup.sendingLabelEn} onChange={(value) => updateHomepageRequestSetup({ sendingLabelEn: value })} />
+                  <Field label={isAr ? "حالة الإرسال (عربي)" : "Sending label (Arabic)"} value={settings.homepageRequestSetup.sendingLabelAr} onChange={(value) => updateHomepageRequestSetup({ sendingLabelAr: value })} />
                 </div>
 
                 <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Ø±Ø³Ø§Ù„Ø© Ø§Ù„Ù†Ø¬Ø§Ø­" : "Success State"}</h3>
-                  <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù†Ø¬Ø§Ø­ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Success title (English)"} value={settings.homepageRequestSetup.successTitleEn} onChange={(value) => updateHomepageRequestSetup({ successTitleEn: value })} />
-                  <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù†Ø¬Ø§Ø­ (Ø¹Ø±Ø¨ÙŠ)" : "Success title (Arabic)"} value={settings.homepageRequestSetup.successTitleAr} onChange={(value) => updateHomepageRequestSetup({ successTitleAr: value })} />
-                  <TextAreaField label={isAr ? "ÙˆØµÙ Ø§Ù„Ù†Ø¬Ø§Ø­ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Success description (English)"} value={settings.homepageRequestSetup.successDescriptionEn} onChange={(value) => updateHomepageRequestSetup({ successDescriptionEn: value })} />
-                  <TextAreaField label={isAr ? "ÙˆØµÙ Ø§Ù„Ù†Ø¬Ø§Ø­ (Ø¹Ø±Ø¨ÙŠ)" : "Success description (Arabic)"} value={settings.homepageRequestSetup.successDescriptionAr} onChange={(value) => updateHomepageRequestSetup({ successDescriptionAr: value })} />
+                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "رسالة النجاح" : "Success State"}</h3>
+                  <Field label={isAr ? "عنوان النجاح (إنجليزي)" : "Success title (English)"} value={settings.homepageRequestSetup.successTitleEn} onChange={(value) => updateHomepageRequestSetup({ successTitleEn: value })} />
+                  <Field label={isAr ? "عنوان النجاح (عربي)" : "Success title (Arabic)"} value={settings.homepageRequestSetup.successTitleAr} onChange={(value) => updateHomepageRequestSetup({ successTitleAr: value })} />
+                  <TextAreaField label={isAr ? "وصف النجاح (إنجليزي)" : "Success description (English)"} value={settings.homepageRequestSetup.successDescriptionEn} onChange={(value) => updateHomepageRequestSetup({ successDescriptionEn: value })} />
+                  <TextAreaField label={isAr ? "وصف النجاح (عربي)" : "Success description (Arabic)"} value={settings.homepageRequestSetup.successDescriptionAr} onChange={(value) => updateHomepageRequestSetup({ successDescriptionAr: value })} />
                 </div>
               </div>
 
               <div className="rounded-[24px] bg-white p-4 shadow-sm">
                 <div className="rounded-[22px] bg-[hsl(var(--primary))] p-5 text-white shadow-sm">
                   {!settings.homepageRequestSetup.enabled ? (
-                    <div className="rounded-2xl bg-white/10 p-5 text-sm font-bold text-white/80">{isAr ? "Ø§Ù„Ù‚Ø³Ù… Ù…Ø®ÙÙŠ Ø­Ø§Ù„ÙŠØ§" : "Section is currently hidden"}</div>
+                    <div className="rounded-2xl bg-white/10 p-5 text-sm font-bold text-white/80">{isAr ? "القسم مخفي حاليا" : "Section is currently hidden"}</div>
                   ) : (
                     <>
                       <p className="text-xs font-black uppercase tracking-[0.16em] text-white/70">{isAr ? settings.homepageRequestSetup.eyebrowAr : settings.homepageRequestSetup.eyebrowEn}</p>
@@ -1458,7 +1456,7 @@ export function SiteContentSettingsPanel() {
                           ))}
                         </div>
                         <p className="mt-3 text-xs font-black uppercase tracking-[0.12em] text-slate-400">
-                          {isAr ? `Ø§Ù„Ø®Ø·ÙˆØ© 1 Ù…Ù† 3 - ${settings.homepageRequestSetup.stepsAr[0]}` : `Step 1 of 3 - ${settings.homepageRequestSetup.stepsEn[0]}`}
+                          {isAr ? `الخطوة 1 من 3 - ${settings.homepageRequestSetup.stepsAr[0]}` : `Step 1 of 3 - ${settings.homepageRequestSetup.stepsEn[0]}`}
                         </p>
                         <div className="mt-4 grid grid-cols-2 gap-2">
                           <div className="h-10 rounded-xl bg-slate-50" />
@@ -1477,28 +1475,28 @@ export function SiteContentSettingsPanel() {
 <TabsContent value="faq" className="mt-0">
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4">
               <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                <Field label={isAr ? "Ø§Ù„Ø¹Ø¨Ø§Ø±Ø© Ø§Ù„ØªÙ…Ù‡ÙŠØ¯ÙŠØ© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Eyebrow (English)"} value={settings.homepage.faqEyebrowEn} onChange={(value) => updateHomepage("faqEyebrowEn", value)} />
-                <Field label={isAr ? "Ø§Ù„Ø¹Ø¨Ø§Ø±Ø© Ø§Ù„ØªÙ…Ù‡ÙŠØ¯ÙŠØ© (Ø¹Ø±Ø¨ÙŠ)" : "Eyebrow (Arabic)"} value={settings.homepage.faqEyebrowAr} onChange={(value) => updateHomepage("faqEyebrowAr", value)} />
-                <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Title (English)"} value={settings.homepage.faqTitleEn} onChange={(value) => updateHomepage("faqTitleEn", value)} />
-                <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† (Ø¹Ø±Ø¨ÙŠ)" : "Title (Arabic)"} value={settings.homepage.faqTitleAr} onChange={(value) => updateHomepage("faqTitleAr", value)} />
-                <TextAreaField label={isAr ? "ÙˆØµÙ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Subtitle (English)"} value={settings.homepage.faqSubtitleEn} onChange={(value) => updateHomepage("faqSubtitleEn", value)} />
-                <TextAreaField label={isAr ? "ÙˆØµÙ (Ø¹Ø±Ø¨ÙŠ)" : "Subtitle (Arabic)"} value={settings.homepage.faqSubtitleAr} onChange={(value) => updateHomepage("faqSubtitleAr", value)} />
+                <Field label={isAr ? "العبارة التمهيدية (إنجليزي)" : "Eyebrow (English)"} value={settings.homepage.faqEyebrowEn} onChange={(value) => updateHomepage("faqEyebrowEn", value)} />
+                <Field label={isAr ? "العبارة التمهيدية (عربي)" : "Eyebrow (Arabic)"} value={settings.homepage.faqEyebrowAr} onChange={(value) => updateHomepage("faqEyebrowAr", value)} />
+                <Field label={isAr ? "عنوان (إنجليزي)" : "Title (English)"} value={settings.homepage.faqTitleEn} onChange={(value) => updateHomepage("faqTitleEn", value)} />
+                <Field label={isAr ? "عنوان (عربي)" : "Title (Arabic)"} value={settings.homepage.faqTitleAr} onChange={(value) => updateHomepage("faqTitleAr", value)} />
+                <TextAreaField label={isAr ? "وصف (إنجليزي)" : "Subtitle (English)"} value={settings.homepage.faqSubtitleEn} onChange={(value) => updateHomepage("faqSubtitleEn", value)} />
+                <TextAreaField label={isAr ? "وصف (عربي)" : "Subtitle (Arabic)"} value={settings.homepage.faqSubtitleAr} onChange={(value) => updateHomepage("faqSubtitleAr", value)} />
               </div>
               <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                <Field label={isAr ? "Ù†Øµ ÙˆØ§ØªØ³Ø§Ø¨ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "WhatsApp Text (English)"} value={settings.homepage.faqWhatsappTextEn} onChange={(value) => updateHomepage("faqWhatsappTextEn", value)} />
-                <Field label={isAr ? "Ù†Øµ ÙˆØ§ØªØ³Ø§Ø¨ (Ø¹Ø±Ø¨ÙŠ)" : "WhatsApp Text (Arabic)"} value={settings.homepage.faqWhatsappTextAr} onChange={(value) => updateHomepage("faqWhatsappTextAr", value)} />
-                <Field label={isAr ? "Ø±Ø§Ø¨Ø· ÙˆØ§ØªØ³Ø§Ø¨" : "WhatsApp URL"} value={settings.homepage.faqWhatsappUrl || ''} onChange={(value) => updateHomepage("faqWhatsappUrl", value)} className="md:col-span-2" />
+                <Field label={isAr ? "نص واتساب (إنجليزي)" : "WhatsApp Text (English)"} value={settings.homepage.faqWhatsappTextEn} onChange={(value) => updateHomepage("faqWhatsappTextEn", value)} />
+                <Field label={isAr ? "نص واتساب (عربي)" : "WhatsApp Text (Arabic)"} value={settings.homepage.faqWhatsappTextAr} onChange={(value) => updateHomepage("faqWhatsappTextAr", value)} />
+                <Field label={isAr ? "رابط واتساب" : "WhatsApp URL"} value={settings.homepage.faqWhatsappUrl || ''} onChange={(value) => updateHomepage("faqWhatsappUrl", value)} className="md:col-span-2" />
               </div>
               <div className="space-y-3 rounded-[22px] bg-white p-4 shadow-sm">
-                <h4 className="font-extrabold text-[#17172f]">{isAr ? "Ø§Ù„Ø£Ø³Ø¦Ù„Ø© ÙˆØ§Ù„Ø¥Ø¬Ø§Ø¨Ø§Øª" : "Questions & Answers"}</h4>
+                <h4 className="font-extrabold text-[#17172f]">{isAr ? "الأسئلة والإجابات" : "Questions & Answers"}</h4>
                 {settings.faqs.map((faq, index) => (
                   <div key={faq.id} className="grid gap-3 rounded-[22px] border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-2 relative group">
-                    <Field label={isAr ? "Ø§Ù„Ø³Ø¤Ø§Ù„ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Question (English)"} value={faq.qEn} onChange={(value) => setSettings(s => ({ ...s, faqs: s.faqs.map(f => f.id === faq.id ? { ...f, qEn: value } : f) }))} />
-                    <Field label={isAr ? "Ø§Ù„Ø³Ø¤Ø§Ù„ (Ø¹Ø±Ø¨ÙŠ)" : "Question (Arabic)"} value={faq.qAr} onChange={(value) => setSettings(s => ({ ...s, faqs: s.faqs.map(f => f.id === faq.id ? { ...f, qAr: value } : f) }))} />
-                    <TextAreaField label={isAr ? "Ø§Ù„Ø¥Ø¬Ø§Ø¨Ø© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Answer (English)"} value={faq.aEn} onChange={(value) => setSettings(s => ({ ...s, faqs: s.faqs.map(f => f.id === faq.id ? { ...f, aEn: value } : f) }))} />
-                    <TextAreaField label={isAr ? "Ø§Ù„Ø¥Ø¬Ø§Ø¨Ø© (Ø¹Ø±Ø¨ÙŠ)" : "Answer (Arabic)"} value={faq.aAr} onChange={(value) => setSettings(s => ({ ...s, faqs: s.faqs.map(f => f.id === faq.id ? { ...f, aAr: value } : f) }))} />
+                    <Field label={isAr ? "السؤال (إنجليزي)" : "Question (English)"} value={faq.qEn} onChange={(value) => setSettings(s => ({ ...s, faqs: s.faqs.map(f => f.id === faq.id ? { ...f, qEn: value } : f) }))} />
+                    <Field label={isAr ? "السؤال (عربي)" : "Question (Arabic)"} value={faq.qAr} onChange={(value) => setSettings(s => ({ ...s, faqs: s.faqs.map(f => f.id === faq.id ? { ...f, qAr: value } : f) }))} />
+                    <TextAreaField label={isAr ? "الإجابة (إنجليزي)" : "Answer (English)"} value={faq.aEn} onChange={(value) => setSettings(s => ({ ...s, faqs: s.faqs.map(f => f.id === faq.id ? { ...f, aEn: value } : f) }))} />
+                    <TextAreaField label={isAr ? "الإجابة (عربي)" : "Answer (Arabic)"} value={faq.aAr} onChange={(value) => setSettings(s => ({ ...s, faqs: s.faqs.map(f => f.id === faq.id ? { ...f, aAr: value } : f) }))} />
                     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white p-1 rounded-xl shadow-sm border border-slate-100">
-                      <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø¹Ù„Ù‰" : "Move up"} disabled={index === 0} onClick={() => {
+                      <IconButton label={isAr ? "تحريك لأعلى" : "Move up"} disabled={index === 0} onClick={() => {
                         setSettings(s => {
                           const newFaqs = [...s.faqs];
                           const [item] = newFaqs.splice(index, 1);
@@ -1506,7 +1504,7 @@ export function SiteContentSettingsPanel() {
                           return { ...s, faqs: newFaqs };
                         });
                       }} icon={ArrowUp} />
-                      <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø³ÙÙ„" : "Move down"} disabled={index === settings.faqs.length - 1} onClick={() => {
+                      <IconButton label={isAr ? "تحريك لأسفل" : "Move down"} disabled={index === settings.faqs.length - 1} onClick={() => {
                         setSettings(s => {
                           const newFaqs = [...s.faqs];
                           const [item] = newFaqs.splice(index, 1);
@@ -1518,9 +1516,9 @@ export function SiteContentSettingsPanel() {
                     </div>
                   </div>
                 ))}
-                <Button variant="outline" onClick={() => setSettings(s => ({ ...s, faqs: [...s.faqs, { id: `faq-${Date.now()}`, qEn: "New Question", qAr: "Ø³Ø¤Ø§Ù„ Ø¬Ø¯ÙŠØ¯", aEn: "", aAr: "" }] }))} className="h-11 rounded-2xl font-extrabold w-full">
+                <Button variant="outline" onClick={() => setSettings(s => ({ ...s, faqs: [...s.faqs, { id: `faq-${Date.now()}`, qEn: "New Question", qAr: "سؤال جديد", aEn: "", aAr: "" }] }))} className="h-11 rounded-2xl font-extrabold w-full">
                   <Plus className="h-4 w-4" />
-                  {isAr ? "Ø¥Ø¶Ø§ÙØ© Ø³Ø¤Ø§Ù„ Ø¬Ø¯ÙŠØ¯" : "Add new question"}
+                  {isAr ? "إضافة سؤال جديد" : "Add new question"}
                 </Button>
               </div>
             </div>
@@ -1528,25 +1526,25 @@ export function SiteContentSettingsPanel() {
           <TabsContent value="final-cta" className="mt-0">
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 xl:grid-cols-[1fr_380px]">
               <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Final CTA" : "Final CTA Settings"}</h3>
-                <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ù‚Ø³Ù…" : "Enable section"} checked={!!settings.homepageFinalCta.enabled} onChange={(value) => updateHomepageFinalCta({ enabled: value })} />
-                <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø²Ø± Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ" : "Enable primary button"} checked={!!settings.homepageFinalCta.primaryButtonEnabled} onChange={(value) => updateHomepageFinalCta({ primaryButtonEnabled: value })} />
-                <Field label={isAr ? "Eyebrow (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Eyebrow (English)"} value={settings.homepageFinalCta.eyebrowEn} onChange={(value) => updateHomepageFinalCta({ eyebrowEn: value })} />
-                <Field label={isAr ? "Eyebrow (Ø¹Ø±Ø¨ÙŠ)" : "Eyebrow (Arabic)"} value={settings.homepageFinalCta.eyebrowAr} onChange={(value) => updateHomepageFinalCta({ eyebrowAr: value })} />
-                <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Title (English)"} value={settings.homepageFinalCta.titleEn} onChange={(value) => updateHomepageFinalCta({ titleEn: value })} />
-                <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¹Ø±Ø¨ÙŠ)" : "Title (Arabic)"} value={settings.homepageFinalCta.titleAr} onChange={(value) => updateHomepageFinalCta({ titleAr: value })} />
-                <TextAreaField label={isAr ? "Ø§Ù„ÙˆØµÙ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Description (English)"} value={settings.homepageFinalCta.descriptionEn} onChange={(value) => updateHomepageFinalCta({ descriptionEn: value })} />
-                <TextAreaField label={isAr ? "Ø§Ù„ÙˆØµÙ (Ø¹Ø±Ø¨ÙŠ)" : "Description (Arabic)"} value={settings.homepageFinalCta.descriptionAr} onChange={(value) => updateHomepageFinalCta({ descriptionAr: value })} />
-                <Field label={isAr ? "Ù†Øµ Ø§Ù„Ø²Ø± (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Primary button label (English)"} value={settings.homepageFinalCta.primaryButtonLabelEn} onChange={(value) => updateHomepageFinalCta({ primaryButtonLabelEn: value })} />
-                <Field label={isAr ? "Ù†Øµ Ø§Ù„Ø²Ø± (Ø¹Ø±Ø¨ÙŠ)" : "Primary button label (Arabic)"} value={settings.homepageFinalCta.primaryButtonLabelAr} onChange={(value) => updateHomepageFinalCta({ primaryButtonLabelAr: value })} />
-                <Field label={isAr ? "Ø±Ø§Ø¨Ø· Ø§Ù„Ø²Ø±" : "Primary button URL"} value={settings.homepageFinalCta.primaryButtonUrl} onChange={(value) => updateHomepageFinalCta({ primaryButtonUrl: value })} />
-                <ToggleCard label={isAr ? "ÙØªØ­ Ø§Ù„Ø±Ø§Ø¨Ø· ÙÙŠ ØªØ¨ÙˆÙŠØ¨ Ø¬Ø¯ÙŠØ¯" : "Open in new tab"} checked={!!settings.homepageFinalCta.primaryButtonOpenInNewTab} onChange={(value) => updateHomepageFinalCta({ primaryButtonOpenInNewTab: value })} />
+                <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "إعدادات Final CTA" : "Final CTA Settings"}</h3>
+                <ToggleCard label={isAr ? "إظهار القسم" : "Enable section"} checked={!!settings.homepageFinalCta.enabled} onChange={(value) => updateHomepageFinalCta({ enabled: value })} />
+                <ToggleCard label={isAr ? "إظهار الزر الرئيسي" : "Enable primary button"} checked={!!settings.homepageFinalCta.primaryButtonEnabled} onChange={(value) => updateHomepageFinalCta({ primaryButtonEnabled: value })} />
+                <Field label={isAr ? "Eyebrow (إنجليزي)" : "Eyebrow (English)"} value={settings.homepageFinalCta.eyebrowEn} onChange={(value) => updateHomepageFinalCta({ eyebrowEn: value })} />
+                <Field label={isAr ? "Eyebrow (عربي)" : "Eyebrow (Arabic)"} value={settings.homepageFinalCta.eyebrowAr} onChange={(value) => updateHomepageFinalCta({ eyebrowAr: value })} />
+                <Field label={isAr ? "العنوان (إنجليزي)" : "Title (English)"} value={settings.homepageFinalCta.titleEn} onChange={(value) => updateHomepageFinalCta({ titleEn: value })} />
+                <Field label={isAr ? "العنوان (عربي)" : "Title (Arabic)"} value={settings.homepageFinalCta.titleAr} onChange={(value) => updateHomepageFinalCta({ titleAr: value })} />
+                <TextAreaField label={isAr ? "الوصف (إنجليزي)" : "Description (English)"} value={settings.homepageFinalCta.descriptionEn} onChange={(value) => updateHomepageFinalCta({ descriptionEn: value })} />
+                <TextAreaField label={isAr ? "الوصف (عربي)" : "Description (Arabic)"} value={settings.homepageFinalCta.descriptionAr} onChange={(value) => updateHomepageFinalCta({ descriptionAr: value })} />
+                <Field label={isAr ? "نص الزر (إنجليزي)" : "Primary button label (English)"} value={settings.homepageFinalCta.primaryButtonLabelEn} onChange={(value) => updateHomepageFinalCta({ primaryButtonLabelEn: value })} />
+                <Field label={isAr ? "نص الزر (عربي)" : "Primary button label (Arabic)"} value={settings.homepageFinalCta.primaryButtonLabelAr} onChange={(value) => updateHomepageFinalCta({ primaryButtonLabelAr: value })} />
+                <Field label={isAr ? "رابط الزر" : "Primary button URL"} value={settings.homepageFinalCta.primaryButtonUrl} onChange={(value) => updateHomepageFinalCta({ primaryButtonUrl: value })} />
+                <ToggleCard label={isAr ? "فتح الرابط في تبويب جديد" : "Open in new tab"} checked={!!settings.homepageFinalCta.primaryButtonOpenInNewTab} onChange={(value) => updateHomepageFinalCta({ primaryButtonOpenInNewTab: value })} />
               </div>
 
               <div className="rounded-[24px] bg-white p-4 shadow-sm">
                 <div className="rounded-[22px] bg-white p-6 text-center shadow-sm ring-1 ring-slate-100">
                   {!settings.homepageFinalCta.enabled ? (
-                    <div className="rounded-2xl bg-slate-50 p-5 text-sm font-bold text-slate-500">{isAr ? "Ø§Ù„Ù‚Ø³Ù… Ù…Ø®ÙÙŠ Ø­Ø§Ù„ÙŠØ§" : "Section is currently hidden"}</div>
+                    <div className="rounded-2xl bg-slate-50 p-5 text-sm font-bold text-slate-500">{isAr ? "القسم مخفي حاليا" : "Section is currently hidden"}</div>
                   ) : (
                     <>
                       <p className="inline-flex rounded-full border border-slate-100 bg-slate-50 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
@@ -1573,7 +1571,7 @@ export function SiteContentSettingsPanel() {
           </TabsContent>
           <TabsContent value="about" className="mt-0">
             <Tabs value={aboutSectionTab} onValueChange={(value) => setAboutSectionTab(value as AboutSectionTab)} className="space-y-4">
-              <div className="w-full overflow-x-auto pb-2">
+              <div className="settings-tabs-scroll w-full overflow-x-auto pb-2">
                 <TabsList className="inline-flex h-auto min-w-max flex-wrap items-center justify-start rounded-2xl bg-white p-1 shadow-[0_10px_26px_rgba(15,23,42,0.06)]">
                   {aboutSectionTabs.map((tab) => (
                     <TabsTrigger key={tab.value} value={tab.value} className="rounded-xl px-4 py-2 text-xs font-extrabold data-[state=active]:bg-[hsl(var(--primary))] data-[state=active]:text-white">
@@ -1586,8 +1584,8 @@ export function SiteContentSettingsPanel() {
               <TabsContent value="hero" className="mt-0">
                 <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 xl:grid-cols-[1fr_380px]">
                   <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                    <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Ù‡ÙŠØ±Ùˆ ØµÙØ­Ø© About" : "About Hero"}</h3>
-                    <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ù‚Ø³Ù…" : "Enable section"} checked={!!settings.aboutPage.hero.enabled} onChange={(value) => updateAboutHero({ enabled: value })} />
+                    <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "هيرو صفحة About" : "About Hero"}</h3>
+                    <ToggleCard label={isAr ? "إظهار القسم" : "Enable section"} checked={!!settings.aboutPage.hero.enabled} onChange={(value) => updateAboutHero({ enabled: value })} />
                     <Field label="Eyebrow EN" value={settings.aboutPage.hero.eyebrowEn} onChange={(value) => updateAboutHero({ eyebrowEn: value })} />
                     <Field label="Eyebrow AR" value={settings.aboutPage.hero.eyebrowAr} onChange={(value) => updateAboutHero({ eyebrowAr: value })} dir="rtl" />
                     <Field label="Title EN" value={settings.aboutPage.hero.titleEn} onChange={(value) => updateAboutHero({ titleEn: value })} />
@@ -1596,7 +1594,7 @@ export function SiteContentSettingsPanel() {
                     <TextAreaField label="Description AR" value={settings.aboutPage.hero.descriptionAr} onChange={(value) => updateAboutHero({ descriptionAr: value })} dir="rtl" />
                     <TextAreaField label="Supporting text EN" value={settings.aboutPage.hero.supportingTextEn} onChange={(value) => updateAboutHero({ supportingTextEn: value })} />
                     <TextAreaField label="Supporting text AR" value={settings.aboutPage.hero.supportingTextAr} onChange={(value) => updateAboutHero({ supportingTextAr: value })} dir="rtl" />
-                    <ImageUrlDropzone label={isAr ? "ØµÙˆØ±Ø© Ø§Ù„Ù‡ÙŠØ±Ùˆ" : "Hero image"} value={settings.aboutPage.hero.imageUrl} onChange={(value) => updateAboutHero({ imageUrl: value })} className="md:col-span-2" previewClassName="bg-slate-50" />
+                    <ImageUrlDropzone label={isAr ? "صورة الهيرو" : "Hero image"} value={settings.aboutPage.hero.imageUrl} onChange={(value) => updateAboutHero({ imageUrl: value })} className="md:col-span-2" previewClassName="bg-slate-50" />
                     <Field label="Image alt EN" value={settings.aboutPage.hero.imageAltEn} onChange={(value) => updateAboutHero({ imageAltEn: value })} />
                     <Field label="Image alt AR" value={settings.aboutPage.hero.imageAltAr} onChange={(value) => updateAboutHero({ imageAltAr: value })} dir="rtl" />
                     <Field label="Breadcrumb EN" value={settings.aboutPage.hero.breadcrumbEn} onChange={(value) => updateAboutHero({ breadcrumbEn: value })} />
@@ -1610,22 +1608,22 @@ export function SiteContentSettingsPanel() {
                 <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 xl:grid-cols-[1fr_380px]">
                   <div className="space-y-5">
                     <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                      <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Ù†Ø¸Ø±Ø© Ø¹Ù„Ù‰ Ø§Ù„Ù…Ù†ØµØ©" : "Platform Overview"}</h3>
-                      <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ù‚Ø³Ù…" : "Enable section"} checked={!!settings.aboutPage.overview.enabled} onChange={(value) => updateAboutOverview({ enabled: value })} />
+                      <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "نظرة على المنصة" : "Platform Overview"}</h3>
+                      <ToggleCard label={isAr ? "إظهار القسم" : "Enable section"} checked={!!settings.aboutPage.overview.enabled} onChange={(value) => updateAboutOverview({ enabled: value })} />
                       <Field label="Eyebrow EN" value={settings.aboutPage.overview.eyebrowEn} onChange={(value) => updateAboutOverview({ eyebrowEn: value })} />
                       <Field label="Eyebrow AR" value={settings.aboutPage.overview.eyebrowAr} onChange={(value) => updateAboutOverview({ eyebrowAr: value })} dir="rtl" />
                       <Field label="Heading EN" value={settings.aboutPage.overview.headingEn} onChange={(value) => updateAboutOverview({ headingEn: value })} />
                       <Field label="Heading AR" value={settings.aboutPage.overview.headingAr} onChange={(value) => updateAboutOverview({ headingAr: value })} dir="rtl" />
                       <TextAreaField label="Description EN" value={settings.aboutPage.overview.descriptionEn} onChange={(value) => updateAboutOverview({ descriptionEn: value })} />
                       <TextAreaField label="Description AR" value={settings.aboutPage.overview.descriptionAr} onChange={(value) => updateAboutOverview({ descriptionAr: value })} dir="rtl" />
-                      <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± CTA" : "Enable CTA"} checked={!!settings.aboutPage.overview.ctaEnabled} onChange={(value) => updateAboutOverview({ ctaEnabled: value })} />
+                      <ToggleCard label={isAr ? "إظهار CTA" : "Enable CTA"} checked={!!settings.aboutPage.overview.ctaEnabled} onChange={(value) => updateAboutOverview({ ctaEnabled: value })} />
                       <Field label="CTA label EN" value={settings.aboutPage.overview.ctaLabelEn} onChange={(value) => updateAboutOverview({ ctaLabelEn: value })} />
                       <Field label="CTA label AR" value={settings.aboutPage.overview.ctaLabelAr} onChange={(value) => updateAboutOverview({ ctaLabelAr: value })} dir="rtl" />
                       <Field label="CTA URL" value={settings.aboutPage.overview.ctaUrl} onChange={(value) => updateAboutOverview({ ctaUrl: value })} />
                     </div>
 
                     <div className="grid gap-3 rounded-[22px] bg-white p-4 shadow-sm">
-                      <h3 className="text-lg font-black text-[#17172f]">{isAr ? "Ù†Ù‚Ø§Ø· Ø§Ù„Ù‚ÙŠÙ…Ø©" : "Value points"}</h3>
+                      <h3 className="text-lg font-black text-[#17172f]">{isAr ? "نقاط القيمة" : "Value points"}</h3>
                       {settings.aboutPage.overview.valuePoints.slice(0, 3).map((point, index) => (
                         <div key={point.id} className="grid gap-3 rounded-[20px] border border-slate-100 p-4 md:grid-cols-2">
                           <Field label={`Point ${index + 1} EN`} value={point.textEn} onChange={(value) => updateAboutValuePoints(settings.aboutPage.overview.valuePoints.map((item) => item.id === point.id ? { ...item, textEn: value } : item))} />
@@ -1635,16 +1633,16 @@ export function SiteContentSettingsPanel() {
                     </div>
 
                     <div className="grid gap-3 rounded-[22px] bg-white p-4 shadow-sm">
-                      <h3 className="text-lg font-black text-[#17172f]">{isAr ? "ØµÙˆØ± Ø§Ù„ÙƒÙˆÙ„Ø§Ø¬" : "Collage images"}</h3>
+                      <h3 className="text-lg font-black text-[#17172f]">{isAr ? "صور الكولاج" : "Collage images"}</h3>
                       {settings.aboutPage.overview.images.slice(0, 3).map((image, index) => (
                         <div key={image.id} className="grid gap-3 rounded-[20px] border border-slate-100 p-4 md:grid-cols-2">
-                          <ImageUrlDropzone label={`${isAr ? "ØµÙˆØ±Ø©" : "Image"} ${index + 1}`} value={image.imageUrl} onChange={(value) => updateAboutImages(settings.aboutPage.overview.images.map((item) => item.id === image.id ? { ...item, imageUrl: value } : item))} />
+                          <ImageUrlDropzone label={`${isAr ? "صورة" : "Image"} ${index + 1}`} value={image.imageUrl} onChange={(value) => updateAboutImages(settings.aboutPage.overview.images.map((item) => item.id === image.id ? { ...item, imageUrl: value } : item))} />
                           <div className="grid gap-3">
                             <Field label="Alt EN" value={image.altEn} onChange={(value) => updateAboutImages(settings.aboutPage.overview.images.map((item) => item.id === image.id ? { ...item, altEn: value } : item))} />
                             <Field label="Alt AR" value={image.altAr} onChange={(value) => updateAboutImages(settings.aboutPage.overview.images.map((item) => item.id === image.id ? { ...item, altAr: value } : item))} dir="rtl" />
                             <Button variant="outline" onClick={() => updateAboutImages(settings.aboutPage.overview.images.map((item) => item.id === image.id ? { ...item, imageUrl: "" } : item))} className="h-10 rounded-2xl font-extrabold text-red-600">
                               <Trash2 className="h-4 w-4" />
-                              {isAr ? "Ø¥Ø²Ø§Ù„Ø© Ø§Ù„ØµÙˆØ±Ø©" : "Remove image"}
+                              {isAr ? "إزالة الصورة" : "Remove image"}
                             </Button>
                           </div>
                         </div>
@@ -1659,8 +1657,8 @@ export function SiteContentSettingsPanel() {
                 <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 xl:grid-cols-[1fr_380px]">
                   <div className="space-y-5">
                     <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                      <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Ù…Ù†Ø¸ÙˆÙ…Ø© Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª" : "Event Ecosystem"}</h3>
-                      <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ù‚Ø³Ù…" : "Enable section"} checked={!!settings.aboutPage.ecosystem.enabled} onChange={(value) => updateAboutEcosystem({ enabled: value })} />
+                      <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "منظومة الفعاليات" : "Event Ecosystem"}</h3>
+                      <ToggleCard label={isAr ? "إظهار القسم" : "Enable section"} checked={!!settings.aboutPage.ecosystem.enabled} onChange={(value) => updateAboutEcosystem({ enabled: value })} />
                       <Field label="Eyebrow EN" value={settings.aboutPage.ecosystem.eyebrowEn} onChange={(value) => updateAboutEcosystem({ eyebrowEn: value })} />
                       <Field label="Eyebrow AR" value={settings.aboutPage.ecosystem.eyebrowAr} onChange={(value) => updateAboutEcosystem({ eyebrowAr: value })} dir="rtl" />
                       <Field label="Heading EN" value={settings.aboutPage.ecosystem.headingEn} onChange={(value) => updateAboutEcosystem({ headingEn: value })} />
@@ -1671,24 +1669,24 @@ export function SiteContentSettingsPanel() {
 
                     <div className="space-y-3 rounded-[22px] bg-white p-4 shadow-sm">
                       <div className="flex items-center justify-between gap-3">
-                        <h3 className="text-lg font-black text-[#17172f]">{isAr ? "ÙƒØ±ÙˆØª Ø§Ù„Ù‚Ø¯Ø±Ø§Øª" : "Capability cards"}</h3>
-                        <Button variant="outline" onClick={() => updateAboutCapabilityCards([...settings.aboutPage.ecosystem.cards, { id: `about-card-${Date.now()}`, enabled: true, icon: "calendar", titleEn: "New Capability", titleAr: "Ù‚Ø¯Ø±Ø© Ø¬Ø¯ÙŠØ¯Ø©", descriptionEn: "", descriptionAr: "" }])} disabled={settings.aboutPage.ecosystem.cards.length >= 6} className="h-10 rounded-2xl font-extrabold">
+                        <h3 className="text-lg font-black text-[#17172f]">{isAr ? "كروت القدرات" : "Capability cards"}</h3>
+                        <Button variant="outline" onClick={() => updateAboutCapabilityCards([...settings.aboutPage.ecosystem.cards, { id: `about-card-${Date.now()}`, enabled: true, icon: "calendar", titleEn: "New Capability", titleAr: "قدرة جديدة", descriptionEn: "", descriptionAr: "" }])} disabled={settings.aboutPage.ecosystem.cards.length >= 6} className="h-10 rounded-2xl font-extrabold">
                           <Plus className="h-4 w-4" />
-                          {isAr ? "Ø¥Ø¶Ø§ÙØ© ÙƒØ§Ø±Øª" : "Add card"}
+                          {isAr ? "إضافة كارت" : "Add card"}
                         </Button>
                       </div>
                       {settings.aboutPage.ecosystem.cards.map((card, index) => (
                         <div key={card.id} className="grid gap-3 rounded-[20px] border border-slate-100 p-4 md:grid-cols-2">
                           <div className="md:col-span-2 flex items-center justify-between gap-3">
-                            <ToggleCard label={isAr ? "Ø¸Ø§Ù‡Ø±" : "Visible"} checked={card.enabled} onChange={(value) => updateAboutCapabilityCards(settings.aboutPage.ecosystem.cards.map((item) => item.id === card.id ? { ...item, enabled: value } : item))} />
+                            <ToggleCard label={isAr ? "ظاهر" : "Visible"} checked={card.enabled} onChange={(value) => updateAboutCapabilityCards(settings.aboutPage.ecosystem.cards.map((item) => item.id === card.id ? { ...item, enabled: value } : item))} />
                             <div className="flex gap-1">
-                              <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø¹Ù„Ù‰" : "Move up"} icon={ArrowUp} disabled={index === 0} onClick={() => {
+                              <IconButton label={isAr ? "تحريك لأعلى" : "Move up"} icon={ArrowUp} disabled={index === 0} onClick={() => {
                                 const cards = [...settings.aboutPage.ecosystem.cards]
                                 const [item] = cards.splice(index, 1)
                                 cards.splice(index - 1, 0, item)
                                 updateAboutCapabilityCards(cards)
                               }} />
-                              <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø³ÙÙ„" : "Move down"} icon={ArrowDown} disabled={index === settings.aboutPage.ecosystem.cards.length - 1} onClick={() => {
+                              <IconButton label={isAr ? "تحريك لأسفل" : "Move down"} icon={ArrowDown} disabled={index === settings.aboutPage.ecosystem.cards.length - 1} onClick={() => {
                                 const cards = [...settings.aboutPage.ecosystem.cards]
                                 const [item] = cards.splice(index, 1)
                                 cards.splice(index + 1, 0, item)
@@ -1727,8 +1725,8 @@ export function SiteContentSettingsPanel() {
                 <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 xl:grid-cols-[1fr_380px]">
                   <div className="space-y-5">
                     <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                      <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Ù‚Ø³Ù… Ø§Ù„ÙØ±ÙŠÙ‚" : "Team Section"}</h3>
-                      <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ù‚Ø³Ù…" : "Enable section"} checked={!!settings.aboutPage.team.enabled} onChange={(value) => updateAboutTeam({ enabled: value })} />
+                      <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "قسم الفريق" : "Team Section"}</h3>
+                      <ToggleCard label={isAr ? "إظهار القسم" : "Enable section"} checked={!!settings.aboutPage.team.enabled} onChange={(value) => updateAboutTeam({ enabled: value })} />
                       <Field label="Eyebrow EN" value={settings.aboutPage.team.eyebrowEn} onChange={(value) => updateAboutTeam({ eyebrowEn: value })} />
                       <Field label="Eyebrow AR" value={settings.aboutPage.team.eyebrowAr} onChange={(value) => updateAboutTeam({ eyebrowAr: value })} dir="rtl" />
                       <Field label="Heading EN" value={settings.aboutPage.team.headingEn} onChange={(value) => updateAboutTeam({ headingEn: value })} />
@@ -1740,31 +1738,31 @@ export function SiteContentSettingsPanel() {
                     <div className="space-y-3 rounded-[22px] bg-white p-4 shadow-sm">
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <h3 className="text-lg font-black text-[#17172f]">{isAr ? "Ø£Ø¹Ø¶Ø§Ø¡ Ø§Ù„ÙØ±ÙŠÙ‚" : "Team members"}</h3>
-                          <p className="mt-1 text-xs font-bold text-slate-400">{isAr ? "Ù„Ù† ÙŠØ¸Ù‡Ø± Ø§Ù„Ù‚Ø³Ù… ÙÙŠ Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ø¥Ù„Ø§ Ø¨Ø¹Ø¯ Ø¥Ø¶Ø§ÙØ© Ø£Ø¹Ø¶Ø§Ø¡ Ø­Ù‚ÙŠÙ‚ÙŠÙŠÙ† ÙˆØªÙØ¹ÙŠÙ„Ù‡." : "The public section stays hidden until real enabled members are added."}</p>
+                          <h3 className="text-lg font-black text-[#17172f]">{isAr ? "أعضاء الفريق" : "Team members"}</h3>
+                          <p className="mt-1 text-xs font-bold text-slate-400">{isAr ? "لن يظهر القسم في الموقع إلا بعد إضافة أعضاء حقيقيين وتفعيله." : "The public section stays hidden until real enabled members are added."}</p>
                         </div>
                         <Button variant="outline" onClick={() => updateAboutTeamMembers([...settings.aboutPage.team.members, { id: `about-team-${Date.now()}`, enabled: true, imageUrl: "", imageAltEn: "", imageAltAr: "", nameEn: "", nameAr: "", jobTitleEn: "", jobTitleAr: "", bioEn: "", bioAr: "", linkedinUrl: "", email: "" }])} disabled={settings.aboutPage.team.members.length >= 12} className="h-10 rounded-2xl font-extrabold">
                           <Plus className="h-4 w-4" />
-                          {isAr ? "Ø¥Ø¶Ø§ÙØ© Ø¹Ø¶Ùˆ" : "Add member"}
+                          {isAr ? "إضافة عضو" : "Add member"}
                         </Button>
                       </div>
                       {settings.aboutPage.team.members.length === 0 ? (
                         <div className="rounded-[20px] border border-dashed border-slate-200 bg-slate-50 p-6 text-sm font-bold text-slate-400">
-                          {isAr ? "Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø£Ø¹Ø¶Ø§Ø¡ ÙØ±ÙŠÙ‚ Ù…Ø¶Ø§ÙÙŠÙ† Ø­Ø§Ù„ÙŠØ§." : "No team members have been added yet."}
+                          {isAr ? "لا يوجد أعضاء فريق مضافين حاليا." : "No team members have been added yet."}
                         </div>
                       ) : null}
                       {settings.aboutPage.team.members.map((member, index) => (
                         <div key={member.id} className="grid gap-3 rounded-[20px] border border-slate-100 p-4 md:grid-cols-2">
                           <div className="md:col-span-2 flex items-center justify-between gap-3">
-                            <ToggleCard label={isAr ? "Ø¸Ø§Ù‡Ø±" : "Visible"} checked={member.enabled} onChange={(value) => updateAboutTeamMembers(settings.aboutPage.team.members.map((item) => item.id === member.id ? { ...item, enabled: value } : item))} />
+                            <ToggleCard label={isAr ? "ظاهر" : "Visible"} checked={member.enabled} onChange={(value) => updateAboutTeamMembers(settings.aboutPage.team.members.map((item) => item.id === member.id ? { ...item, enabled: value } : item))} />
                             <div className="flex gap-1">
-                              <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø¹Ù„Ù‰" : "Move up"} icon={ArrowUp} disabled={index === 0} onClick={() => {
+                              <IconButton label={isAr ? "تحريك لأعلى" : "Move up"} icon={ArrowUp} disabled={index === 0} onClick={() => {
                                 const members = [...settings.aboutPage.team.members]
                                 const [item] = members.splice(index, 1)
                                 members.splice(index - 1, 0, item)
                                 updateAboutTeamMembers(members)
                               }} />
-                              <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø³ÙÙ„" : "Move down"} icon={ArrowDown} disabled={index === settings.aboutPage.team.members.length - 1} onClick={() => {
+                              <IconButton label={isAr ? "تحريك لأسفل" : "Move down"} icon={ArrowDown} disabled={index === settings.aboutPage.team.members.length - 1} onClick={() => {
                                 const members = [...settings.aboutPage.team.members]
                                 const [item] = members.splice(index, 1)
                                 members.splice(index + 1, 0, item)
@@ -1773,7 +1771,7 @@ export function SiteContentSettingsPanel() {
                               <IconButton label={adminT(language, "common.delete")} icon={Trash2} tone="danger" onClick={() => updateAboutTeamMembers(settings.aboutPage.team.members.filter((item) => item.id !== member.id))} />
                             </div>
                           </div>
-                          <ImageUrlDropzone label={isAr ? "ØµÙˆØ±Ø© Ø§Ù„Ø¹Ø¶Ùˆ" : "Profile image"} value={member.imageUrl} onChange={(value) => updateAboutTeamMembers(settings.aboutPage.team.members.map((item) => item.id === member.id ? { ...item, imageUrl: value } : item))} className="md:col-span-2" previewClassName="bg-slate-50" />
+                          <ImageUrlDropzone label={isAr ? "صورة العضو" : "Profile image"} value={member.imageUrl} onChange={(value) => updateAboutTeamMembers(settings.aboutPage.team.members.map((item) => item.id === member.id ? { ...item, imageUrl: value } : item))} className="md:col-span-2" previewClassName="bg-slate-50" />
                           <Field label="Name EN" value={member.nameEn} onChange={(value) => updateAboutTeamMembers(settings.aboutPage.team.members.map((item) => item.id === member.id ? { ...item, nameEn: value } : item))} />
                           <Field label="Name AR" value={member.nameAr} onChange={(value) => updateAboutTeamMembers(settings.aboutPage.team.members.map((item) => item.id === member.id ? { ...item, nameAr: value } : item))} dir="rtl" />
                           <Field label="Job title EN" value={member.jobTitleEn} onChange={(value) => updateAboutTeamMembers(settings.aboutPage.team.members.map((item) => item.id === member.id ? { ...item, jobTitleEn: value } : item))} />
@@ -1796,18 +1794,18 @@ export function SiteContentSettingsPanel() {
                 <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 xl:grid-cols-[1fr_380px]">
                   <div className="space-y-5">
                     <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                      <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Ø§Ù„Ø±Ø¤ÙŠØ© ÙˆØ§Ù„Ù…Ø¨Ø§Ø¯Ø¦" : "Vision & Principles"}</h3>
-                      <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ù‚Ø³Ù…" : "Enable section"} checked={!!settings.aboutPage.vision.enabled} onChange={(value) => updateAboutVision({ enabled: value })} />
+                      <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "الرؤية والمبادئ" : "Vision & Principles"}</h3>
+                      <ToggleCard label={isAr ? "إظهار القسم" : "Enable section"} checked={!!settings.aboutPage.vision.enabled} onChange={(value) => updateAboutVision({ enabled: value })} />
                       <Field label="Eyebrow EN" value={settings.aboutPage.vision.eyebrowEn} onChange={(value) => updateAboutVision({ eyebrowEn: value })} />
                       <Field label="Eyebrow AR" value={settings.aboutPage.vision.eyebrowAr} onChange={(value) => updateAboutVision({ eyebrowAr: value })} dir="rtl" />
                       <Field label="Heading EN" value={settings.aboutPage.vision.headingEn} onChange={(value) => updateAboutVision({ headingEn: value })} />
                       <Field label="Heading AR" value={settings.aboutPage.vision.headingAr} onChange={(value) => updateAboutVision({ headingAr: value })} dir="rtl" />
                       <TextAreaField label="Description EN" value={settings.aboutPage.vision.descriptionEn} onChange={(value) => updateAboutVision({ descriptionEn: value })} />
                       <TextAreaField label="Description AR" value={settings.aboutPage.vision.descriptionAr} onChange={(value) => updateAboutVision({ descriptionAr: value })} dir="rtl" />
-                      <ImageUrlDropzone label={isAr ? "ØµÙˆØ±Ø© Ø§Ù„Ø±Ø¤ÙŠØ©" : "Vision image"} value={settings.aboutPage.vision.imageUrl} onChange={(value) => updateAboutVision({ imageUrl: value })} className="md:col-span-2" previewClassName="bg-slate-50" />
+                      <ImageUrlDropzone label={isAr ? "صورة الرؤية" : "Vision image"} value={settings.aboutPage.vision.imageUrl} onChange={(value) => updateAboutVision({ imageUrl: value })} className="md:col-span-2" previewClassName="bg-slate-50" />
                       <Field label="Image alt EN" value={settings.aboutPage.vision.imageAltEn} onChange={(value) => updateAboutVision({ imageAltEn: value })} />
                       <Field label="Image alt AR" value={settings.aboutPage.vision.imageAltAr} onChange={(value) => updateAboutVision({ imageAltAr: value })} dir="rtl" />
-                      <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± CTA" : "Enable CTA"} checked={!!settings.aboutPage.vision.ctaEnabled} onChange={(value) => updateAboutVision({ ctaEnabled: value })} />
+                      <ToggleCard label={isAr ? "إظهار CTA" : "Enable CTA"} checked={!!settings.aboutPage.vision.ctaEnabled} onChange={(value) => updateAboutVision({ ctaEnabled: value })} />
                       <Field label="CTA label EN" value={settings.aboutPage.vision.ctaLabelEn} onChange={(value) => updateAboutVision({ ctaLabelEn: value })} />
                       <Field label="CTA label AR" value={settings.aboutPage.vision.ctaLabelAr} onChange={(value) => updateAboutVision({ ctaLabelAr: value })} dir="rtl" />
                       <Field label="CTA URL" value={settings.aboutPage.vision.ctaUrl} onChange={(value) => updateAboutVision({ ctaUrl: value })} />
@@ -1815,10 +1813,10 @@ export function SiteContentSettingsPanel() {
 
                     <div className="space-y-3 rounded-[22px] bg-white p-4 shadow-sm">
                       <div className="flex items-center justify-between gap-3">
-                        <h3 className="text-lg font-black text-[#17172f]">{isAr ? "Ø§Ù„Ù…Ø¨Ø§Ø¯Ø¦" : "Principles"}</h3>
-                        <Button variant="outline" onClick={() => updateAboutPrinciples([...settings.aboutPage.vision.principles, { id: `about-principle-${Date.now()}`, textEn: "New principle", textAr: "Ù…Ø¨Ø¯Ø£ Ø¬Ø¯ÙŠØ¯" }])} disabled={settings.aboutPage.vision.principles.length >= 6} className="h-10 rounded-2xl font-extrabold">
+                        <h3 className="text-lg font-black text-[#17172f]">{isAr ? "المبادئ" : "Principles"}</h3>
+                        <Button variant="outline" onClick={() => updateAboutPrinciples([...settings.aboutPage.vision.principles, { id: `about-principle-${Date.now()}`, textEn: "New principle", textAr: "مبدأ جديد" }])} disabled={settings.aboutPage.vision.principles.length >= 6} className="h-10 rounded-2xl font-extrabold">
                           <Plus className="h-4 w-4" />
-                          {isAr ? "Ø¥Ø¶Ø§ÙØ© Ù…Ø¨Ø¯Ø£" : "Add principle"}
+                          {isAr ? "إضافة مبدأ" : "Add principle"}
                         </Button>
                       </div>
                       {settings.aboutPage.vision.principles.map((principle, index) => (
@@ -1826,13 +1824,13 @@ export function SiteContentSettingsPanel() {
                           <Field label={`Principle ${index + 1} EN`} value={principle.textEn} onChange={(value) => updateAboutPrinciples(settings.aboutPage.vision.principles.map((item) => item.id === principle.id ? { ...item, textEn: value } : item))} />
                           <Field label={`Principle ${index + 1} AR`} value={principle.textAr} onChange={(value) => updateAboutPrinciples(settings.aboutPage.vision.principles.map((item) => item.id === principle.id ? { ...item, textAr: value } : item))} dir="rtl" />
                           <div className="flex items-end gap-1">
-                            <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø¹Ù„Ù‰" : "Move up"} icon={ArrowUp} disabled={index === 0} onClick={() => {
+                            <IconButton label={isAr ? "تحريك لأعلى" : "Move up"} icon={ArrowUp} disabled={index === 0} onClick={() => {
                               const principles = [...settings.aboutPage.vision.principles]
                               const [item] = principles.splice(index, 1)
                               principles.splice(index - 1, 0, item)
                               updateAboutPrinciples(principles)
                             }} />
-                            <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø³ÙÙ„" : "Move down"} icon={ArrowDown} disabled={index === settings.aboutPage.vision.principles.length - 1} onClick={() => {
+                            <IconButton label={isAr ? "تحريك لأسفل" : "Move down"} icon={ArrowDown} disabled={index === settings.aboutPage.vision.principles.length - 1} onClick={() => {
                               const principles = [...settings.aboutPage.vision.principles]
                               const [item] = principles.splice(index, 1)
                               principles.splice(index + 1, 0, item)
@@ -1854,7 +1852,7 @@ export function SiteContentSettingsPanel() {
               <div className="space-y-5">
                 <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
                   <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">Contact Hero</h3>
-                  <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ù‡ÙŠØ±Ùˆ" : "Enable hero"} checked={!!settings.contactPage.hero.enabled} onChange={(value) => updateContactHero({ enabled: value })} />
+                  <ToggleCard label={isAr ? "إظهار الهيرو" : "Enable hero"} checked={!!settings.contactPage.hero.enabled} onChange={(value) => updateContactHero({ enabled: value })} />
                   <Field label="Eyebrow EN" value={settings.contactPage.hero.eyebrowEn} onChange={(value) => updateContactHero({ eyebrowEn: value })} />
                   <Field label="Title EN" value={settings.contactPage.hero.titleEn} onChange={(value) => updateContactHero({ titleEn: value })} />
                   <Field label="Title AR" value={settings.contactPage.hero.titleAr} onChange={(value) => updateContactHero({ titleAr: value })} />
@@ -1864,17 +1862,17 @@ export function SiteContentSettingsPanel() {
                   <Field label="Supporting text AR" value={settings.contactPage.hero.supportingTextAr} onChange={(value) => updateContactHero({ supportingTextAr: value })} />
                   <Field label="Primary CTA EN" value={settings.contactPage.hero.primaryCtaEn} onChange={(value) => updateContactHero({ primaryCtaEn: value })} />
                   <Field label="Secondary CTA EN" value={settings.contactPage.hero.secondaryCtaEn} onChange={(value) => updateContactHero({ secondaryCtaEn: value })} />
-                  <ImageUrlDropzone label={isAr ? "ØµÙˆØ±Ø© Ø§Ù„Ù‡ÙŠØ±Ùˆ" : "Hero image"} value={settings.contactPage.hero.imageUrl} onChange={(value) => updateContactHero({ imageUrl: value })} previewClassName="bg-slate-50" />
+                  <ImageUrlDropzone label={isAr ? "صورة الهيرو" : "Hero image"} value={settings.contactPage.hero.imageUrl} onChange={(value) => updateContactHero({ imageUrl: value })} previewClassName="bg-slate-50" />
                   <Field label="Image alt EN" value={settings.contactPage.hero.imageAltEn} onChange={(value) => updateContactHero({ imageAltEn: value })} />
                 </div>
 
                 <div className="space-y-4 rounded-[22px] bg-white p-4 shadow-sm">
-                  <h3 className="text-lg font-black text-[#17172f]">{isAr ? "ÙƒØ±ÙˆØª Ø§Ù„ØªÙˆØ§ØµÙ„" : "Contact Cards"}</h3>
+                  <h3 className="text-lg font-black text-[#17172f]">{isAr ? "كروت التواصل" : "Contact Cards"}</h3>
                   {settings.contactPage.contactCards.slice(0, 4).map((card, index) => (
                     <div key={card.id} className="grid gap-3 rounded-[20px] border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-2">
                       <div className="md:col-span-2 flex items-center justify-between gap-3">
-                        <p className="text-sm font-black text-slate-700">{isAr ? "ÙƒØ§Ø±Øª" : "Card"} {index + 1}</p>
-                        <ToggleCard label={isAr ? "Ø¸Ø§Ù‡Ø±" : "Visible"} checked={card.enabled} onChange={(value) => updateContactCards(settings.contactPage.contactCards.map((item) => item.id === card.id ? { ...item, enabled: value } : item))} />
+                        <p className="text-sm font-black text-slate-700">{isAr ? "كارت" : "Card"} {index + 1}</p>
+                        <ToggleCard label={isAr ? "ظاهر" : "Visible"} checked={card.enabled} onChange={(value) => updateContactCards(settings.contactPage.contactCards.map((item) => item.id === card.id ? { ...item, enabled: value } : item))} />
                       </div>
                       <Field label="Label EN" value={card.labelEn} onChange={(value) => updateContactCards(settings.contactPage.contactCards.map((item) => item.id === card.id ? { ...item, labelEn: value } : item))} />
                       <Field label="Label AR" value={card.labelAr} onChange={(value) => updateContactCards(settings.contactPage.contactCards.map((item) => item.id === card.id ? { ...item, labelAr: value } : item))} />
@@ -1913,8 +1911,8 @@ export function SiteContentSettingsPanel() {
                 </div>
 
                 <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Ù…Ø­ØªÙˆÙ‰ Request Details" : "Request Details Content"}</h3>
-                  <ToggleCard label={isAr ? "Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ù‚Ø³Ù…" : "Enable section"} checked={!!settings.contactPage.requestSection.enabled} onChange={(value) => updateContactRequest({ enabled: value })} />
+                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "محتوى Request Details" : "Request Details Content"}</h3>
+                  <ToggleCard label={isAr ? "إظهار القسم" : "Enable section"} checked={!!settings.contactPage.requestSection.enabled} onChange={(value) => updateContactRequest({ enabled: value })} />
                   <Field label="Eyebrow EN" value={settings.contactPage.requestSection.eyebrowEn} onChange={(value) => updateContactRequest({ eyebrowEn: value })} />
                   <Field label="Title EN" value={settings.contactPage.requestSection.titleEn} onChange={(value) => updateContactRequest({ titleEn: value })} />
                   <Field label="Title AR" value={settings.contactPage.requestSection.titleAr} onChange={(value) => updateContactRequest({ titleAr: value })} />
@@ -1934,7 +1932,7 @@ export function SiteContentSettingsPanel() {
                   <h3 className="text-lg font-black text-[#17172f]">{isAr ? "نقاط مختصرة للفورم" : "Concise Benefit Points"}</h3>
                   {settings.contactPage.requestSection.benefits.slice(0, 3).map((benefit, index) => (
                     <div key={benefit.id} className="grid gap-3 rounded-[20px] border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-2">
-                      <p className="md:col-span-2 text-sm font-black text-slate-700">{isAr ? "Ù…ÙŠØ²Ø©" : "Benefit"} {index + 1}</p>
+                      <p className="md:col-span-2 text-sm font-black text-slate-700">{isAr ? "ميزة" : "Benefit"} {index + 1}</p>
                       <Field label="Title EN" value={benefit.titleEn} onChange={(value) => updateContactBenefits(settings.contactPage.requestSection.benefits.map((item) => item.id === benefit.id ? { ...item, titleEn: value } : item))} />
                       <Field label="Title AR" value={benefit.titleAr} onChange={(value) => updateContactBenefits(settings.contactPage.requestSection.benefits.map((item) => item.id === benefit.id ? { ...item, titleAr: value } : item))} />
                       <TextAreaField label="Text EN" value={benefit.textEn} onChange={(value) => updateContactBenefits(settings.contactPage.requestSection.benefits.map((item) => item.id === benefit.id ? { ...item, textEn: value } : item))} />
@@ -1984,7 +1982,7 @@ export function SiteContentSettingsPanel() {
                 </div>
 
                 <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "Ø±Ø³Ø§Ù„Ø© Ø§Ù„Ù†Ø¬Ø§Ø­" : "Success Message"}</h3>
+                  <h3 className="md:col-span-2 text-lg font-black text-[#17172f]">{isAr ? "رسالة النجاح" : "Success Message"}</h3>
                   <Field label="Title EN" value={settings.contactPage.successState.titleEn} onChange={(value) => updateContactSuccess({ titleEn: value })} />
                   <Field label="Title AR" value={settings.contactPage.successState.titleAr} onChange={(value) => updateContactSuccess({ titleAr: value })} />
                   <TextAreaField label="Description EN" value={settings.contactPage.successState.descriptionEn} onChange={(value) => updateContactSuccess({ descriptionEn: value })} />
@@ -2023,97 +2021,97 @@ export function SiteContentSettingsPanel() {
 <TabsContent value="upcoming" className="mt-0">
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4">
               <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                <ToggleCard label={isAr ? "ØªÙ…ÙƒÙŠÙ† Ù‚Ø³Ù… Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©" : "Enable Upcoming Events"} checked={!!settings.upcomingEvents?.enabled} onChange={(v) => updateUpcoming({ enabled: v })} />
-                <Field label={isAr ? "Ø§Ù„Ø¹Ø¨Ø§Ø±Ø© Ø§Ù„ØªÙ…Ù‡ÙŠØ¯ÙŠØ© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Eyebrow (English)"} value={settings.upcomingEvents?.eyebrowEn || ''} onChange={(value) => updateUpcoming({ eyebrowEn: value })} />
+                <ToggleCard label={isAr ? "تمكين قسم الفعاليات القادمة" : "Enable Upcoming Events"} checked={!!settings.upcomingEvents?.enabled} onChange={(v) => updateUpcoming({ enabled: v })} />
+                <Field label={isAr ? "العبارة التمهيدية (إنجليزي)" : "Eyebrow (English)"} value={settings.upcomingEvents?.eyebrowEn || ''} onChange={(value) => updateUpcoming({ eyebrowEn: value })} />
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-500">{isAr ? "Ø§Ù„Ø¹Ø¨Ø§Ø±Ø© Ø§Ù„ØªÙ…Ù‡ÙŠØ¯ÙŠØ© (Ø¹Ø±Ø¨ÙŠ)" : "Eyebrow (Arabic)"}</Label>
+                  <Label className="text-xs font-bold text-slate-500">{isAr ? "العبارة التمهيدية (عربي)" : "Eyebrow (Arabic)"}</Label>
                   <Input value={settings.upcomingEvents?.eyebrowAr || ''} onChange={(e) => updateUpcoming({ eyebrowAr: e.target.value })} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                 </div>
-                <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Title (English)"} value={settings.upcomingEvents?.titleEn || ''} onChange={(value) => updateUpcoming({ titleEn: value })} />
+                <Field label={isAr ? "العنوان (إنجليزي)" : "Title (English)"} value={settings.upcomingEvents?.titleEn || ''} onChange={(value) => updateUpcoming({ titleEn: value })} />
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-500">{isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¹Ø±Ø¨ÙŠ)" : "Title (Arabic)"}</Label>
+                  <Label className="text-xs font-bold text-slate-500">{isAr ? "العنوان (عربي)" : "Title (Arabic)"}</Label>
                   <Input value={settings.upcomingEvents?.titleAr || ''} onChange={(e) => updateUpcoming({ titleAr: e.target.value })} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                 </div>
-                <TextAreaField label={isAr ? "Ø§Ù„ÙˆØµÙ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Description (English)"} value={settings.upcomingEvents?.descriptionEn || ''} onChange={(value) => updateUpcoming({ descriptionEn: value })} />
+                <TextAreaField label={isAr ? "الوصف (إنجليزي)" : "Description (English)"} value={settings.upcomingEvents?.descriptionEn || ''} onChange={(value) => updateUpcoming({ descriptionEn: value })} />
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-500">{isAr ? "Ø§Ù„ÙˆØµÙ (Ø¹Ø±Ø¨ÙŠ)" : "Description (Arabic)"}</Label>
+                  <Label className="text-xs font-bold text-slate-500">{isAr ? "الوصف (عربي)" : "Description (Arabic)"}</Label>
                   <Textarea value={settings.upcomingEvents?.descriptionAr || ''} onChange={(e) => updateUpcoming({ descriptionAr: e.target.value })} dir="rtl" className="rounded-xl bg-slate-50/50 text-right" />
                 </div>
-                <Field label={isAr ? "Ù†Øµ Ø¥Ø°Ø§ ÙƒØ§Ù†Øª Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© ÙØ§Ø±ØºØ© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Empty title (English)"} value={settings.upcomingEvents?.emptyTitleEn || ''} onChange={(value) => updateUpcoming({ emptyTitleEn: value })} />
+                <Field label={isAr ? "نص إذا كانت القائمة فارغة (إنجليزي)" : "Empty title (English)"} value={settings.upcomingEvents?.emptyTitleEn || ''} onChange={(value) => updateUpcoming({ emptyTitleEn: value })} />
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-500">{isAr ? "Ù†Øµ Ø¥Ø°Ø§ ÙƒØ§Ù†Øª Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© ÙØ§Ø±ØºØ© (Ø¹Ø±Ø¨ÙŠ)" : "Empty title (Arabic)"}</Label>
+                  <Label className="text-xs font-bold text-slate-500">{isAr ? "نص إذا كانت القائمة فارغة (عربي)" : "Empty title (Arabic)"}</Label>
                   <Input value={settings.upcomingEvents?.emptyTitleAr || ''} onChange={(e) => updateUpcoming({ emptyTitleAr: e.target.value })} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">{isAr ? "ØªØ±ØªÙŠØ¨ Ø§Ù„Ø¹Ø±Ø¶" : "Sort Mode"}</Label>
+                  <Label className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">{isAr ? "ترتيب العرض" : "Sort Mode"}</Label>
                   <Select value={settings.upcomingEvents?.sortMode || 'default'} onValueChange={(value) => updateUpcoming({ sortMode: value as any })}>
                     <SelectTrigger className="h-12 rounded-2xl border-slate-200 bg-slate-50 font-extrabold">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="default">{isAr ? "Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠ" : "Default"}</SelectItem>
-                      <SelectItem value="nearest">{isAr ? "Ø§Ù„Ø£Ù‚Ø±Ø¨" : "Nearest"}</SelectItem>
-                      <SelectItem value="latest">{isAr ? "Ø§Ù„Ø£Ø­Ø¯Ø«" : "Latest"}</SelectItem>
-                      <SelectItem value="oldest">{isAr ? "Ø§Ù„Ø£Ù‚Ø¯Ù…" : "Oldest"}</SelectItem>
+                      <SelectItem value="default">{isAr ? "الافتراضي" : "Default"}</SelectItem>
+                      <SelectItem value="nearest">{isAr ? "الأقرب" : "Nearest"}</SelectItem>
+                      <SelectItem value="latest">{isAr ? "الأحدث" : "Latest"}</SelectItem>
+                      <SelectItem value="oldest">{isAr ? "الأقدم" : "Oldest"}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <Field label={isAr ? "Ø§Ù„Ø¹Ù†Ø§ØµØ± ÙÙŠ Ø§Ù„ØµÙØ­Ø©" : "Items per page"} value={String(settings.upcomingEvents?.itemsPerPage || 24)} onChange={(value) => updateUpcoming({ itemsPerPage: Number(value) })} />
+                <Field label={isAr ? "العناصر في الصفحة" : "Items per page"} value={String(settings.upcomingEvents?.itemsPerPage || 24)} onChange={(value) => updateUpcoming({ itemsPerPage: Number(value) })} />
               </div>
               <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm">
-                <h4 className="font-extrabold text-[#17172f]">{isAr ? "Ø§Ù„Ù‚Ø³Ù… Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§ØªÙŠ" : "Informational Section"}</h4>
+                <h4 className="font-extrabold text-[#17172f]">{isAr ? "القسم المعلوماتي" : "Informational Section"}</h4>
                 <div className="grid gap-3 md:grid-cols-2">
-                  <ToggleCard label={isAr ? "ØªÙ…ÙƒÙŠÙ† Ø§Ù„Ù‚Ø³Ù… Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§ØªÙŠ" : "Enable informational section"} checked={!!settings.upcomingEvents?.informationSection?.enabled} onChange={(v) => updateUpcomingInfo({ enabled: v })} />
-                  <Field label={isAr ? "Ø§Ù„Ø¹Ø¨Ø§Ø±Ø© Ø§Ù„ØªÙ…Ù‡ÙŠØ¯ÙŠØ© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Badge / Eyebrow (English)"} value={settings.upcomingEvents?.informationSection?.badgeEn || ''} onChange={(v) => updateUpcomingInfo({ badgeEn: v })} />
+                  <ToggleCard label={isAr ? "تمكين القسم المعلوماتي" : "Enable informational section"} checked={!!settings.upcomingEvents?.informationSection?.enabled} onChange={(v) => updateUpcomingInfo({ enabled: v })} />
+                  <Field label={isAr ? "العبارة التمهيدية (إنجليزي)" : "Badge / Eyebrow (English)"} value={settings.upcomingEvents?.informationSection?.badgeEn || ''} onChange={(v) => updateUpcomingInfo({ badgeEn: v })} />
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-slate-500">{isAr ? "Ø§Ù„Ø¹Ø¨Ø§Ø±Ø© Ø§Ù„ØªÙ…Ù‡ÙŠØ¯ÙŠØ© (Ø¹Ø±Ø¨ÙŠ)" : "Badge / Eyebrow (Arabic)"}</Label>
+                    <Label className="text-xs font-bold text-slate-500">{isAr ? "العبارة التمهيدية (عربي)" : "Badge / Eyebrow (Arabic)"}</Label>
                     <Input value={settings.upcomingEvents?.informationSection?.badgeAr || ''} onChange={(e) => updateUpcomingInfo({ badgeAr: e.target.value })} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                   </div>
-                  <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Heading (English)"} value={settings.upcomingEvents?.informationSection?.titleEn || ''} onChange={(v) => updateUpcomingInfo({ titleEn: v })} />
+                  <Field label={isAr ? "العنوان (إنجليزي)" : "Heading (English)"} value={settings.upcomingEvents?.informationSection?.titleEn || ''} onChange={(v) => updateUpcomingInfo({ titleEn: v })} />
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-slate-500">{isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¹Ø±Ø¨ÙŠ)" : "Heading (Arabic)"}</Label>
+                    <Label className="text-xs font-bold text-slate-500">{isAr ? "العنوان (عربي)" : "Heading (Arabic)"}</Label>
                     <Input value={settings.upcomingEvents?.informationSection?.titleAr || ''} onChange={(e) => updateUpcomingInfo({ titleAr: e.target.value })} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                   </div>
-                  <TextAreaField label={isAr ? "Ø§Ù„ÙˆØµÙ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Description (English)"} value={settings.upcomingEvents?.informationSection?.descriptionEn || ''} onChange={(v) => updateUpcomingInfo({ descriptionEn: v })} />
+                  <TextAreaField label={isAr ? "الوصف (إنجليزي)" : "Description (English)"} value={settings.upcomingEvents?.informationSection?.descriptionEn || ''} onChange={(v) => updateUpcomingInfo({ descriptionEn: v })} />
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-slate-500">{isAr ? "Ø§Ù„ÙˆØµÙ (Ø¹Ø±Ø¨ÙŠ)" : "Description (Arabic)"}</Label>
+                    <Label className="text-xs font-bold text-slate-500">{isAr ? "الوصف (عربي)" : "Description (Arabic)"}</Label>
                     <Textarea value={settings.upcomingEvents?.informationSection?.descriptionAr || ''} onChange={(e) => updateUpcomingInfo({ descriptionAr: e.target.value })} dir="rtl" className="rounded-xl bg-slate-50/50 text-right" />
                   </div>
-                  <ImageUrlDropzone label={isAr ? "ØµÙˆØ±Ø© Ø§Ù„Ù‚Ø³Ù…" : "Section image"} value={settings.upcomingEvents?.informationSection?.imageUrl || ''} onChange={(v) => updateUpcomingInfo({ imageUrl: v })} />
-                  <Field label={isAr ? "Alt Ù†Øµ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Image alt (English)"} value={settings.upcomingEvents?.informationSection?.imageAltEn || ''} onChange={(v) => updateUpcomingInfo({ imageAltEn: v })} />
+                  <ImageUrlDropzone label={isAr ? "صورة القسم" : "Section image"} value={settings.upcomingEvents?.informationSection?.imageUrl || ''} onChange={(v) => updateUpcomingInfo({ imageUrl: v })} />
+                  <Field label={isAr ? "Alt نص (إنجليزي)" : "Image alt (English)"} value={settings.upcomingEvents?.informationSection?.imageAltEn || ''} onChange={(v) => updateUpcomingInfo({ imageAltEn: v })} />
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-slate-500">{isAr ? "Alt Ù†Øµ (Ø¹Ø±Ø¨ÙŠ)" : "Image alt (Arabic)"}</Label>
+                    <Label className="text-xs font-bold text-slate-500">{isAr ? "Alt نص (عربي)" : "Image alt (Arabic)"}</Label>
                     <Input value={settings.upcomingEvents?.informationSection?.imageAltAr || ''} onChange={(e) => updateUpcomingInfo({ imageAltAr: e.target.value })} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">{isAr ? "Ù…ÙˆØ¶Ø¹ Ø§Ù„ØµÙˆØ±Ø©" : "Image position"}</Label>
+                    <Label className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">{isAr ? "موضع الصورة" : "Image position"}</Label>
                     <Select value={settings.upcomingEvents?.informationSection?.imagePosition || 'left'} onValueChange={(value) => updateUpcomingInfo({ imagePosition: value as any })}>
                       <SelectTrigger className="h-12 rounded-2xl border-slate-200 bg-slate-50 font-extrabold">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="left">{isAr ? "ÙŠØ³Ø§Ø±" : "Left"}</SelectItem>
-                        <SelectItem value="right">{isAr ? "ÙŠÙ…ÙŠÙ†" : "Right"}</SelectItem>
+                        <SelectItem value="left">{isAr ? "يسار" : "Left"}</SelectItem>
+                        <SelectItem value="right">{isAr ? "يمين" : "Right"}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <div className="mt-4">
-                  <h5 className="font-extrabold">{isAr ? "Ø§Ù„Ù†Ù‚Ø§Ø·" : "Bullet items"}</h5>
+                  <h5 className="font-extrabold">{isAr ? "النقاط" : "Bullet items"}</h5>
                   <div className="space-y-3 mt-3">
                     {(settings.upcomingEvents?.informationSection?.bullets || []).map((b, i) => (
                       <div key={b.id} className="grid gap-2 md:grid-cols-[1fr_auto] items-start">
                         <div className="grid gap-2">
-                          <Field label={isAr ? `Ø§Ù„Ù†Ù‚Ø·Ø© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ) #${i+1}` : `Bullet (English) #${i+1}`} value={b.textEn} onChange={(v) => setSettings(s => ({ ...s, upcomingEvents: { ...(s.upcomingEvents||{}), informationSection: { ...(s.upcomingEvents?.informationSection||{}), bullets: (s.upcomingEvents?.informationSection?.bullets||[]).map(x => x.id === b.id ? { ...x, textEn: v } : x) } } } as SiteContentSettings))} />
+                          <Field label={isAr ? `النقطة (إنجليزي) #${i+1}` : `Bullet (English) #${i+1}`} value={b.textEn} onChange={(v) => setSettings(s => ({ ...s, upcomingEvents: { ...(s.upcomingEvents||{}), informationSection: { ...(s.upcomingEvents?.informationSection||{}), bullets: (s.upcomingEvents?.informationSection?.bullets||[]).map(x => x.id === b.id ? { ...x, textEn: v } : x) } } } as SiteContentSettings))} />
                           <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-500">{isAr ? `Ø§Ù„Ù†Ù‚Ø·Ø© (Ø¹Ø±Ø¨ÙŠ) #${i+1}` : `Bullet (Arabic) #${i+1}`}</Label>
+                            <Label className="text-xs font-bold text-slate-500">{isAr ? `النقطة (عربي) #${i+1}` : `Bullet (Arabic) #${i+1}`}</Label>
                             <Input value={b.textAr} onChange={(e) => setSettings(s => ({ ...s, upcomingEvents: { ...(s.upcomingEvents||{}), informationSection: { ...(s.upcomingEvents?.informationSection||{}), bullets: (s.upcomingEvents?.informationSection?.bullets||[]).map(x => x.id === b.id ? { ...x, textAr: e.target.value } : x) } } } as SiteContentSettings))} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                           </div>
                         </div>
                         <div className="flex flex-col gap-2">
                           <div className="flex gap-1">
-                            <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø¹Ù„Ù‰" : "Move up"} onClick={() => setSettings(s => {
+                            <IconButton label={isAr ? "تحريك لأعلى" : "Move up"} onClick={() => setSettings(s => {
                               const arr = (s.upcomingEvents?.informationSection?.bullets || []).slice();
                               const idx = arr.findIndex(x => x.id === b.id);
                               if (idx <= 0) return s;
@@ -2121,7 +2119,7 @@ export function SiteContentSettingsPanel() {
                               arr.splice(idx-1,0,it);
                               return { ...s, upcomingEvents: { ...(s.upcomingEvents||{}), informationSection: { ...(s.upcomingEvents?.informationSection||{}), bullets: arr } } } as SiteContentSettings;
                             })} icon={ArrowUp} />
-                            <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø³ÙÙ„" : "Move down"} onClick={() => setSettings(s => {
+                            <IconButton label={isAr ? "تحريك لأسفل" : "Move down"} onClick={() => setSettings(s => {
                               const arr = (s.upcomingEvents?.informationSection?.bullets || []).slice();
                               const idx = arr.findIndex(x => x.id === b.id);
                               if (idx < 0 || idx === arr.length-1) return s;
@@ -2134,9 +2132,9 @@ export function SiteContentSettingsPanel() {
                         </div>
                       </div>
                     ))}
-                    <Button variant="outline" onClick={() => setSettings(s => ({ ...s, upcomingEvents: { ...(s.upcomingEvents||{}), informationSection: { ...(s.upcomingEvents?.informationSection||{}), bullets: [...(s.upcomingEvents?.informationSection?.bullets||[]), { id: `b-${Date.now()}`, textEn: 'New bullet', textAr: 'Ù†Ù‚Ø·Ø© Ø¬Ø¯ÙŠØ¯Ø©' }] } } } as SiteContentSettings))} className="h-11 rounded-2xl font-extrabold w-full">
+                    <Button variant="outline" onClick={() => setSettings(s => ({ ...s, upcomingEvents: { ...(s.upcomingEvents||{}), informationSection: { ...(s.upcomingEvents?.informationSection||{}), bullets: [...(s.upcomingEvents?.informationSection?.bullets||[]), { id: `b-${Date.now()}`, textEn: 'New bullet', textAr: 'نقطة جديدة' }] } } } as SiteContentSettings))} className="h-11 rounded-2xl font-extrabold w-full">
                       <Plus className="h-4 w-4" />
-                      {isAr ? 'Ø¥Ø¶Ø§ÙØ© Ù†Ù‚Ø·Ø©' : 'Add bullet'}
+                      {isAr ? 'إضافة نقطة' : 'Add bullet'}
                     </Button>
                   </div>
                 </div>
@@ -2146,97 +2144,97 @@ export function SiteContentSettingsPanel() {
 <TabsContent value="previous" className="mt-0">
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4">
               <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                <ToggleCard label={isAr ? "ØªÙ…ÙƒÙŠÙ† Ù‚Ø³Ù… Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ§Øª Ø§Ù„Ø³Ø§Ø¨Ù‚Ø©" : "Enable Previous Events"} checked={!!settings.previousEvents?.enabled} onChange={(v) => updatePrevious({ enabled: v })} />
-                <Field label={isAr ? "Ø§Ù„Ø¹Ø¨Ø§Ø±Ø© Ø§Ù„ØªÙ…Ù‡ÙŠØ¯ÙŠØ© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Eyebrow (English)"} value={settings.previousEvents?.eyebrowEn || ''} onChange={(value) => updatePrevious({ eyebrowEn: value })} />
+                <ToggleCard label={isAr ? "تمكين قسم الفعاليات السابقة" : "Enable Previous Events"} checked={!!settings.previousEvents?.enabled} onChange={(v) => updatePrevious({ enabled: v })} />
+                <Field label={isAr ? "العبارة التمهيدية (إنجليزي)" : "Eyebrow (English)"} value={settings.previousEvents?.eyebrowEn || ''} onChange={(value) => updatePrevious({ eyebrowEn: value })} />
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-500">{isAr ? "Ø§Ù„Ø¹Ø¨Ø§Ø±Ø© Ø§Ù„ØªÙ…Ù‡ÙŠØ¯ÙŠØ© (Ø¹Ø±Ø¨ÙŠ)" : "Eyebrow (Arabic)"}</Label>
+                  <Label className="text-xs font-bold text-slate-500">{isAr ? "العبارة التمهيدية (عربي)" : "Eyebrow (Arabic)"}</Label>
                   <Input value={settings.previousEvents?.eyebrowAr || ''} onChange={(e) => updatePrevious({ eyebrowAr: e.target.value })} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                 </div>
-                <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Title (English)"} value={settings.previousEvents?.titleEn || ''} onChange={(value) => updatePrevious({ titleEn: value })} />
+                <Field label={isAr ? "العنوان (إنجليزي)" : "Title (English)"} value={settings.previousEvents?.titleEn || ''} onChange={(value) => updatePrevious({ titleEn: value })} />
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-500">{isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¹Ø±Ø¨ÙŠ)" : "Title (Arabic)"}</Label>
+                  <Label className="text-xs font-bold text-slate-500">{isAr ? "العنوان (عربي)" : "Title (Arabic)"}</Label>
                   <Input value={settings.previousEvents?.titleAr || ''} onChange={(e) => updatePrevious({ titleAr: e.target.value })} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                 </div>
-                <TextAreaField label={isAr ? "Ø§Ù„ÙˆØµÙ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Description (English)"} value={settings.previousEvents?.descriptionEn || ''} onChange={(value) => updatePrevious({ descriptionEn: value })} />
+                <TextAreaField label={isAr ? "الوصف (إنجليزي)" : "Description (English)"} value={settings.previousEvents?.descriptionEn || ''} onChange={(value) => updatePrevious({ descriptionEn: value })} />
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-500">{isAr ? "Ø§Ù„ÙˆØµÙ (Ø¹Ø±Ø¨ÙŠ)" : "Description (Arabic)"}</Label>
+                  <Label className="text-xs font-bold text-slate-500">{isAr ? "الوصف (عربي)" : "Description (Arabic)"}</Label>
                   <Textarea value={settings.previousEvents?.descriptionAr || ''} onChange={(e) => updatePrevious({ descriptionAr: e.target.value })} dir="rtl" className="rounded-xl bg-slate-50/50 text-right" />
                 </div>
-                <Field label={isAr ? "Ù†Øµ Ø¥Ø°Ø§ ÙƒØ§Ù†Øª Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© ÙØ§Ø±ØºØ© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Empty title (English)"} value={settings.previousEvents?.emptyTitleEn || ''} onChange={(value) => updatePrevious({ emptyTitleEn: value })} />
+                <Field label={isAr ? "نص إذا كانت القائمة فارغة (إنجليزي)" : "Empty title (English)"} value={settings.previousEvents?.emptyTitleEn || ''} onChange={(value) => updatePrevious({ emptyTitleEn: value })} />
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-500">{isAr ? "Ù†Øµ Ø¥Ø°Ø§ ÙƒØ§Ù†Øª Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© ÙØ§Ø±ØºØ© (Ø¹Ø±Ø¨ÙŠ)" : "Empty title (Arabic)"}</Label>
+                  <Label className="text-xs font-bold text-slate-500">{isAr ? "نص إذا كانت القائمة فارغة (عربي)" : "Empty title (Arabic)"}</Label>
                   <Input value={settings.previousEvents?.emptyTitleAr || ''} onChange={(e) => updatePrevious({ emptyTitleAr: e.target.value })} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">{isAr ? "ØªØ±ØªÙŠØ¨ Ø§Ù„Ø¹Ø±Ø¶" : "Sort Mode"}</Label>
+                  <Label className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">{isAr ? "ترتيب العرض" : "Sort Mode"}</Label>
                   <Select value={settings.previousEvents?.sortMode || 'nearest'} onValueChange={(value) => updatePrevious({ sortMode: value as any })}>
                     <SelectTrigger className="h-12 rounded-2xl border-slate-200 bg-slate-50 font-extrabold">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="default">{isAr ? "Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠ" : "Default"}</SelectItem>
-                      <SelectItem value="nearest">{isAr ? "Ø§Ù„Ø£Ù‚Ø±Ø¨" : "Nearest"}</SelectItem>
-                      <SelectItem value="latest">{isAr ? "Ø§Ù„Ø£Ø­Ø¯Ø«" : "Latest"}</SelectItem>
-                      <SelectItem value="oldest">{isAr ? "Ø§Ù„Ø£Ù‚Ø¯Ù…" : "Oldest"}</SelectItem>
+                      <SelectItem value="default">{isAr ? "الافتراضي" : "Default"}</SelectItem>
+                      <SelectItem value="nearest">{isAr ? "الأقرب" : "Nearest"}</SelectItem>
+                      <SelectItem value="latest">{isAr ? "الأحدث" : "Latest"}</SelectItem>
+                      <SelectItem value="oldest">{isAr ? "الأقدم" : "Oldest"}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <Field label={isAr ? "Ø§Ù„Ø¹Ù†Ø§ØµØ± ÙÙŠ Ø§Ù„ØµÙØ­Ø©" : "Items per page"} value={String(settings.previousEvents?.itemsPerPage || 24)} onChange={(value) => updatePrevious({ itemsPerPage: Number(value) })} />
+                <Field label={isAr ? "العناصر في الصفحة" : "Items per page"} value={String(settings.previousEvents?.itemsPerPage || 24)} onChange={(value) => updatePrevious({ itemsPerPage: Number(value) })} />
               </div>
               <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm mt-4">
-                <h4 className="font-extrabold text-[#17172f]">{isAr ? "Ø§Ù„Ù‚Ø³Ù… Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§ØªÙŠ" : "Informational Section"}</h4>
+                <h4 className="font-extrabold text-[#17172f]">{isAr ? "القسم المعلوماتي" : "Informational Section"}</h4>
                 <div className="grid gap-3 md:grid-cols-2">
-                  <ToggleCard label={isAr ? "ØªÙ…ÙƒÙŠÙ† Ø§Ù„Ù‚Ø³Ù… Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§ØªÙŠ" : "Enable informational section"} checked={!!settings.previousEvents?.informationSection?.enabled} onChange={(v) => updatePreviousInfo({ enabled: v })} />
-                  <Field label={isAr ? "Ø§Ù„Ø¹Ø¨Ø§Ø±Ø© Ø§Ù„ØªÙ…Ù‡ÙŠØ¯ÙŠØ© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Badge / Eyebrow (English)"} value={settings.previousEvents?.informationSection?.badgeEn || ''} onChange={(v) => updatePreviousInfo({ badgeEn: v })} />
+                  <ToggleCard label={isAr ? "تمكين القسم المعلوماتي" : "Enable informational section"} checked={!!settings.previousEvents?.informationSection?.enabled} onChange={(v) => updatePreviousInfo({ enabled: v })} />
+                  <Field label={isAr ? "العبارة التمهيدية (إنجليزي)" : "Badge / Eyebrow (English)"} value={settings.previousEvents?.informationSection?.badgeEn || ''} onChange={(v) => updatePreviousInfo({ badgeEn: v })} />
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-slate-500">{isAr ? "Ø§Ù„Ø¹Ø¨Ø§Ø±Ø© Ø§Ù„ØªÙ…Ù‡ÙŠØ¯ÙŠØ© (Ø¹Ø±Ø¨ÙŠ)" : "Badge / Eyebrow (Arabic)"}</Label>
+                    <Label className="text-xs font-bold text-slate-500">{isAr ? "العبارة التمهيدية (عربي)" : "Badge / Eyebrow (Arabic)"}</Label>
                     <Input value={settings.previousEvents?.informationSection?.badgeAr || ''} onChange={(e) => updatePreviousInfo({ badgeAr: e.target.value })} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                   </div>
-                  <Field label={isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Heading (English)"} value={settings.previousEvents?.informationSection?.titleEn || ''} onChange={(v) => updatePreviousInfo({ titleEn: v })} />
+                  <Field label={isAr ? "العنوان (إنجليزي)" : "Heading (English)"} value={settings.previousEvents?.informationSection?.titleEn || ''} onChange={(v) => updatePreviousInfo({ titleEn: v })} />
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-slate-500">{isAr ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† (Ø¹Ø±Ø¨ÙŠ)" : "Heading (Arabic)"}</Label>
+                    <Label className="text-xs font-bold text-slate-500">{isAr ? "العنوان (عربي)" : "Heading (Arabic)"}</Label>
                     <Input value={settings.previousEvents?.informationSection?.titleAr || ''} onChange={(e) => updatePreviousInfo({ titleAr: e.target.value })} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                   </div>
-                  <TextAreaField label={isAr ? "Ø§Ù„ÙˆØµÙ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Description (English)"} value={settings.previousEvents?.informationSection?.descriptionEn || ''} onChange={(v) => updatePreviousInfo({ descriptionEn: v })} />
+                  <TextAreaField label={isAr ? "الوصف (إنجليزي)" : "Description (English)"} value={settings.previousEvents?.informationSection?.descriptionEn || ''} onChange={(v) => updatePreviousInfo({ descriptionEn: v })} />
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-slate-500">{isAr ? "Ø§Ù„ÙˆØµÙ (Ø¹Ø±Ø¨ÙŠ)" : "Description (Arabic)"}</Label>
+                    <Label className="text-xs font-bold text-slate-500">{isAr ? "الوصف (عربي)" : "Description (Arabic)"}</Label>
                     <Textarea value={settings.previousEvents?.informationSection?.descriptionAr || ''} onChange={(e) => updatePreviousInfo({ descriptionAr: e.target.value })} dir="rtl" className="rounded-xl bg-slate-50/50 text-right" />
                   </div>
-                  <ImageUrlDropzone label={isAr ? "ØµÙˆØ±Ø© Ø§Ù„Ù‚Ø³Ù…" : "Section image"} value={settings.previousEvents?.informationSection?.imageUrl || ''} onChange={(v) => updatePreviousInfo({ imageUrl: v })} />
-                  <Field label={isAr ? "Alt Ù†Øµ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Image alt (English)"} value={settings.previousEvents?.informationSection?.imageAltEn || ''} onChange={(v) => updatePreviousInfo({ imageAltEn: v })} />
+                  <ImageUrlDropzone label={isAr ? "صورة القسم" : "Section image"} value={settings.previousEvents?.informationSection?.imageUrl || ''} onChange={(v) => updatePreviousInfo({ imageUrl: v })} />
+                  <Field label={isAr ? "Alt نص (إنجليزي)" : "Image alt (English)"} value={settings.previousEvents?.informationSection?.imageAltEn || ''} onChange={(v) => updatePreviousInfo({ imageAltEn: v })} />
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-slate-500">{isAr ? "Alt Ù†Øµ (Ø¹Ø±Ø¨ÙŠ)" : "Image alt (Arabic)"}</Label>
+                    <Label className="text-xs font-bold text-slate-500">{isAr ? "Alt نص (عربي)" : "Image alt (Arabic)"}</Label>
                     <Input value={settings.previousEvents?.informationSection?.imageAltAr || ''} onChange={(e) => updatePreviousInfo({ imageAltAr: e.target.value })} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">{isAr ? "Ù…ÙˆØ¶Ø¹ Ø§Ù„ØµÙˆØ±Ø©" : "Image position"}</Label>
+                    <Label className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">{isAr ? "موضع الصورة" : "Image position"}</Label>
                     <Select value={settings.previousEvents?.informationSection?.imagePosition || 'right'} onValueChange={(value) => updatePreviousInfo({ imagePosition: value as any })}>
                       <SelectTrigger className="h-12 rounded-2xl border-slate-200 bg-slate-50 font-extrabold">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="left">{isAr ? "ÙŠØ³Ø§Ø±" : "Left"}</SelectItem>
-                        <SelectItem value="right">{isAr ? "ÙŠÙ…ÙŠÙ†" : "Right"}</SelectItem>
+                        <SelectItem value="left">{isAr ? "يسار" : "Left"}</SelectItem>
+                        <SelectItem value="right">{isAr ? "يمين" : "Right"}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <div className="mt-4">
-                  <h5 className="font-extrabold">{isAr ? "Ø§Ù„Ù†Ù‚Ø§Ø·" : "Bullet items"}</h5>
+                  <h5 className="font-extrabold">{isAr ? "النقاط" : "Bullet items"}</h5>
                   <div className="space-y-3 mt-3">
                     {(settings.previousEvents?.informationSection?.bullets || []).map((b, i) => (
                       <div key={b.id} className="grid gap-2 md:grid-cols-[1fr_auto] items-start">
                         <div className="grid gap-2">
-                          <Field label={isAr ? `Ø§Ù„Ù†Ù‚Ø·Ø© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ) #${i+1}` : `Bullet (English) #${i+1}`} value={b.textEn} onChange={(v) => setSettings(s => ({ ...s, previousEvents: { ...(s.previousEvents||{}), informationSection: { ...(s.previousEvents?.informationSection||{}), bullets: (s.previousEvents?.informationSection?.bullets||[]).map(x => x.id === b.id ? { ...x, textEn: v } : x) } } } as SiteContentSettings))} />
+                          <Field label={isAr ? `النقطة (إنجليزي) #${i+1}` : `Bullet (English) #${i+1}`} value={b.textEn} onChange={(v) => setSettings(s => ({ ...s, previousEvents: { ...(s.previousEvents||{}), informationSection: { ...(s.previousEvents?.informationSection||{}), bullets: (s.previousEvents?.informationSection?.bullets||[]).map(x => x.id === b.id ? { ...x, textEn: v } : x) } } } as SiteContentSettings))} />
                           <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-500">{isAr ? `Ø§Ù„Ù†Ù‚Ø·Ø© (Ø¹Ø±Ø¨ÙŠ) #${i+1}` : `Bullet (Arabic) #${i+1}`}</Label>
+                            <Label className="text-xs font-bold text-slate-500">{isAr ? `النقطة (عربي) #${i+1}` : `Bullet (Arabic) #${i+1}`}</Label>
                             <Input value={b.textAr} onChange={(e) => setSettings(s => ({ ...s, previousEvents: { ...(s.previousEvents||{}), informationSection: { ...(s.previousEvents?.informationSection||{}), bullets: (s.previousEvents?.informationSection?.bullets||[]).map(x => x.id === b.id ? { ...x, textAr: e.target.value } : x) } } } as SiteContentSettings))} dir="rtl" className="h-11 rounded-xl bg-slate-50/50 text-right" />
                           </div>
                         </div>
                         <div className="flex flex-col gap-2">
                           <div className="flex gap-1">
-                            <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø¹Ù„Ù‰" : "Move up"} onClick={() => setSettings(s => {
+                            <IconButton label={isAr ? "تحريك لأعلى" : "Move up"} onClick={() => setSettings(s => {
                               const arr = (s.previousEvents?.informationSection?.bullets || []).slice();
                               const idx = arr.findIndex(x => x.id === b.id);
                               if (idx <= 0) return s;
@@ -2244,7 +2242,7 @@ export function SiteContentSettingsPanel() {
                               arr.splice(idx-1,0,it);
                               return { ...s, previousEvents: { ...(s.previousEvents||{}), informationSection: { ...(s.previousEvents?.informationSection||{}), bullets: arr } } } as SiteContentSettings;
                             })} icon={ArrowUp} />
-                            <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø³ÙÙ„" : "Move down"} onClick={() => setSettings(s => {
+                            <IconButton label={isAr ? "تحريك لأسفل" : "Move down"} onClick={() => setSettings(s => {
                               const arr = (s.previousEvents?.informationSection?.bullets || []).slice();
                               const idx = arr.findIndex(x => x.id === b.id);
                               if (idx < 0 || idx === arr.length-1) return s;
@@ -2257,9 +2255,9 @@ export function SiteContentSettingsPanel() {
                         </div>
                       </div>
                     ))}
-                    <Button variant="outline" onClick={() => setSettings(s => ({ ...s, previousEvents: { ...(s.previousEvents||{}), informationSection: { ...(s.previousEvents?.informationSection||{}), bullets: [...(s.previousEvents?.informationSection?.bullets||[]), { id: `p-${Date.now()}`, textEn: 'New bullet', textAr: 'Ù†Ù‚Ø·Ø© Ø¬Ø¯ÙŠØ¯Ø©' }] } } } as SiteContentSettings))} className="h-11 rounded-2xl font-extrabold w-full">
+                    <Button variant="outline" onClick={() => setSettings(s => ({ ...s, previousEvents: { ...(s.previousEvents||{}), informationSection: { ...(s.previousEvents?.informationSection||{}), bullets: [...(s.previousEvents?.informationSection?.bullets||[]), { id: `p-${Date.now()}`, textEn: 'New bullet', textAr: 'نقطة جديدة' }] } } } as SiteContentSettings))} className="h-11 rounded-2xl font-extrabold w-full">
                       <Plus className="h-4 w-4" />
-                      {isAr ? 'Ø¥Ø¶Ø§ÙØ© Ù†Ù‚Ø·Ø©' : 'Add bullet'}
+                      {isAr ? 'إضافة نقطة' : 'Add bullet'}
                     </Button>
                   </div>
                 </div>
@@ -2387,30 +2385,96 @@ export function SiteContentSettingsPanel() {
           </TabsContent>
 <TabsContent value="footer" className="mt-0">
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4">
-              <h3 className="text-lg font-bold">{isAr ? "Ù†ØµÙˆØµ Ø§Ù„ÙÙˆØªØ± Ø§Ù„Ø³ÙÙ„ÙŠØ© (Logo & Columns)" : "Footer Bottom Texts (Logo & Columns)"}</h3>
+              <h3 className="text-lg font-bold">{isAr ? "إعدادات الفوتر" : "Footer Settings"}</h3>
+
               <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm md:grid-cols-2">
-                <TextAreaField label={isAr ? "ÙˆØµÙ Ø£Ø³ÙÙ„ Ø§Ù„Ù„ÙˆØ¬Ùˆ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Logo Description (English)"} value={settings.homepage.footerLogoDescEn} onChange={(value) => updateHomepage("footerLogoDescEn", value)} />
-                <TextAreaField label={isAr ? "ÙˆØµÙ Ø£Ø³ÙÙ„ Ø§Ù„Ù„ÙˆØ¬Ùˆ (Ø¹Ø±Ø¨ÙŠ)" : "Logo Description (Arabic)"} value={settings.homepage.footerLogoDescAr} onChange={(value) => updateHomepage("footerLogoDescAr", value)} />
+                <TextAreaField label={isAr ? "وصف البراند (إنجليزي)" : "Brand Description (English)"} value={settings.homepage.footerLogoDescEn} onChange={(value) => updateHomepage("footerLogoDescEn", value)} />
+                <TextAreaField label={isAr ? "وصف البراند (عربي)" : "Brand Description (Arabic)"} value={settings.homepage.footerLogoDescAr} onChange={(value) => updateHomepage("footerLogoDescAr", value)} />
+                <Field label={isAr ? "عنوان الخدمات (إنجليزي)" : "Services Title (English)"} value={settings.homepage.footerServicesTitleEn} onChange={(value) => updateHomepage("footerServicesTitleEn", value)} />
+                <Field label={isAr ? "عنوان الخدمات (عربي)" : "Services Title (Arabic)"} value={settings.homepage.footerServicesTitleAr} onChange={(value) => updateHomepage("footerServicesTitleAr", value)} />
+                <Field label={isAr ? "عنوان الدعم (إنجليزي)" : "Support Title (English)"} value={settings.homepage.footerSupportTitleEn} onChange={(value) => updateHomepage("footerSupportTitleEn", value)} />
+                <Field label={isAr ? "عنوان الدعم (عربي)" : "Support Title (Arabic)"} value={settings.homepage.footerSupportTitleAr} onChange={(value) => updateHomepage("footerSupportTitleAr", value)} />
+                <Field label={isAr ? "نص الحقوق (إنجليزي)" : "Copyright Text (English)"} value={settings.homepage.footerCopyrightEn} onChange={(value) => updateHomepage("footerCopyrightEn", value)} />
+                <Field label={isAr ? "نص الحقوق (عربي)" : "Copyright Text (Arabic)"} value={settings.homepage.footerCopyrightAr} onChange={(value) => updateHomepage("footerCopyrightAr", value)} />
+              </div>
+            </div>
 
-                <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† Ø¹Ù…ÙˆØ¯ Ø§Ù„Ø®Ø¯Ù…Ø§Øª (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Services Column Title (English)"} value={settings.homepage.footerServicesTitleEn} onChange={(value) => updateHomepage("footerServicesTitleEn", value)} />
-                <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† Ø¹Ù…ÙˆØ¯ Ø§Ù„Ø®Ø¯Ù…Ø§Øª (Ø¹Ø±Ø¨ÙŠ)" : "Services Column Title (Arabic)"} value={settings.homepage.footerServicesTitleAr} onChange={(value) => updateHomepage("footerServicesTitleAr", value)} />
+            <div className="mt-5 grid gap-5 rounded-[24px] bg-slate-50 p-4 lg:grid-cols-2">
+              {["services", "support"].map((group) => (
+                <div key={group} className="rounded-[22px] bg-white p-4 shadow-sm">
+                  <h3 className="text-lg font-bold">{group === "services" ? (isAr ? "روابط الخدمات" : "Services Links") : (isAr ? "روابط الدعم" : "Support Links")}</h3>
+                  <div className="mt-4 space-y-3">
+                    {footerNavigationLinks.filter((link) => link.col === group).map((link) => (
+                      <div key={link.id} className="grid gap-3 rounded-[16px] bg-slate-50 p-4 md:grid-cols-3">
+                        <Input placeholder="Label EN" value={link.labelEn} onChange={(e) => {
+                          const newLinks = footerNavigationLinks.map((item) => item.id === link.id ? { ...item, labelEn: e.target.value } : item)
+                          setSettings({ ...settings, footerLinks: newLinks })
+                          setSaveState("idle")
+                        }} />
+                        <Input placeholder="Label AR" value={link.labelAr} onChange={(e) => {
+                          const newLinks = footerNavigationLinks.map((item) => item.id === link.id ? { ...item, labelAr: e.target.value } : item)
+                          setSettings({ ...settings, footerLinks: newLinks })
+                          setSaveState("idle")
+                        }} />
+                        <Input placeholder="URL" value={link.href} onChange={(e) => {
+                          const newLinks = footerNavigationLinks.map((item) => item.id === link.id ? { ...item, href: e.target.value } : item)
+                          setSettings({ ...settings, footerLinks: newLinks })
+                          setSaveState("idle")
+                        }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-                <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† Ø¹Ù…ÙˆØ¯ Ø§Ù„Ø¯Ø¹Ù… (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Support Column Title (English)"} value={settings.homepage.footerSupportTitleEn} onChange={(value) => updateHomepage("footerSupportTitleEn", value)} />
-                <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† Ø¹Ù…ÙˆØ¯ Ø§Ù„Ø¯Ø¹Ù… (Ø¹Ø±Ø¨ÙŠ)" : "Support Column Title (Arabic)"} value={settings.homepage.footerSupportTitleAr} onChange={(value) => updateHomepage("footerSupportTitleAr", value)} />
+            <div className="mt-5 grid gap-5 rounded-[24px] bg-slate-50 p-4">
+              <h3 className="text-lg font-bold">{isAr ? "بيانات التواصل في الفوتر" : "Footer Contact Details"}</h3>
+              <div className="grid gap-3 md:grid-cols-2">
+                {DEFAULT_CONTACT_PAGE_SETTINGS.contactCards.slice(0, 4).map((fallbackCard) => {
+                  const currentCard = settings.contactPage.contactCards.find((card) => card.id === fallbackCard.id || card.id === fallbackCard.id.replace("contact-", "")) || fallbackCard
+                  return (
+                    <div key={fallbackCard.id} className="grid gap-3 rounded-[16px] bg-white p-4 shadow-sm md:grid-cols-2">
+                      <Field label="Label EN" value={currentCard.labelEn} onChange={(value) => updateContactCards(settings.contactPage.contactCards.map((card) => card.id === currentCard.id ? { ...card, labelEn: value } : card))} />
+                      <Field label="Label AR" value={currentCard.labelAr} onChange={(value) => updateContactCards(settings.contactPage.contactCards.map((card) => card.id === currentCard.id ? { ...card, labelAr: value } : card))} />
+                      <Field label="Value" value={currentCard.value} onChange={(value) => updateContactCards(settings.contactPage.contactCards.map((card) => card.id === currentCard.id ? { ...card, value } : card))} />
+                      <Field label="Link value" value={currentCard.linkValue} onChange={(value) => updateContactCards(settings.contactPage.contactCards.map((card) => card.id === currentCard.id ? { ...card, linkValue: value } : card))} />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
 
-                <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† Ø¹Ù…ÙˆØ¯ Ø§Ù„Ø´Ø±ÙƒØ© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Company Column Title (English)"} value={settings.homepage.footerCompanyTitleEn} onChange={(value) => updateHomepage("footerCompanyTitleEn", value)} />
-                <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† Ø¹Ù…ÙˆØ¯ Ø§Ù„Ø´Ø±ÙƒØ© (Ø¹Ø±Ø¨ÙŠ)" : "Company Column Title (Arabic)"} value={settings.homepage.footerCompanyTitleAr} onChange={(value) => updateHomepage("footerCompanyTitleAr", value)} />
-                
-                <Field label={isAr ? "Ù†Øµ Ø§Ù„Ø­Ù‚ÙˆÙ‚ (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Copyright Text (English)"} value={settings.homepage.footerCopyrightEn} onChange={(value) => updateHomepage("footerCopyrightEn", value)} />
-                <Field label={isAr ? "Ù†Øµ Ø§Ù„Ø­Ù‚ÙˆÙ‚ (Ø¹Ø±Ø¨ÙŠ)" : "Copyright Text (Arabic)"} value={settings.homepage.footerCopyrightAr} onChange={(value) => updateHomepage("footerCopyrightAr", value)} />
+            <div className="mt-5 grid gap-5 rounded-[24px] bg-slate-50 p-4">
+              <h3 className="text-lg font-bold">{isAr ? "روابط قانونية أسفل الفوتر" : "Bottom Legal Links"}</h3>
+              <div className="grid gap-3 md:grid-cols-2">
+                {footerLegalLinks.map((link) => (
+                  <div key={link.id} className="grid gap-3 rounded-[16px] bg-white p-4 shadow-sm md:grid-cols-3">
+                    <Input placeholder="Label EN" value={link.labelEn} onChange={(e) => {
+                      const newLinks = footerLegalLinks.map((item) => item.id === link.id ? { ...item, labelEn: e.target.value } : item)
+                      setSettings({ ...settings, footerLegalLinks: newLinks })
+                      setSaveState("idle")
+                    }} />
+                    <Input placeholder="Label AR" value={link.labelAr} onChange={(e) => {
+                      const newLinks = footerLegalLinks.map((item) => item.id === link.id ? { ...item, labelAr: e.target.value } : item)
+                      setSettings({ ...settings, footerLegalLinks: newLinks })
+                      setSaveState("idle")
+                    }} />
+                    <Input placeholder="URL" value={link.href} onChange={(e) => {
+                      const newLinks = footerLegalLinks.map((item) => item.id === link.id ? { ...item, href: e.target.value } : item)
+                      setSettings({ ...settings, footerLegalLinks: newLinks })
+                      setSaveState("idle")
+                    }} />
+                  </div>
+                ))}
               </div>
             </div>
 
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 mt-5">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold">{isAr ? "Ø±ÙˆØ§Ø¨Ø· Ø§Ù„ØªÙˆØ§ØµÙ„ Ø§Ù„Ø§Ø¬ØªÙ…Ø§Ø¹ÙŠ" : "Social Media Links"}</h3>
-                <Button onClick={() => setSettings({ ...settings, socialLinks: [...(settings.socialLinks || []), { id: Date.now().toString(), platform: "twitter", url: "#" }] })} variant="outline" size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" /> {isAr ? "Ø¥Ø¶Ø§ÙØ© Ø±Ø§Ø¨Ø·" : "Add Link"}
+                <h3 className="text-lg font-bold">{isAr ? "روابط التواصل الاجتماعي" : "Social Media Links"}</h3>
+                <Button onClick={() => { setSettings({ ...settings, socialLinks: [...(settings.socialLinks || []), { id: Date.now().toString(), platform: "twitter", url: "#" }] }); setSaveState("idle") }} variant="outline" size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" /> {isAr ? "إضافة رابط" : "Add Link"}
                 </Button>
               </div>
               <div className="space-y-3">
@@ -2420,6 +2484,7 @@ export function SiteContentSettingsPanel() {
                       const newLinks = [...settings.socialLinks]
                       newLinks[index].platform = val
                       setSettings({ ...settings, socialLinks: newLinks })
+                      setSaveState("idle")
                     }}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -2435,10 +2500,12 @@ export function SiteContentSettingsPanel() {
                       const newLinks = [...settings.socialLinks]
                       newLinks[index].url = e.target.value
                       setSettings({ ...settings, socialLinks: newLinks })
+                      setSaveState("idle")
                     }} />
                     <Button variant="ghost" size="icon" className="text-rose-500 shrink-0 h-10 w-10" onClick={() => {
                       const newLinks = settings.socialLinks.filter((_, i) => i !== index)
                       setSettings({ ...settings, socialLinks: newLinks })
+                      setSaveState("idle")
                     }}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -2446,66 +2513,17 @@ export function SiteContentSettingsPanel() {
                 ))}
               </div>
             </div>
-
-            <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 mt-5">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold">{isAr ? "Ø±ÙˆØ§Ø¨Ø· Ø§Ù„ÙÙˆØªØ±" : "Footer Links"}</h3>
-                <Button onClick={() => setSettings({ ...settings, footerLinks: [...(settings.footerLinks || []), { id: Date.now().toString(), col: "services", labelEn: "New Link", labelAr: "Ø±Ø§Ø¨Ø· Ø¬Ø¯ÙŠØ¯", href: "#" }] })} variant="outline" size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" /> {isAr ? "Ø¥Ø¶Ø§ÙØ© Ø±Ø§Ø¨Ø·" : "Add Link"}
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {settings.footerLinks?.map((link, index) => (
-                  <div key={link.id} className="grid gap-3 rounded-[16px] bg-white p-4 shadow-sm md:grid-cols-[1fr_1.5fr_1.5fr_1fr_auto] items-center">
-                    <Select value={link.col} onValueChange={(val: any) => {
-                      const newLinks = [...settings.footerLinks]
-                      newLinks[index].col = val
-                      setSettings({ ...settings, footerLinks: newLinks })
-                    }}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="services">{isAr ? "Ø§Ù„Ø®Ø¯Ù…Ø§Øª" : "Services"}</SelectItem>
-                        <SelectItem value="support">{isAr ? "Ø§Ù„Ø¯Ø¹Ù…" : "Support"}</SelectItem>
-                        <SelectItem value="company">{isAr ? "Ø§Ù„Ø´Ø±ÙƒØ©" : "Company"}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input placeholder={isAr ? "Ø§Ù„Ø§Ø³Ù… (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)" : "Label (English)"} value={link.labelEn} onChange={(e) => {
-                      const newLinks = [...settings.footerLinks]
-                      newLinks[index].labelEn = e.target.value
-                      setSettings({ ...settings, footerLinks: newLinks })
-                    }} />
-                    <Input placeholder={isAr ? "Ø§Ù„Ø§Ø³Ù… (Ø¹Ø±Ø¨ÙŠ)" : "Label (Arabic)"} value={link.labelAr} onChange={(e) => {
-                      const newLinks = [...settings.footerLinks]
-                      newLinks[index].labelAr = e.target.value
-                      setSettings({ ...settings, footerLinks: newLinks })
-                    }} />
-                    <Input placeholder="URL" value={link.href} onChange={(e) => {
-                      const newLinks = [...settings.footerLinks]
-                      newLinks[index].href = e.target.value
-                      setSettings({ ...settings, footerLinks: newLinks })
-                    }} />
-                    <Button variant="ghost" size="icon" className="text-rose-500 shrink-0 h-10 w-10" onClick={() => {
-                      const newLinks = settings.footerLinks.filter((_, i) => i !== index)
-                      setSettings({ ...settings, footerLinks: newLinks })
-                    }}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </TabsContent>
-<TabsContent value="menu" className="mt-0">
+          </TabsContent><TabsContent value="menu" className="mt-0">
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 xl:grid-cols-[1fr_380px]">
               <div className="space-y-3 rounded-[22px] bg-white p-4 shadow-sm">
                 {settings.menu.map((item, index) => (
                   <div key={item.id} className="grid gap-3 rounded-[22px] border border-slate-100 bg-white p-4 shadow-sm lg:grid-cols-[1fr_1fr_1fr_auto]">
-                    <Field label={isAr ? "Ø§Ø³Ù… Ø§Ù„Ø±Ø§Ø¨Ø· Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©" : "English label"} value={item.labelEn} onChange={(value) => updateMenuItem(item.id, "labelEn", value)} />
-                    <Field label={isAr ? "Ø§Ø³Ù… Ø§Ù„Ø±Ø§Ø¨Ø· Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©" : "Arabic label"} value={item.labelAr} onChange={(value) => updateMenuItem(item.id, "labelAr", value)} />
-                    <Field label={isAr ? "Ø§Ù„Ø±Ø§Ø¨Ø· / Ø§Ù„Ù‚Ø³Ù…" : "URL / Anchor"} value={item.href} onChange={(value) => updateMenuItem(item.id, "href", value)} />
+                    <Field label={isAr ? "اسم الرابط بالإنجليزية" : "English label"} value={item.labelEn} onChange={(value) => updateMenuItem(item.id, "labelEn", value)} />
+                    <Field label={isAr ? "اسم الرابط بالعربية" : "Arabic label"} value={item.labelAr} onChange={(value) => updateMenuItem(item.id, "labelAr", value)} />
+                    <Field label={isAr ? "الرابط / القسم" : "URL / Anchor"} value={item.href} onChange={(value) => updateMenuItem(item.id, "href", value)} />
                     <div className="flex items-end gap-2">
-                      <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø¹Ù„Ù‰" : "Move up"} disabled={index === 0} onClick={() => moveMenuItem(item.id, -1)} icon={ArrowUp} />
-                      <IconButton label={isAr ? "ØªØ­Ø±ÙŠÙƒ Ù„Ø£Ø³ÙÙ„" : "Move down"} disabled={index === settings.menu.length - 1} onClick={() => moveMenuItem(item.id, 1)} icon={ArrowDown} />
+                      <IconButton label={isAr ? "تحريك لأعلى" : "Move up"} disabled={index === 0} onClick={() => moveMenuItem(item.id, -1)} icon={ArrowUp} />
+                      <IconButton label={isAr ? "تحريك لأسفل" : "Move down"} disabled={index === settings.menu.length - 1} onClick={() => moveMenuItem(item.id, 1)} icon={ArrowDown} />
                       <div className="flex h-11 items-center gap-2 rounded-2xl bg-[#f8f5fb] px-3">
                         <Switch checked={item.visible} onCheckedChange={(value) => updateMenuItem(item.id, "visible", value)} />
                         <span className="text-xs font-extrabold text-slate-500">{adminT(language, "settings.show")}</span>
@@ -2516,7 +2534,7 @@ export function SiteContentSettingsPanel() {
                 ))}
                 <Button variant="outline" onClick={addMenuItem} className="h-11 rounded-2xl font-extrabold">
                   <Plus className="h-4 w-4" />
-                  {isAr ? "Ø¥Ø¶Ø§ÙØ© Ø±Ø§Ø¨Ø· Ù„Ù„Ù‚Ø§Ø¦Ù…Ø©" : "Add menu item"}
+                  {isAr ? "إضافة رابط للقائمة" : "Add menu item"}
                 </Button>
               </div>
 
@@ -2524,7 +2542,7 @@ export function SiteContentSettingsPanel() {
                 <div className="rounded-[22px] bg-white p-4 shadow-sm">
                   <div className="mb-4 flex items-center gap-2 text-sm font-extrabold text-[#17172f]">
                     <Menu className="h-4 w-4 text-[hsl(var(--primary))]" />
-                    {isAr ? "Ù…Ø¹Ø§ÙŠÙ†Ø© Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…ÙˆÙ‚Ø¹" : "Public navigation preview"}
+                    {isAr ? "معاينة قائمة الموقع" : "Public navigation preview"}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {visibleMenu.map((item) => (
@@ -2540,14 +2558,14 @@ export function SiteContentSettingsPanel() {
 <TabsContent value="seo" className="mt-0">
             <div className="grid gap-5 rounded-[24px] bg-slate-50 p-4 xl:grid-cols-[1fr_420px]">
               <div className="grid gap-4 rounded-[22px] bg-white p-4 shadow-sm">
-                <Field label={isAr ? "Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù…ÙŠØªØ§" : "Meta title"} value={settings.seo.metaTitle} onChange={(value) => updateSeo("metaTitle", value)} />
-                <TextAreaField label={isAr ? "ÙˆØµÙ Ø§Ù„Ù…ÙŠØªØ§" : "Meta description"} value={settings.seo.metaDescription} onChange={(value) => updateSeo("metaDescription", value)} />
-                <Field label={isAr ? "Ø§Ù„Ø±Ø§Ø¨Ø· Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ Canonical" : "Canonical URL"} value={settings.seo.canonicalUrl} onChange={(value) => updateSeo("canonicalUrl", value)} />
-                <Field label={isAr ? "Ø§Ù„ÙƒÙ„Ù…Ø§Øª Ø§Ù„Ù…ÙØªØ§Ø­ÙŠØ©" : "Keywords"} value={settings.seo.keywords} onChange={(value) => updateSeo("keywords", value)} />
-                <ImageUrlDropzone label={isAr ? "ØµÙˆØ±Ø© Ø§Ù„Ù…Ø´Ø§Ø±ÙƒØ© Open Graph" : "Open Graph image"} value={settings.seo.ogImage} onChange={(value) => updateSeo("ogImage", value)} />
+                <Field label={isAr ? "عنوان الميتا" : "Meta title"} value={settings.seo.metaTitle} onChange={(value) => updateSeo("metaTitle", value)} />
+                <TextAreaField label={isAr ? "وصف الميتا" : "Meta description"} value={settings.seo.metaDescription} onChange={(value) => updateSeo("metaDescription", value)} />
+                <Field label={isAr ? "الرابط الأساسي Canonical" : "Canonical URL"} value={settings.seo.canonicalUrl} onChange={(value) => updateSeo("canonicalUrl", value)} />
+                <Field label={isAr ? "الكلمات المفتاحية" : "Keywords"} value={settings.seo.keywords} onChange={(value) => updateSeo("keywords", value)} />
+                <ImageUrlDropzone label={isAr ? "صورة المشاركة Open Graph" : "Open Graph image"} value={settings.seo.ogImage} onChange={(value) => updateSeo("ogImage", value)} />
                 <div className="flex flex-wrap gap-3">
-                  <ToggleCard label={isAr ? "Ø§Ù„Ø³Ù…Ø§Ø­ Ø¨Ø§Ù„Ø£Ø±Ø´ÙØ©" : "Allow indexing"} checked={settings.seo.robotsIndex} onChange={(value) => updateSeo("robotsIndex", value)} />
-                  <ToggleCard label={isAr ? "ØªØªØ¨Ø¹ Ø§Ù„Ø±ÙˆØ§Ø¨Ø·" : "Follow links"} checked={settings.seo.robotsFollow} onChange={(value) => updateSeo("robotsFollow", value)} />
+                  <ToggleCard label={isAr ? "السماح بالأرشفة" : "Allow indexing"} checked={settings.seo.robotsIndex} onChange={(value) => updateSeo("robotsIndex", value)} />
+                  <ToggleCard label={isAr ? "تتبع الروابط" : "Follow links"} checked={settings.seo.robotsFollow} onChange={(value) => updateSeo("robotsFollow", value)} />
                 </div>
               </div>
 
@@ -2555,7 +2573,7 @@ export function SiteContentSettingsPanel() {
                 <div className="rounded-[22px] bg-white p-5 shadow-sm">
                   <div className="mb-4 flex items-center gap-2 text-sm font-extrabold text-[#17172f]">
                     <Search className="h-4 w-4 text-[hsl(var(--primary))]" />
-                    {isAr ? "Ù…Ø¹Ø§ÙŠÙ†Ø© Ù†ØªÙŠØ¬Ø© Ø§Ù„Ø¨Ø­Ø«" : "Search result preview"}
+                    {isAr ? "معاينة نتيجة البحث" : "Search result preview"}
                   </div>
                   <p className="truncate text-xs font-medium text-emerald-700">{settings.seo.canonicalUrl}</p>
                   <h3 className="mt-1 line-clamp-2 text-lg font-semibold leading-snug text-[#1a0dab]">{settings.seo.metaTitle}</h3>
@@ -2637,7 +2655,7 @@ function AboutPreviewCard({ settings, section, isAr }: { settings: AboutPageSett
           ) : (
             <div className="rounded-2xl bg-[hsl(var(--primary))] p-4 text-white">
               <p className="text-xs font-black uppercase tracking-[0.14em] text-white/70">About Page</p>
-              <p className="mt-2 text-sm font-semibold leading-6 text-white/80">{isAr ? "Ù…Ø¹Ø§ÙŠÙ†Ø© Ø³Ø±ÙŠØ¹Ø© Ù„Ù„Ù…Ø­ØªÙˆÙ‰ Ø§Ù„Ø­Ø§Ù„ÙŠ." : "Quick preview of the current content."}</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-white/80">{isAr ? "معاينة سريعة للمحتوى الحالي." : "Quick preview of the current content."}</p>
             </div>
           )}
         </div>

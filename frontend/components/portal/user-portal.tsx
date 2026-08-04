@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils"
 import type { PlatformThemeSettings } from "@/types/platform"
 
 type PortalView = "overview" | "registrations" | "registration-detail" | "tickets" | "ticket-detail" | "certificates" | "notifications" | "reviews" | "profile" | "security" | "support"
+type AuthState = "loading" | "authenticated" | "unauthenticated" | "forbidden"
 type LangText = { en: string; ar: string }
 
 const navItems = [
@@ -202,7 +203,7 @@ export function UserPortal({ view, recordId }: { view: PortalView; recordId?: st
   const { language, setLanguage, isRtl } = useLanguage()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
-  const [authState, setAuthState] = useState<"loading" | "ready">("loading")
+  const [authState, setAuthState] = useState<AuthState>("loading")
   const [theme, setTheme] = useState<PlatformThemeSettings>(() => defaultPlatformTheme)
 
   useEffect(() => {
@@ -219,6 +220,7 @@ export function UserPortal({ view, recordId }: { view: PortalView; recordId?: st
   useEffect(() => {
     const currentToken = token()
     if (!currentToken) {
+      setAuthState("unauthenticated")
       router.replace(`/login?next=${encodeURIComponent(pathname)}`)
       return
     }
@@ -227,19 +229,21 @@ export function UserPortal({ view, recordId }: { view: PortalView; recordId?: st
         const role = currentUser?.role_code || currentUser?.role?.code
         window.localStorage.setItem("stylish-events-admin-user", JSON.stringify(currentUser))
         if (["admin", "organizer", "employee", "back_office"].includes(role)) {
+          setAuthState("forbidden")
           router.replace("/admin")
           return
         }
         setUser(currentUser)
-        setAuthState("ready")
+        setAuthState("authenticated")
       })
       .catch(() => {
         clearSession()
+        setAuthState("unauthenticated")
         router.replace(`/login?next=${encodeURIComponent(pathname)}`)
       })
   }, [pathname, router])
 
-  if (authState === "loading") return <PortalLoading isRtl={isRtl} />
+  if (authState !== "authenticated") return <PortalLoading isRtl={isRtl} />
 
   const parentView = view === "registration-detail" ? "registrations" : view === "ticket-detail" ? "tickets" : view
   const current = navItems.find((item) => item.view === parentView) || navItems[0]
@@ -475,7 +479,7 @@ function NextEventCard({ row, pending }: { row?: any; pending?: any }) {
           {image ? <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover opacity-45" /> : null}
           <div className="relative z-10 flex min-h-[220px] flex-col justify-end">
             <Badge className="mb-4 w-fit rounded-full bg-white/90 text-[hsl(var(--primary))] hover:bg-white/90">{isPending ? (isRtl ? "تسجيل قيد المراجعة" : "Under review") : (isRtl ? "الحدث القادم" : "Next Event")}</Badge>
-            <h3 className="max-w-3xl text-3xl font-black sm:text-4xl">{isRtl ? item.event_title_ar : item.event_title_en}</h3>
+            <h3 className="max-w-3xl text-2xl font-black sm:text-3xl">{isRtl ? item.event_title_ar : item.event_title_en}</h3>
             <p className="mt-3 text-sm font-bold text-white/80">{formatDate(item.starts_at)} · {formatTime(item.starts_at)}</p>
           </div>
         </div>
@@ -634,7 +638,7 @@ function SecureTicketDetail({ id }: { id: string }) {
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 to-transparent" />
             <div className="absolute bottom-4 left-4 right-4 text-white">
               <p className="text-xs font-black uppercase tracking-[0.12em] opacity-80">{isRtl ? "تذكرة دخول" : "Check-in Ticket"}</p>
-              <h2 className="mt-1 line-clamp-2 text-xl font-black">{eventTitle(row, isRtl)}</h2>
+              <h2 className="mt-1 line-clamp-2 text-lg font-black">{eventTitle(row, isRtl)}</h2>
             </div>
           </div>
           <div className="p-4">
@@ -669,7 +673,7 @@ function QrOverlay({ qrState, onClose }: { qrState: any; onClose: () => void }) 
             <div className="mx-auto inline-block rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm" dir="ltr">
               <QRCodeSVG value={data.qrPayload || ""} size={260} level="H" />
             </div>
-            <h2 className="mt-4 text-xl font-black">{isRtl ? data.eventTitleAr || data.eventTitleEn : data.eventTitleEn || data.eventTitleAr}</h2>
+            <h2 className="mt-4 text-lg font-black">{isRtl ? data.eventTitleAr || data.eventTitleEn : data.eventTitleEn || data.eventTitleAr}</h2>
             <p className="mt-2 text-sm font-bold text-slate-500">{isRtl ? "اعرض رمز QR هذا لموظف تسجيل الدخول." : "Present this QR code to the check-in staff."}</p>
             <div className="mt-4 grid gap-2 rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-700">
               <span dir="ltr">{data.ticketNumber}</span>
@@ -703,12 +707,12 @@ function TicketDetail({ id }: { id: string }) {
 
 function TicketInfo({ row }: { row: any }) {
   const { isRtl } = useLanguage()
-  return <div><p className="text-sm font-black text-[hsl(var(--primary))]" dir="ltr">{row.registration_number}</p><h2 className="mt-2 text-2xl font-black">{isRtl ? row.event_title_ar : row.event_title_en}</h2><div className="mt-6 grid gap-3 md:grid-cols-2"><DetailItem label={isRtl ? "حامل التذكرة" : "Ticket holder"} value={row.full_name} /><DetailItem label={isRtl ? "البريد الإلكتروني" : "Email"} value={row.email} ltr /><DetailItem label={isRtl ? "نوع التذكرة" : "Ticket type"} value={isRtl ? row.ticket_name_ar : row.ticket_name_en} /><DetailItem label={isRtl ? "تاريخ الفعالية" : "Event date"} value={formatDate(row.starts_at)} /></div>{row.pdf_url ? <Button asChild className="mt-6 h-11 rounded-xl bg-[hsl(var(--primary))] font-black"><Link href={apiAssetUrl(row.pdf_url)}>{isRtl ? "تحميل التذكرة" : "Download Ticket"}</Link></Button> : null}</div>
+  return <div><p className="text-sm font-black text-[hsl(var(--primary))]" dir="ltr">{row.registration_number}</p><h2 className="mt-2 text-xl font-black">{isRtl ? row.event_title_ar : row.event_title_en}</h2><div className="mt-6 grid gap-3 md:grid-cols-2"><DetailItem label={isRtl ? "حامل التذكرة" : "Ticket holder"} value={row.full_name} /><DetailItem label={isRtl ? "البريد الإلكتروني" : "Email"} value={row.email} ltr /><DetailItem label={isRtl ? "نوع التذكرة" : "Ticket type"} value={isRtl ? row.ticket_name_ar : row.ticket_name_en} /><DetailItem label={isRtl ? "تاريخ الفعالية" : "Event date"} value={formatDate(row.starts_at)} /></div>{row.pdf_url ? <Button asChild className="mt-6 h-11 rounded-xl bg-[hsl(var(--primary))] font-black"><Link href={apiAssetUrl(row.pdf_url)}>{isRtl ? "تحميل التذكرة" : "Download Ticket"}</Link></Button> : null}</div>
 }
 
 function DetailPage({ back, row, title, reference }: { back: string; row: any; title: string; reference?: string }) {
   const { isRtl } = useLanguage()
-  return <section className="space-y-4"><Button asChild variant="outline" className="h-10 rounded-2xl font-bold"><Link href={back}>{isRtl ? "رجوع" : "Back"}</Link></Button><div className={cardClass("p-5")}><div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"><div><p className="text-sm font-black text-[hsl(var(--primary))]" dir="ltr">{reference}</p><h2 className="mt-2 text-2xl font-black">{title}</h2><p className="mt-2 text-sm font-bold text-slate-500">{formatDate(row.starts_at)} · {isRtl ? row.venue_name_ar || row.city_ar : row.venue_name_en || row.city_en || "Online"}</p></div><StatusBadge value={row.registration_status} /></div><div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3"><DetailItem label={isRtl ? "حامل التسجيل" : "Registration holder"} value={row.full_name} /><DetailItem label={isRtl ? "البريد الإلكتروني" : "Email"} value={row.email} ltr /><DetailItem label={isRtl ? "نوع التذكرة" : "Ticket type"} value={isRtl ? row.ticket_name_ar : row.ticket_name_en} /><DetailItem label={isRtl ? "حالة الدفع" : "Payment status"} value={statusLabel(row.payment_status, isRtl)} /><DetailItem label={isRtl ? "المبلغ" : "Amount"} value={`${row.selected_currency || ""} ${Number(row.selected_price || 0).toLocaleString()}`} ltr /><DetailItem label={isRtl ? "تاريخ الإنشاء" : "Created"} value={formatDate(row.created_at)} /></div><div className="mt-6 flex flex-wrap gap-3">{row.ticket_id ? <Button asChild className="h-11 rounded-2xl bg-[hsl(var(--primary))] font-black text-white"><Link href={`/dashboard/tickets/${row.ticket_id}`}>{isRtl ? "عرض التذكرة" : "View Ticket"}</Link></Button> : null}</div></div></section>
+  return <section className="space-y-4"><Button asChild variant="outline" className="h-10 rounded-2xl font-bold"><Link href={back}>{isRtl ? "رجوع" : "Back"}</Link></Button><div className={cardClass("p-5")}><div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"><div><p className="text-sm font-black text-[hsl(var(--primary))]" dir="ltr">{reference}</p><h2 className="mt-2 text-xl font-black">{title}</h2><p className="mt-2 text-sm font-bold text-slate-500">{formatDate(row.starts_at)} · {isRtl ? row.venue_name_ar || row.city_ar : row.venue_name_en || row.city_en || "Online"}</p></div><StatusBadge value={row.registration_status} /></div><div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3"><DetailItem label={isRtl ? "حامل التسجيل" : "Registration holder"} value={row.full_name} /><DetailItem label={isRtl ? "البريد الإلكتروني" : "Email"} value={row.email} ltr /><DetailItem label={isRtl ? "نوع التذكرة" : "Ticket type"} value={isRtl ? row.ticket_name_ar : row.ticket_name_en} /><DetailItem label={isRtl ? "حالة الدفع" : "Payment status"} value={statusLabel(row.payment_status, isRtl)} /><DetailItem label={isRtl ? "المبلغ" : "Amount"} value={`${row.selected_currency || ""} ${Number(row.selected_price || 0).toLocaleString()}`} ltr /><DetailItem label={isRtl ? "تاريخ الإنشاء" : "Created"} value={formatDate(row.created_at)} /></div><div className="mt-6 flex flex-wrap gap-3">{row.ticket_id ? <Button asChild className="h-11 rounded-2xl bg-[hsl(var(--primary))] font-black text-white"><Link href={`/dashboard/tickets/${row.ticket_id}`}>{isRtl ? "عرض التذكرة" : "View Ticket"}</Link></Button> : null}</div></div></section>
 }
 
 function DetailItem({ label, value, ltr = false }: { label: string; value?: string | number | null; ltr?: boolean }) {
@@ -839,7 +843,7 @@ function Reviews() {
 
 function Support() {
   const { isRtl } = useLanguage()
-  return <section className={cardClass("p-5")}><h2 className="text-2xl font-black">{isRtl ? "الدعم" : "Support"}</h2><p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">{isRtl ? "لأي استفسار عن التسجيلات أو التذاكر أو الشهادات، استخدم صفحة التواصل الرسمية وسيتم إنشاء رقم متابعة." : "For registration, ticket, or certificate support, use the official Contact page and you will receive a support reference."}</p><div className="mt-5 grid gap-3 sm:grid-cols-2"><DetailItem label={isRtl ? "البريد" : "Email"} value="info@directevents.click" ltr /><DetailItem label={isRtl ? "الدعم" : "Support"} value={isRtl ? "متابعة عبر صفحة التواصل" : "Handled through the Contact workflow"} /></div><Button asChild className="mt-5 h-11 rounded-2xl bg-[hsl(var(--primary))] font-black text-white"><Link href="/contact">{isRtl ? "إرسال استفسار" : "Submit inquiry"} <ExternalLink className="h-4 w-4" /></Link></Button></section>
+  return <section className={cardClass("p-5")}><h2 className="text-2xl font-black">{isRtl ? "الدعم" : "Support"}</h2><p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">{isRtl ? "لأي استفسار عن التسجيلات أو التذاكر أو الشهادات، استخدم صفحة التواصل الرسمية وسيتم إنشاء رقم متابعة." : "For registration, ticket, or certificate support, use the official Contact page and you will receive a support reference."}</p><div className="mt-5 grid gap-3 sm:grid-cols-2"><DetailItem label={isRtl ? "البريد" : "Email"} value="info@stylish-holidays.com" ltr /><DetailItem label={isRtl ? "الدعم" : "Support"} value={isRtl ? "متابعة عبر صفحة التواصل" : "Handled through the Contact workflow"} /></div><Button asChild className="mt-5 h-11 rounded-2xl bg-[hsl(var(--primary))] font-black text-white"><Link href="/contact">{isRtl ? "إرسال استفسار" : "Submit inquiry"} <ExternalLink className="h-4 w-4" /></Link></Button></section>
 }
 
 function Summary({ icon: Icon, label, value, href }: { icon: any; label: string; value: number; href: string }) {

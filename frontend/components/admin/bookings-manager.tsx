@@ -79,7 +79,7 @@ export function BookingsManager() {
         if (active) setBookings((rows || []).map(normalizeBooking))
       })
       .catch((error) => {
-        if (active) toast.error("Could not load bookings", { description: error instanceof Error ? error.message : "Check backend and MySQL." })
+        if (active) toast.error("Could not load bookings", { description: error instanceof Error ? error.message : "Check the backend connection." })
       })
     return () => {
       active = false
@@ -215,7 +215,7 @@ export function BookingsManager() {
                                 {adminT(language, "common.viewOrder")}
                               </Link>
                             </DropdownMenuItem>
-                            <ConfirmAction title="Mark as paid?" description="This order will be marked paid in MySQL." confirmLabel="Mark paid" onConfirm={() => updateStatus(booking, "paid")}>
+                            <ConfirmAction title="Mark as paid?" description="This order will be marked as paid." confirmLabel="Mark paid" onConfirm={() => updateStatus(booking, "paid")}>
                               <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-emerald-600"><CheckCircle2 className="h-4 w-4" /> {adminT(language, "common.markPaid")}</DropdownMenuItem>
                             </ConfirmAction>
                             <ConfirmAction title="Refund booking?" description="This order will be marked refunded." confirmLabel="Refund" onConfirm={() => updateStatus(booking, "refunded")}>

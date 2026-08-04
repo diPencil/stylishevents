@@ -64,16 +64,18 @@ async function createTicketFixture(customer, status = 'approved', qrStatus = 'ac
     INSERT INTO doctors (user_id, full_name, mobile, email, country_code, country_name, city, specialty, nationality, preferred_language)
     VALUES (:userId, :name, '+201000000000', :email, 'EG', 'Egypt', 'Cairo', 'General', 'Egyptian', 'en')
   `, { userId: customer.id, name: customer.name, email: doctorEmail });
+  const slug = `${base}-event-${randomBytes(2).toString('hex')}`;
   const event = await query(`
     INSERT INTO events (slug, title_en, title_ar, summary_en, summary_ar, description_en, description_ar, type, status, starts_at, ends_at, cover_image_url, max_attendees)
     VALUES (:slug, 'Codex Customer Event', 'فعالية كوديكس', 'Customer-safe summary', 'ملخص آمن للعميل', 'Public event description', 'وصف عام للفعالية', 'conference', 'published', DATE_ADD(NOW(), INTERVAL 5 DAY), DATE_ADD(NOW(), INTERVAL 6 DAY), '/uploads/assets/codex-cover.png', 100)
-  `, { slug: `${base}-event-${randomBytes(2).toString('hex')}` });
-  if (overrides.titleEn || Object.prototype.hasOwnProperty.call(overrides, 'coverImage') || overrides.bannerImage || overrides.galleryJson) {
+  `, { slug });
+  if (overrides.titleEn || Object.prototype.hasOwnProperty.call(overrides, 'coverImage') || overrides.bannerImage || overrides.detailsImage || overrides.galleryJson) {
     await query(
       `UPDATE events
        SET title_en = COALESCE(:titleEn, title_en),
            cover_image_url = :coverImage,
            banner_image_url = :bannerImage,
+           event_details_image_url = :detailsImage,
            gallery_json = :galleryJson
        WHERE id = :eventId`,
       {
@@ -81,6 +83,7 @@ async function createTicketFixture(customer, status = 'approved', qrStatus = 'ac
         titleEn: overrides.titleEn || null,
         coverImage: Object.prototype.hasOwnProperty.call(overrides, 'coverImage') ? overrides.coverImage : '/uploads/assets/codex-cover.png',
         bannerImage: overrides.bannerImage || null,
+        detailsImage: overrides.detailsImage || null,
         galleryJson: overrides.galleryJson ? JSON.stringify(overrides.galleryJson) : null,
       }
     );
@@ -107,7 +110,7 @@ async function createTicketFixture(customer, status = 'approved', qrStatus = 'ac
     INSERT INTO generated_tickets (registration_id, attendee_id, ticket_number, qr_token, generated_at)
     VALUES (:registrationId, :attendeeId, :number, :qrToken, NOW())
   `, { registrationId: registration.insertId, attendeeId: attendee.insertId, number: `${base}-TIC-${randomBytes(2).toString('hex')}`, qrToken });
-  return { doctorId: doctor.insertId, eventId: event.insertId, ticketTypeId: ticketType.insertId, orderId: order.insertId, registrationId: registration.insertId, attendeeId: attendee.insertId, ticketId: ticket.insertId, qrToken };
+  return { slug, doctorId: doctor.insertId, eventId: event.insertId, ticketTypeId: ticketType.insertId, orderId: order.insertId, registrationId: registration.insertId, attendeeId: attendee.insertId, ticketId: ticket.insertId, qrToken };
 }
 
 async function createPublicCheckoutFixture({
@@ -218,6 +221,7 @@ after(async () => {
   await query('DELETE esa FROM event_staff_assignments esa JOIN events e ON e.id = esa.event_id WHERE e.slug LIKE :prefix', { prefix: `${base}-%` }).catch(() => {});
   await query('DELETE FROM public_checkout_sessions WHERE customer_email LIKE :prefix OR session_key LIKE :sessionPrefix', { prefix: `${base}.%@example.com`, sessionPrefix: `${base}-%` }).catch(() => {});
   await query('DELETE FROM checkin_logs WHERE attendee_id IN (SELECT id FROM attendees WHERE attendee_number LIKE :prefix)', { prefix: `${base}-%` }).catch(() => {});
+  await query('DELETE FROM reviews WHERE event_id IN (SELECT id FROM events WHERE slug LIKE :prefix) OR customer_id IN (SELECT id FROM users WHERE email LIKE :userPrefix)', { prefix: `${base}-%`, userPrefix: `${base}.%@example.com` }).catch(() => {});
   await query('DELETE FROM generated_tickets WHERE ticket_number LIKE :prefix', { prefix: `${base}-%` }).catch(() => {});
   await query('DELETE FROM certificates WHERE attendee_id IN (SELECT id FROM attendees WHERE attendee_number LIKE :prefix)', { prefix: `${base}-%` }).catch(() => {});
   await query('DELETE FROM attendees WHERE attendee_number LIKE :prefix', { prefix: `${base}-%` }).catch(() => {});
@@ -584,6 +588,214 @@ test('public checkout enforces final-seat concurrency and registration windows',
   `, { eventId: finalSeat.eventId, ticketTypeId: finalSeat.ticketTypeId });
   assert.equal(Number(finalCounts.expired_total), 1);
   assert.equal(Number(finalCounts.active_total), 1);
+});
+
+test('public event DTO includes independent details image without private fields', async () => {
+  const fixtureEvent = await createTicketFixture(fixture.customerA, 'approved', 'active', {
+    titleEn: 'Codex Details Image Event',
+    coverImage: '/uploads/assets/codex-cover-safe.png',
+    bannerImage: '/uploads/assets/codex-hero-safe.png',
+    detailsImage: '/uploads/assets/codex-details-safe.png',
+  });
+  const visible = await api(`/api/public/events/${fixtureEvent.slug}`);
+  assert.equal(visible.response.status, 200);
+  assert.equal(visible.body.data.event.cover_image_url, '/uploads/assets/codex-cover-safe.png');
+  assert.equal(visible.body.data.event.banner_image_url, '/uploads/assets/codex-hero-safe.png');
+  assert.equal(visible.body.data.event.event_details_image_url, '/uploads/assets/codex-details-safe.png');
+  assert.equal(JSON.stringify(visible.body.data).includes('C:\\'), false);
+  assert.equal(JSON.stringify(visible.body.data).includes('qr_token'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(visible.body.data.event, 'internal_notes'), false);
+});
+
+test('event review eligibility is registration-owned and event-end controlled', async () => {
+  const endedApproved = await createTicketFixture(fixture.customerA);
+  await query('UPDATE events SET starts_at = DATE_SUB(NOW(), INTERVAL 3 DAY), ends_at = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE id = :eventId', { eventId: endedApproved.eventId });
+
+  const guest = await api(`/api/public/events/${endedApproved.slug}/review-eligibility`);
+  assert.equal(guest.response.status, 401);
+
+  const unregistered = await api(`/api/public/events/${endedApproved.slug}/review-eligibility`, { headers: auth(fixture.customerB) });
+  assert.equal(unregistered.response.status, 200);
+  assert.equal(unregistered.body.data.eligible, false);
+  assert.equal(unregistered.body.data.state, 'not_registered');
+
+  const eligible = await api(`/api/public/events/${endedApproved.slug}/review-eligibility`, { headers: auth(fixture.customerA) });
+  assert.equal(eligible.response.status, 200);
+  assert.equal(eligible.body.data.eligible, true);
+
+  const legacyDoctor = await createUser('doctor', 99);
+  const legacyFixture = await createTicketFixture(legacyDoctor);
+  await query('UPDATE events SET starts_at = DATE_SUB(NOW(), INTERVAL 3 DAY), ends_at = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE id = :eventId', { eventId: legacyFixture.eventId });
+  const legacyEligible = await api(`/api/public/events/${legacyFixture.slug}/review-eligibility`, { headers: auth(legacyDoctor) });
+  assert.equal(legacyEligible.response.status, 200);
+  assert.equal(legacyEligible.body.data.eligible, true);
+
+  const futureApproved = await createTicketFixture(fixture.customerA);
+  const beforeEnd = await api(`/api/public/events/${futureApproved.slug}/review-eligibility`, { headers: auth(fixture.customerA) });
+  assert.equal(beforeEnd.response.status, 200);
+  assert.equal(beforeEnd.body.data.eligible, false);
+  assert.equal(beforeEnd.body.data.state, 'event_not_ended');
+
+  for (const [status, state] of [
+    ['pending_verification', 'registration_not_eligible'],
+    ['pending_review', 'registration_not_eligible'],
+    ['rejected', 'registration_not_eligible'],
+    ['cancelled', 'registration_not_eligible'],
+  ]) {
+    const item = await createTicketFixture(fixture.customerA, status);
+    await query('UPDATE events SET starts_at = DATE_SUB(NOW(), INTERVAL 3 DAY), ends_at = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE id = :eventId', { eventId: item.eventId });
+    const result = await api(`/api/public/events/${item.slug}/review-eligibility`, { headers: auth(fixture.customerA) });
+    assert.equal(result.response.status, 200);
+    assert.equal(result.body.data.eligible, false);
+    assert.equal(result.body.data.state, state);
+  }
+});
+
+test('event reviews validate rating, sanitize HTML, and enforce one review per customer event', async () => {
+  const fixtureEvent = await createTicketFixture(fixture.customerA);
+  await query('UPDATE events SET starts_at = DATE_SUB(NOW(), INTERVAL 3 DAY), ends_at = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE id = :eventId', { eventId: fixtureEvent.eventId });
+
+  const lowRating = await api(`/api/public/events/${fixtureEvent.slug}/review`, {
+    method: 'POST',
+    headers: auth(fixture.customerA),
+    body: JSON.stringify({ rating: 0, comment: 'Bad rating' }),
+  });
+  assert.equal(lowRating.response.status, 400);
+
+  const highRating = await api(`/api/public/events/${fixtureEvent.slug}/review`, {
+    method: 'POST',
+    headers: auth(fixture.customerA),
+    body: JSON.stringify({ rating: 6, comment: 'Bad rating' }),
+  });
+  assert.equal(highRating.response.status, 400);
+
+  const crossCustomer = await api(`/api/public/events/${fixtureEvent.slug}/review`, {
+    method: 'POST',
+    headers: auth(fixture.customerB),
+    body: JSON.stringify({ rating: 5, comment: 'No owned registration' }),
+  });
+  assert.equal(crossCustomer.response.status, 403);
+
+  const created = await api(`/api/public/events/${fixtureEvent.slug}/review`, {
+    method: 'POST',
+    headers: auth(fixture.customerA),
+    body: JSON.stringify({ rating: 5, comment: '<script>alert(1)</script><b>Great</b> event' }),
+  });
+  assert.equal(created.response.status, 200);
+  assert.equal(created.body.data.status, 'pending');
+
+  const stored = await first('SELECT id, comment, status FROM reviews WHERE customer_id = :userId AND event_id = :eventId', {
+    userId: fixture.customerA.id,
+    eventId: fixtureEvent.eventId,
+  });
+  assert.ok(stored?.id);
+  assert.equal(stored.status, 'pending');
+  assert.equal(String(stored.comment).includes('<'), false);
+  assert.match(stored.comment, /Great event/);
+
+  const duplicate = await api(`/api/public/events/${fixtureEvent.slug}/review`, {
+    method: 'POST',
+    headers: auth(fixture.customerA),
+    body: JSON.stringify({ rating: 4, comment: 'Duplicate' }),
+  });
+  assert.equal(duplicate.response.status, 409);
+
+  const duplicateCount = await first('SELECT COUNT(*) AS total FROM reviews WHERE customer_id = :userId AND event_id = :eventId', {
+    userId: fixture.customerA.id,
+    eventId: fixtureEvent.eventId,
+  });
+  assert.equal(Number(duplicateCount.total), 1);
+
+  const updated = await api(`/api/public/events/${fixtureEvent.slug}/review`, {
+    method: 'PATCH',
+    headers: auth(fixture.customerA),
+    body: JSON.stringify({ rating: 4, comment: 'Updated review' }),
+  });
+  assert.equal(updated.response.status, 200);
+  assert.equal(updated.body.data.status, 'pending');
+  const afterUpdate = await first('SELECT COUNT(*) AS total, MAX(rating) AS rating, MAX(status) AS status FROM reviews WHERE customer_id = :userId AND event_id = :eventId', {
+    userId: fixture.customerA.id,
+    eventId: fixtureEvent.eventId,
+  });
+  assert.equal(Number(afterUpdate.total), 1);
+  assert.equal(Number(afterUpdate.rating), 4);
+  assert.equal(afterUpdate.status, 'pending');
+
+  const secondEvent = await createTicketFixture(fixture.customerA);
+  await query('UPDATE events SET starts_at = DATE_SUB(NOW(), INTERVAL 3 DAY), ends_at = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE id = :eventId', { eventId: secondEvent.eventId });
+  const otherEventReview = await api(`/api/public/events/${secondEvent.slug}/review`, {
+    method: 'POST',
+    headers: auth(fixture.customerA),
+    body: JSON.stringify({ rating: 5, comment: 'Different event allowed' }),
+  });
+  assert.equal(otherEventReview.response.status, 200);
+});
+
+test('public reviews are approved-only and admin moderation updates public average', async () => {
+  const fixtureEvent = await createTicketFixture(fixture.customerA);
+  await query('UPDATE events SET starts_at = DATE_SUB(NOW(), INTERVAL 3 DAY), ends_at = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE id = :eventId', { eventId: fixtureEvent.eventId });
+  const review = await api(`/api/public/events/${fixtureEvent.slug}/review`, {
+    method: 'POST',
+    headers: auth(fixture.customerA),
+    body: JSON.stringify({ rating: 5, comment: 'Approved public text' }),
+  });
+  assert.equal(review.response.status, 200);
+
+  const beforeApproval = await api(`/api/public/events/${fixtureEvent.slug}`);
+  assert.equal(beforeApproval.response.status, 200);
+  assert.equal(beforeApproval.body.data.reviews.length, 0);
+  assert.equal(beforeApproval.body.data.event.rating_summary.count, 0);
+  assert.equal(JSON.stringify(beforeApproval.body.data).includes(fixture.customerA.email), false);
+  assert.equal(JSON.stringify(beforeApproval.body.data).includes('+201'), false);
+
+  const row = await first('SELECT id FROM reviews WHERE event_id = :eventId AND customer_id = :userId', {
+    eventId: fixtureEvent.eventId,
+    userId: fixture.customerA.id,
+  });
+  const adminList = await api(`/api/reviews?eventId=${fixtureEvent.eventId}`, { headers: auth(fixture.admin) });
+  assert.equal(adminList.response.status, 200);
+  assert.ok(adminList.body.data.find((item) => item.id === row.id));
+
+  const approve = await api(`/api/reviews/${row.id}/status`, {
+    method: 'PATCH',
+    headers: auth(fixture.admin),
+    body: JSON.stringify({ status: 'approved' }),
+  });
+  assert.equal(approve.response.status, 200);
+
+  const afterApproval = await api(`/api/public/events/${fixtureEvent.slug}`);
+  assert.equal(afterApproval.response.status, 200);
+  assert.equal(afterApproval.body.data.reviews.length, 1);
+  assert.equal(afterApproval.body.data.event.rating_summary.count, 1);
+  assert.equal(Number(afterApproval.body.data.event.rating_summary.average), 5);
+  assert.equal(JSON.stringify(afterApproval.body.data).includes(fixture.customerA.email), false);
+  assert.equal(JSON.stringify(afterApproval.body.data).includes('customer_id'), false);
+
+  const reject = await api(`/api/reviews/${row.id}/status`, {
+    method: 'PATCH',
+    headers: auth(fixture.admin),
+    body: JSON.stringify({ status: 'rejected' }),
+  });
+  assert.equal(reject.response.status, 200);
+  const afterRejection = await api(`/api/public/events/${fixtureEvent.slug}`);
+  assert.equal(afterRejection.body.data.reviews.length, 0);
+  assert.equal(afterRejection.body.data.event.rating_summary.count, 0);
+});
+
+test('concurrent duplicate event reviews keep a single database row', async () => {
+  const fixtureEvent = await createTicketFixture(fixture.customerA);
+  await query('UPDATE events SET starts_at = DATE_SUB(NOW(), INTERVAL 3 DAY), ends_at = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE id = :eventId', { eventId: fixtureEvent.eventId });
+
+  const [firstAttempt, secondAttempt] = await Promise.all([
+    api(`/api/public/events/${fixtureEvent.slug}/review`, { method: 'POST', headers: auth(fixture.customerA), body: JSON.stringify({ rating: 5, comment: 'Concurrent A' }) }),
+    api(`/api/public/events/${fixtureEvent.slug}/review`, { method: 'POST', headers: auth(fixture.customerA), body: JSON.stringify({ rating: 4, comment: 'Concurrent B' }) }),
+  ]);
+  assert.deepEqual([firstAttempt.response.status, secondAttempt.response.status].sort(), [200, 409]);
+  const count = await first('SELECT COUNT(*) AS total FROM reviews WHERE event_id = :eventId AND customer_id = :userId', {
+    eventId: fixtureEvent.eventId,
+    userId: fixture.customerA.id,
+  });
+  assert.equal(Number(count.total), 1);
 });
 
 test('customer QR endpoint enforces ownership and eligibility', async () => {

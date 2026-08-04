@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { first, query } from '../db/mysql.js';
 import { asyncRoute, fail, ok } from '../utils/apiResponse.js';
 import { z } from 'zod';
-import { requireAuth, requireRole } from '../middleware/auth.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -132,7 +132,7 @@ router.get('/settings/theme', asyncRoute(async (req, res) => {
   ok(res, await readProjectSetting('theme', {}));
 }));
 
-router.put('/settings/theme', asyncRoute(async (req, res) => {
+router.put('/settings/theme', requireAuth, requirePermission('theme_identity.manage'), asyncRoute(async (req, res) => {
   const theme = {
     primaryColor: req.body.primaryColor || '#2563eb',
     secondaryColor: req.body.secondaryColor || '#0f172a',
@@ -145,6 +145,10 @@ router.put('/settings/theme', asyncRoute(async (req, res) => {
     logoEnUrl: req.body.logoEnUrl || '/logo.png',
     logoArUrl: req.body.logoArUrl || '/LogoAR.png',
     faviconUrl: req.body.faviconUrl || '/favicon.png',
+    footerLocationEn: req.body.footerLocationEn || '26 Tarablous Street, Abbas El Akkad, 2nd floor, Flat 5, Nasr City, Cairo, Egypt',
+    footerLocationAr: req.body.footerLocationAr || '\u0662\u0666 \u0634\u0627\u0631\u0639 \u0637\u0631\u0627\u0628\u0644\u0633\u060c \u0639\u0628\u0627\u0633 \u0627\u0644\u0639\u0642\u0627\u062f\u060c \u0627\u0644\u062f\u0648\u0631 \u0627\u0644\u062b\u0627\u0646\u064a\u060c \u0634\u0642\u0629 \u0665\u060c \u0645\u062f\u064a\u0646\u0629 \u0646\u0635\u0631\u060c \u0627\u0644\u0642\u0627\u0647\u0631\u0629\u060c \u0645\u0635\u0631',
+    footerMobile: req.body.footerMobile || '+2 0100 607 1661',
+    footerWhatsapp: req.body.footerWhatsapp || '+2 0100 607 1661',
   };
 
   await writeProjectSetting('theme', theme);
@@ -340,6 +344,94 @@ const anchorOrSafeUrlString = z.string().max(2000).refine((value) => {
   }
   return value.startsWith('/') && !value.startsWith('//');
 }, 'Invalid URL');
+
+const footerNavigationDefaults = [
+  { id: 'upcoming-events', col: 'services', labelEn: 'Upcoming Events', labelAr: 'الفعاليات القادمة', href: '/upcoming-events' },
+  { id: 'previous-events', col: 'services', labelEn: 'Previous Events', labelAr: 'الفعاليات السابقة', href: '/previous-events' },
+  { id: 'reception-and-farewell', col: 'services', labelEn: 'Reception and Farewell', labelAr: 'الاستقبال والتوديع', href: '/reception-and-farewell' },
+  { id: 'faq', col: 'services', labelEn: 'Frequently Asked Questions', labelAr: 'الأسئلة الشائعة', href: '/faq' },
+  { id: 'about', col: 'support', labelEn: 'About Company', labelAr: 'عن الشركة', href: '/about' },
+  { id: 'contact', col: 'support', labelEn: 'Contact Us', labelAr: 'تواصل معنا', href: '/contact' },
+  { id: 'how-to-create-account', col: 'support', labelEn: 'How to Create an Account', labelAr: 'كيفية إنشاء حساب', href: '/how-to-create-account' },
+  { id: 'how-to-register-for-event', col: 'support', labelEn: 'How to Register for an Event', labelAr: 'كيفية التسجيل في فعالية', href: '/how-to-register-for-event' },
+];
+
+const footerLegalDefaults = [
+  { id: 'terms', labelEn: 'Terms and Conditions', labelAr: 'الشروط والأحكام', href: '/terms' },
+  { id: 'privacy', labelEn: 'Privacy Policy', labelAr: 'سياسة الخصوصية', href: '/privacy' },
+];
+
+function footerRouteId(href = '', label = '') {
+  const key = `${href} ${label}`.toLowerCase();
+  if (key.includes('upcoming')) return 'upcoming-events';
+  if (key.includes('previous')) return 'previous-events';
+  if (key.includes('reception')) return 'reception-and-farewell';
+  if (key.includes('faq') || key.includes('frequently')) return 'faq';
+  if (key.includes('privacy')) return 'privacy';
+  if (key.includes('terms')) return 'terms';
+  if (key.includes('about')) return 'about';
+  if (key.includes('contact')) return 'contact';
+  if (key.includes('create-account') || key.includes('create an account')) return 'how-to-create-account';
+  if (key.includes('register-for-event') || key.includes('register for an event')) return 'how-to-register-for-event';
+  return '';
+}
+
+const footerNavigationLinkSchema = z.object({
+  id: z.string().min(1).max(120),
+  col: z.enum(['services', 'support']),
+  labelEn: z.string().max(160),
+  labelAr: z.string().max(160),
+  href: anchorOrSafeUrlString,
+});
+
+const footerLegalLinkSchema = z.object({
+  id: z.enum(['terms', 'privacy']),
+  labelEn: z.string().max(160),
+  labelAr: z.string().max(160),
+  href: anchorOrSafeUrlString,
+});
+
+function normalizeFooterLinks(savedLinks = []) {
+  const source = Array.isArray(savedLinks) ? savedLinks : [];
+  const savedById = new Map();
+  source.forEach((link) => {
+    const id = footerRouteId(link?.href, `${link?.labelEn || ''} ${link?.labelAr || ''}`) || link?.id;
+    if (id) savedById.set(id, link);
+  });
+
+  return footerNavigationDefaults.map((fallback) => {
+    const saved = savedById.get(fallback.id);
+    return {
+      ...fallback,
+      ...(saved || {}),
+      id: fallback.id,
+      col: fallback.col,
+      href: saved?.href && saved.href !== '#' ? saved.href : fallback.href,
+    };
+  });
+}
+
+function normalizeFooterLegalLinks(savedLegalLinks = [], savedFooterLinks = []) {
+  const source = [
+    ...(Array.isArray(savedLegalLinks) ? savedLegalLinks : []),
+    ...(Array.isArray(savedFooterLinks) ? savedFooterLinks : []),
+  ];
+  const savedById = new Map();
+  source.forEach((link) => {
+    const id = footerRouteId(link?.href, `${link?.labelEn || ''} ${link?.labelAr || ''}`);
+    if (id === 'privacy' || id === 'terms') savedById.set(id, link);
+  });
+
+  return footerLegalDefaults.map((fallback) => {
+    const saved = savedById.get(fallback.id);
+    return {
+      ...fallback,
+      ...(saved || {}),
+      id: fallback.id,
+      href: saved?.href && saved.href !== '#' ? saved.href : fallback.href,
+    };
+  });
+}
 
 const requestSetupStatCardSchema = z.object({
   id: z.string().min(1).max(120),
@@ -645,7 +737,7 @@ function trimStringsDeep(value) {
   return typeof value === 'string' ? value.trim() : value;
 }
 
-router.put('/settings/site-content', requireAuth, requireRole('admin'), asyncRoute(async (req, res) => {
+router.put('/settings/site-content', requireAuth, requirePermission('website_content.manage'), asyncRoute(async (req, res) => {
   const incoming = req.body || {};
   const current = await readProjectSetting('site_content', {});
 
@@ -833,6 +925,23 @@ router.put('/settings/site-content', requireAuth, requireRole('admin'), asyncRou
     };
   }
 
+  if (incoming.footerLinks !== undefined || current.footerLinks !== undefined) {
+    const normalized = normalizeFooterLinks(incoming.footerLinks !== undefined ? incoming.footerLinks : current.footerLinks);
+    const parsed = z.array(footerNavigationLinkSchema).length(8).safeParse(trimStringsDeep(normalized));
+    if (!parsed.success) return fail(res, 400, 'Invalid footerLinks settings', parsed.error.flatten());
+    updated.footerLinks = parsed.data;
+  }
+
+  if (incoming.footerLegalLinks !== undefined || incoming.footerLinks !== undefined || current.footerLegalLinks !== undefined || current.footerLinks !== undefined) {
+    const normalized = normalizeFooterLegalLinks(
+      incoming.footerLegalLinks !== undefined ? incoming.footerLegalLinks : current.footerLegalLinks,
+      incoming.footerLinks !== undefined ? incoming.footerLinks : current.footerLinks
+    );
+    const parsed = z.array(footerLegalLinkSchema).length(2).safeParse(trimStringsDeep(normalized));
+    if (!parsed.success) return fail(res, 400, 'Invalid footerLegalLinks settings', parsed.error.flatten());
+    updated.footerLegalLinks = parsed.data;
+  }
+
   // Validate and merge upcomingEvents
   if (incoming.upcomingEvents !== undefined) {
     const parsed = eventPageSchema.safeParse(incoming.upcomingEvents);
@@ -886,7 +995,7 @@ router.put('/settings/site-content', requireAuth, requireRole('admin'), asyncRou
   }
 
   // For all other top-level settings, preserve or merge shallowly if provided
-  const allowedToplevel = ['menu', 'faqs', 'whyUsCards', 'footerLinks', 'socialLinks', 'seo'];
+  const allowedToplevel = ['menu', 'faqs', 'whyUsCards', 'socialLinks', 'seo'];
   for (const key of allowedToplevel) {
     if (incoming[key] !== undefined) updated[key] = incoming[key];
   }
@@ -899,12 +1008,12 @@ router.get('/settings/currency', asyncRoute(async (req, res) => {
   ok(res, await readProjectSetting('currency', {}));
 }));
 
-router.put('/settings/currency', asyncRoute(async (req, res) => {
+router.put('/settings/currency', requireAuth, requirePermission('settings.manage'), asyncRoute(async (req, res) => {
   await writeProjectSetting('currency', req.body || {});
   ok(res, req.body || {}, 'Currency settings saved');
 }));
 
-router.post('/assets/upload', asyncRoute(async (req, res) => {
+router.post('/assets/upload', requireAuth, requirePermission('website_content.manage'), asyncRoute(async (req, res) => {
   try {
     const url = await savePlatformAsset(req.body || {});
     ok(res, { url }, 'Image uploaded');

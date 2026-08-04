@@ -12,7 +12,7 @@ import type { LucideIcon } from "lucide-react"
 
 export function PublicPageFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="public-site min-h-screen overflow-x-hidden bg-[hsl(var(--primary)/0.07)] text-[#111827]">
+    <div className="public-site min-h-screen overflow-x-clip bg-[hsl(var(--primary)/0.07)] text-[#111827]">
       <Navbar />
       <main>{children}</main>
       <Footer />
@@ -142,7 +142,7 @@ export function SectionHeader({
   return (
     <div className={cn("mb-10", align === "center" ? "mx-auto max-w-3xl text-center" : "max-w-3xl")}>
       <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">{isRtl ? eyebrowAr : eyebrowEn}</p>
-      <h2 className="mt-3 text-3xl font-black tracking-tight text-[#0f172a] md:text-5xl">{isRtl ? titleAr : titleEn}</h2>
+      <h2 className="mt-3 text-2xl font-black tracking-tight text-[#0f172a] md:text-4xl lg:text-5xl">{isRtl ? titleAr : titleEn}</h2>
       {(subtitleEn || subtitleAr) && (
         <p className="mt-4 text-base font-medium leading-8 text-slate-600">{isRtl ? subtitleAr : subtitleEn}</p>
       )}
@@ -190,7 +190,7 @@ export function EventCard({ event, previous = false }: { event: any; previous?: 
           <span className="w-fit rounded-full bg-white/16 px-3 py-1 text-xs font-extrabold backdrop-blur">{isRtl ? event.typeAr || event.cityAr : event.typeEn || event.cityEn}</span>
           <div>
             <p className="text-sm font-bold opacity-80">{isRtl ? event.dateAr : event.dateEn}</p>
-            <h3 className="mt-2 text-2xl font-black leading-tight">{isRtl ? event.titleAr : event.titleEn}</h3>
+            <h3 className="mt-2 text-xl font-black leading-tight">{isRtl ? event.titleAr : event.titleEn}</h3>
           </div>
         </div>
       </div>
@@ -202,8 +202,8 @@ export function EventCard({ event, previous = false }: { event: any; previous?: 
           <MiniMeta icon={previous ? CheckCircle2 : Ticket} label={isRtl ? event.statusAr || event.attendees : event.statusEn || event.attendees} />
         </div>
         <Button asChild variant={previous ? "outline" : "default"} className="h-11 w-full rounded-2xl font-extrabold">
-          <Link href={previous ? "/contact" : "/register"}>
-            {previous ? (isRtl ? "اطلب دراسة حالة مشابهة" : "Request similar case") : (isRtl ? "اطلب تفاصيل الحجز" : "Request booking details")}
+          <Link href={previous ? "/contact" : (event.slug ? `/events/${event.slug}` : "/upcoming-events")}>
+            {previous ? (isRtl ? "اطلب دراسة حالة مشابهة" : "Request similar case") : (isRtl ? "عرض التفاصيل والتسجيل" : "View details and register")}
             <ArrowRight className={cn("h-4 w-4", isRtl && "rotate-180")} />
           </Link>
         </Button>
@@ -258,7 +258,7 @@ export function SplitPanel({
         <div className="grid overflow-hidden rounded-[36px] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] lg:grid-cols-[0.9fr_1.1fr]">
           <div className="bg-[hsl(var(--secondary))] p-8 text-white md:p-12">
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">Stylish Events</p>
-            <h2 className="mt-4 text-3xl font-black leading-tight md:text-5xl">{isRtl ? titleAr : titleEn}</h2>
+            <h2 className="mt-4 text-2xl font-black leading-tight md:text-4xl lg:text-5xl">{isRtl ? titleAr : titleEn}</h2>
             <p className="mt-5 text-base font-medium leading-8 text-white/70">{isRtl ? textAr : textEn}</p>
           </div>
           <div className="grid gap-3 p-6 md:p-10">

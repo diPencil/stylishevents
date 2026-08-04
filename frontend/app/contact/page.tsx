@@ -238,7 +238,7 @@ export default function ContactPage() {
                 <span className="inline-flex rounded-full bg-white/18 px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em]">
                   {isRtl ? request.eyebrowAr : request.eyebrowEn}
                 </span>
-                <h2 className="mt-5 text-3xl font-black leading-tight sm:text-4xl">
+                <h2 className="mt-5 text-2xl font-black leading-tight md:text-4xl lg:text-5xl">
                   {isRtl ? request.titleAr : request.titleEn}
                 </h2>
                 <p className="mt-4 text-sm font-semibold leading-7 text-white/82">

@@ -1,6 +1,8 @@
 import express from 'express';
 import { z } from 'zod';
-import { query, transaction } from '../db/mysql.js';
+import { first, query, transaction } from '../db/mysql.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
+import { requireEventScope } from '../auth/scope.js';
 import { asyncRoute, fail, ok } from '../utils/apiResponse.js';
 
 const router = express.Router();
@@ -51,6 +53,14 @@ function normalizePeriod(period) {
 
 router.get('/', asyncRoute(async (req, res) => {
   const eventId = Number(req.query.eventId || 0);
+  if (eventId) {
+    const event = await first('SELECT id, status FROM events WHERE id = :eventId LIMIT 1', { eventId });
+    if (!event) return fail(res, 404, 'Event not found');
+    if (event.status !== 'published') {
+      if (!req.user?.permissions?.includes('tickets.manage')) return fail(res, 404, 'Event not found');
+      if (!(await requireEventScope(req, res, eventId))) return;
+    }
+  }
 
   const rows = await query(`
     SELECT
@@ -77,9 +87,10 @@ router.get('/', asyncRoute(async (req, res) => {
   ok(res, rows);
 }));
 
-router.post('/', asyncRoute(async (req, res) => {
+router.post('/', requireAuth, requirePermission('tickets.manage'), asyncRoute(async (req, res) => {
   const parsed = ticketTypeSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
+  if (!(await requireEventScope(req, res, parsed.data.eventId))) return;
 
   const ticket = normalizeTicket(parsed.data);
   const result = await query(`
@@ -108,9 +119,13 @@ router.post('/', asyncRoute(async (req, res) => {
   ok(res, { id: result.insertId, ...ticket }, 'Ticket type created');
 }));
 
-router.put('/:id', asyncRoute(async (req, res) => {
+router.put('/:id', requireAuth, requirePermission('tickets.manage'), asyncRoute(async (req, res) => {
   const parsed = ticketTypeSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
+  const existing = await first('SELECT event_id FROM ticket_types WHERE id = :id LIMIT 1', { id: Number(req.params.id) });
+  if (!existing) return fail(res, 404, 'Ticket type not found');
+  if (!(await requireEventScope(req, res, existing.event_id))) return;
+  if (!(await requireEventScope(req, res, parsed.data.eventId))) return;
 
   const ticket = normalizeTicket(parsed.data);
   await query(`
@@ -130,8 +145,11 @@ router.put('/:id', asyncRoute(async (req, res) => {
   ok(res, { id: Number(req.params.id), ...ticket }, 'Ticket type updated');
 }));
 
-router.patch('/:id/status', asyncRoute(async (req, res) => {
+router.patch('/:id/status', requireAuth, requirePermission('tickets.manage'), asyncRoute(async (req, res) => {
   const isActive = Boolean(req.body.isActive);
+  const existing = await first('SELECT event_id FROM ticket_types WHERE id = :id LIMIT 1', { id: Number(req.params.id) });
+  if (!existing) return fail(res, 404, 'Ticket type not found');
+  if (!(await requireEventScope(req, res, existing.event_id))) return;
   await query('UPDATE ticket_types SET is_active = :isActive WHERE id = :id', {
     id: Number(req.params.id),
     isActive,
@@ -140,12 +158,27 @@ router.patch('/:id/status', asyncRoute(async (req, res) => {
   ok(res, { id: Number(req.params.id), isActive }, 'Ticket type status updated');
 }));
 
-router.delete('/:id', asyncRoute(async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('tickets.manage'), asyncRoute(async (req, res) => {
+  const existing = await first('SELECT event_id FROM ticket_types WHERE id = :id LIMIT 1', { id: Number(req.params.id) });
+  if (!existing) return fail(res, 404, 'Ticket type not found');
+  if (!(await requireEventScope(req, res, existing.event_id))) return;
   await query('UPDATE ticket_types SET is_active = 0 WHERE id = :id', { id: Number(req.params.id) });
   ok(res, { id: Number(req.params.id), isActive: false }, 'Ticket type disabled');
 }));
 
 router.get('/:ticketTypeId/price-periods', asyncRoute(async (req, res) => {
+  const ticketType = await first(`
+    SELECT tt.id, tt.event_id, e.status AS event_status
+    FROM ticket_types tt
+    JOIN events e ON e.id = tt.event_id
+    WHERE tt.id = :ticketTypeId
+    LIMIT 1
+  `, { ticketTypeId: Number(req.params.ticketTypeId) });
+  if (!ticketType) return fail(res, 404, 'Ticket type not found');
+  if (ticketType.event_status !== 'published') {
+    if (!req.user?.permissions?.includes('pricing.manage')) return fail(res, 404, 'Ticket type not found');
+    if (!(await requireEventScope(req, res, ticketType.event_id))) return;
+  }
   const rows = await query(`
     SELECT
       id,
@@ -166,9 +199,12 @@ router.get('/:ticketTypeId/price-periods', asyncRoute(async (req, res) => {
   ok(res, rows);
 }));
 
-router.post('/price-periods', asyncRoute(async (req, res) => {
+router.post('/price-periods', requireAuth, requirePermission('pricing.manage'), asyncRoute(async (req, res) => {
   const parsed = pricePeriodSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
+  const ticketType = await first('SELECT event_id FROM ticket_types WHERE id = :ticketTypeId LIMIT 1', { ticketTypeId: parsed.data.ticketTypeId });
+  if (!ticketType) return fail(res, 404, 'Ticket type not found');
+  if (!(await requireEventScope(req, res, ticketType.event_id))) return;
 
   const period = normalizePeriod(parsed.data);
   const price = period.price;
@@ -204,9 +240,21 @@ router.post('/price-periods', asyncRoute(async (req, res) => {
   ok(res, { id: result.insertId, ...period }, 'Price period created');
 }));
 
-router.put('/price-periods/:id', asyncRoute(async (req, res) => {
+router.put('/price-periods/:id', requireAuth, requirePermission('pricing.manage'), asyncRoute(async (req, res) => {
   const parsed = pricePeriodSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
+  const existing = await first(`
+    SELECT tt.event_id
+    FROM ticket_price_periods tpp
+    JOIN ticket_types tt ON tt.id = tpp.ticket_type_id
+    WHERE tpp.id = :id
+    LIMIT 1
+  `, { id: Number(req.params.id) });
+  if (!existing) return fail(res, 404, 'Price period not found');
+  if (!(await requireEventScope(req, res, existing.event_id))) return;
+  const ticketType = await first('SELECT event_id FROM ticket_types WHERE id = :ticketTypeId LIMIT 1', { ticketTypeId: parsed.data.ticketTypeId });
+  if (!ticketType) return fail(res, 404, 'Ticket type not found');
+  if (!(await requireEventScope(req, res, ticketType.event_id))) return;
 
   const period = normalizePeriod(parsed.data);
   const price = period.price;
@@ -228,8 +276,17 @@ router.put('/price-periods/:id', asyncRoute(async (req, res) => {
   ok(res, { id: Number(req.params.id), ...period }, 'Price period updated');
 }));
 
-router.patch('/price-periods/:id/status', asyncRoute(async (req, res) => {
+router.patch('/price-periods/:id/status', requireAuth, requirePermission('pricing.manage'), asyncRoute(async (req, res) => {
   const isActive = Boolean(req.body.isActive);
+  const existing = await first(`
+    SELECT tt.event_id
+    FROM ticket_price_periods tpp
+    JOIN ticket_types tt ON tt.id = tpp.ticket_type_id
+    WHERE tpp.id = :id
+    LIMIT 1
+  `, { id: Number(req.params.id) });
+  if (!existing) return fail(res, 404, 'Price period not found');
+  if (!(await requireEventScope(req, res, existing.event_id))) return;
   await query('UPDATE ticket_price_periods SET is_active = :isActive WHERE id = :id', {
     id: Number(req.params.id),
     isActive,
@@ -238,7 +295,16 @@ router.patch('/price-periods/:id/status', asyncRoute(async (req, res) => {
   ok(res, { id: Number(req.params.id), isActive }, 'Price period status updated');
 }));
 
-router.delete('/price-periods/:id', asyncRoute(async (req, res) => {
+router.delete('/price-periods/:id', requireAuth, requirePermission('pricing.manage'), asyncRoute(async (req, res) => {
+  const existing = await first(`
+    SELECT tt.event_id
+    FROM ticket_price_periods tpp
+    JOIN ticket_types tt ON tt.id = tpp.ticket_type_id
+    WHERE tpp.id = :id
+    LIMIT 1
+  `, { id: Number(req.params.id) });
+  if (!existing) return fail(res, 404, 'Price period not found');
+  if (!(await requireEventScope(req, res, existing.event_id))) return;
   await query('UPDATE ticket_price_periods SET is_active = 0 WHERE id = :id', { id: Number(req.params.id) });
   ok(res, { id: Number(req.params.id), isActive: false }, 'Price period disabled');
 }));

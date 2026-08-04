@@ -48,6 +48,7 @@ type CreateEventForm = {
   checkInNotes: string
   terms: string
   heroImage: string
+  detailsImage: string
   galleryImages: string
   seoTitle: string
   seoDescription: string
@@ -91,6 +92,7 @@ const initialForm: CreateEventForm = {
   checkInNotes: "",
   terms: "",
   heroImage: "",
+  detailsImage: "",
   galleryImages: "",
   seoTitle: "",
   seoDescription: "",
@@ -173,6 +175,7 @@ export function EventCreatePage() {
         maxAttendees: Number(form.capacity || 0) || null,
         coverImageUrl: form.heroImage || null,
         bannerImageUrl: form.heroImage || null,
+        eventDetailsImageUrl: form.detailsImage || null,
         gallery: gallery,
         googleMapsUrl: form.location || null,
         venueId: null,
@@ -324,6 +327,7 @@ export function EventCreatePage() {
             <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
               <div className="space-y-4">
                 <ImageUrlDropzone label="Event image URL" value={form.heroImage} onChange={(value) => setField("heroImage", value)} />
+                <ImageUrlDropzone label="Event details image URL" value={form.detailsImage} onChange={(value) => setField("detailsImage", value)} />
                 <ImageGalleryDropzone label="Gallery images" value={form.galleryImages} onChange={(value) => setField("galleryImages", value)} />
               </div>
               <div className="rounded-[22px] border border-slate-100 bg-slate-50 p-3">

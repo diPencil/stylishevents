@@ -6,7 +6,6 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { AnimatedCtaButton } from "@/components/ui/animated-cta-button"
-import { BookingForm } from "@/components/booking-form"
 import { FaqSection } from "@/components/faq-section"
 import { useLanguage } from "@/contexts/language-context"
 import { DotLottieReact } from "@lottiefiles/dotlottie-react"
@@ -38,10 +37,8 @@ export default function Home() {
     })
   }, [])
 
-  const scrollToForm = () => {
-    const element = document.getElementById("booking-form")
-    element?.scrollIntoView({ behavior: "smooth" })
-  }
+  const whyUsTitleEn = siteContent?.homepage?.whyUsTitleEn || "Our experience makes your event easier to run"
+  const whyUsTitleAr = siteContent?.homepage?.whyUsTitleAr || "خبرتنا تجعل تجربة فعاليتك أسهل وأكثر تنظيما"
 
   // Default fallback if loading or failing
   const defaultCards = (t("whyUs.cards") as unknown as any[]) || []
@@ -89,7 +86,7 @@ export default function Home() {
 
         {/* Section 1: Features (New - Based on Reference) */}
         {featuresSection.enabled ? (
-        <section id="features" className="pt-32 md:pt-64 pb-32 relative overflow-hidden bg-[hsl(var(--primary)/0.05)]">
+        <section id="features" className="pt-16 md:pt-24 pb-32 relative overflow-hidden bg-[hsl(var(--primary)/0.05)]">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="flex flex-col items-center text-center mb-20">
               <motion.div
@@ -100,7 +97,7 @@ export default function Home() {
               >
                 {isRtl ? featuresSection.eyebrowAr : featuresSection.eyebrowEn}
               </motion.div>
-              <h2 className={`text-3xl md:text-6xl ${isRtl ? 'font-bold' : 'font-extrabold'} tracking-tighter text-[#0f172a] mb-6 max-w-4xl leading-[1.1]`}>
+              <h2 className={`text-2xl md:text-4xl lg:text-5xl ${isRtl ? 'font-bold' : 'font-extrabold'} tracking-tighter text-[#0f172a] mb-6 max-w-4xl leading-[1.1]`}>
                 {isRtl ? featuresSection.titleAr : featuresSection.titleEn}
               </h2>
               <p className="text-lg text-slate-500 max-w-2xl mx-auto font-medium">
@@ -188,6 +185,8 @@ export default function Home() {
         </section>
         ) : null}
 
+        <EventShowcaseSection />
+
         {/* Section 2: Benefits (Bento Grid - Redesigned to match Reference perfectly) */}
         <section id="why-us" className="py-32 bg-slate-50/50">
           <div className="container px-4 md:px-6 mx-auto">
@@ -200,8 +199,14 @@ export default function Home() {
               >
                 {isRtl ? siteContent?.homepage?.whyUsBadgeAr || "المزايا" : siteContent?.homepage?.whyUsBadgeEn || "Benefits"}
               </motion.div>
-              <h2 className={`text-2xl md:text-5xl lg:text-6xl ${isRtl ? 'font-bold' : 'font-extrabold'} tracking-tighter text-[#0f172a] mb-6 leading-[1.4] md:leading-[1.6]`}>
-                {isRtl ? siteContent?.homepage?.whyUsTitleAr || "خبرتنا تجعل تجربة فعاليتك أسهل وأكثر تنظيما" : siteContent?.homepage?.whyUsTitleEn || "Our experience makes your event easier to run"}
+              <h2 className={`text-2xl md:text-4xl lg:text-5xl ${isRtl ? 'font-bold' : 'font-extrabold'} tracking-tighter text-[#0f172a] mb-6 leading-[1.4] md:leading-[1.5]`}>
+                {isRtl ? whyUsTitleAr : whyUsTitleEn === "Our experience makes your event easier to run" ? (
+                  <>
+                    Our experience makes
+                    <br />
+                    your event easier to run
+                  </>
+                ) : whyUsTitleEn}
               </h2>
               <p className="text-lg text-slate-500 max-w-2xl mx-auto font-medium">
                 {isRtl ? siteContent?.homepage?.whyUsSubtitleAr || t("whyUs.subtitle") : siteContent?.homepage?.whyUsSubtitleEn || t("whyUs.subtitle")}
@@ -443,7 +448,9 @@ export default function Home() {
                     </div>
                     <div className="mt-8">
                       <AnimatedCtaButton
-                        onClick={() => document.getElementById("booking-form")?.scrollIntoView({ behavior: "smooth" })}
+                        onClick={() => {
+                          window.location.href = "/contact/"
+                        }}
                       >
                         {isRtl ? "نظم فعاليتك" : "Plan Your Event"}
                       </AnimatedCtaButton>
@@ -455,12 +462,7 @@ export default function Home() {
           </div>
         </section>
 
-        <EventShowcaseSection />
-
         <EventsInspireSection settings={siteContent?.homepage?.eventsInspireSection} />
-
-        {/* Section B/C: Booking Form */}
-        <BookingForm requestSetupSettings={siteContent?.homepageRequestSetup} />
 
         {/* Section D: FAQ (New - Based on Reference) */}
         <FaqSection />

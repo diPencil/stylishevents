@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import express from 'express';
 import { z } from 'zod';
 import { first, query, transaction } from '../db/mysql.js';
+import { requireAuth, requireAnyPermission, requirePermission } from '../middleware/auth.js';
+import { eventScopeCondition, requireEventScope } from '../auth/scope.js';
 import { asyncRoute, fail, ok } from '../utils/apiResponse.js';
 
 const router = express.Router();
@@ -30,30 +32,36 @@ function cardNumber() {
   return `CARD-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 }
 
-router.get('/templates', asyncRoute(async (req, res) => {
+router.get('/templates', requireAuth, requireAnyPermission(['certificates.view', 'certificates.manage']), asyncRoute(async (req, res) => {
   const eventId = Number(req.query.eventId || 0);
+  if (eventId && !(await requireEventScope(req, res, eventId))) return;
+  const scope = eventScopeCondition(req.user, 'e');
   const rows = await query(`
     SELECT
-      id,
-      event_id,
-      name,
-      template_type,
-      template_url,
-      field_positions_json,
-      is_default,
-      is_active,
-      created_at,
-      updated_at
-    FROM certificate_templates
-    ${eventId ? 'WHERE event_id = :eventId' : ''}
-    ORDER BY is_default DESC, updated_at DESC
-  `, { eventId });
+      ct.id,
+      ct.event_id,
+      ct.name,
+      ct.template_type,
+      ct.template_url,
+      ct.field_positions_json,
+      ct.is_default,
+      ct.is_active,
+      ct.created_at,
+      ct.updated_at
+    FROM certificate_templates ct
+    JOIN events e ON e.id = ct.event_id
+    WHERE (:eventId = 0 OR ct.event_id = :eventId)
+      AND (${scope.clause})
+    ORDER BY ct.is_default DESC, ct.updated_at DESC
+  `, { eventId, ...scope.params });
 
   ok(res, rows);
 }));
 
-router.get('/delivery', asyncRoute(async (req, res) => {
+router.get('/delivery', requireAuth, requireAnyPermission(['certificates.view', 'certificates.manage']), asyncRoute(async (req, res) => {
   const eventId = Number(req.query.eventId || 0);
+  if (eventId && !(await requireEventScope(req, res, eventId))) return;
+  const scope = eventScopeCondition(req.user, 'e');
   const rows = await query(`
     SELECT
       a.id AS attendee_id,
@@ -81,17 +89,19 @@ router.get('/delivery', asyncRoute(async (req, res) => {
     JOIN ticket_types tt ON tt.id = a.ticket_type_id
     LEFT JOIN certificates c ON c.attendee_id = a.id
     LEFT JOIN event_cards ec ON ec.attendee_id = a.id
-    ${eventId ? 'WHERE a.event_id = :eventId' : ''}
+    WHERE (:eventId = 0 OR a.event_id = :eventId)
+      AND (${scope.clause})
     ORDER BY a.created_at DESC
     LIMIT 500
-  `, { eventId });
+  `, { eventId, ...scope.params });
 
   ok(res, rows);
 }));
 
-router.post('/templates', asyncRoute(async (req, res) => {
+router.post('/templates', requireAuth, requirePermission('certificates.manage'), asyncRoute(async (req, res) => {
   const parsed = templateSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
+  if (!(await requireEventScope(req, res, parsed.data.eventId))) return;
 
   const template = parsed.data;
   const result = await transaction(async (connection) => {
@@ -132,8 +142,11 @@ router.post('/templates', asyncRoute(async (req, res) => {
   ok(res, { id: result.insertId, ...template }, 'Certificate template saved');
 }));
 
-router.patch('/templates/:id/status', asyncRoute(async (req, res) => {
+router.patch('/templates/:id/status', requireAuth, requirePermission('certificates.manage'), asyncRoute(async (req, res) => {
   const isActive = Boolean(req.body.isActive);
+  const template = await first('SELECT id, event_id FROM certificate_templates WHERE id = :id LIMIT 1', { id: Number(req.params.id) });
+  if (!template) return fail(res, 404, 'Template not found');
+  if (!(await requireEventScope(req, res, template.event_id))) return;
   await query(`
     UPDATE certificate_templates
     SET is_active = :isActive
@@ -143,7 +156,7 @@ router.patch('/templates/:id/status', asyncRoute(async (req, res) => {
   ok(res, { id: Number(req.params.id), isActive }, 'Template status updated');
 }));
 
-router.post('/issue', asyncRoute(async (req, res) => {
+router.post('/issue', requireAuth, requirePermission('certificates.manage'), asyncRoute(async (req, res) => {
   const parsed = issueSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
 
@@ -160,6 +173,7 @@ router.post('/issue', asyncRoute(async (req, res) => {
   `, { attendeeId: parsed.data.attendeeId });
 
   if (!attendee) return fail(res, 404, 'Attendee not found');
+  if (!(await requireEventScope(req, res, attendee.event_id))) return;
   if (!attendee.checked_in_at) return fail(res, 422, 'Certificate can be issued after check-in');
 
   const issued = await transaction(async (connection) => {
@@ -223,14 +237,15 @@ router.post('/issue', asyncRoute(async (req, res) => {
   ok(res, issued, 'Certificate issued');
 }));
 
-router.post('/event-card', asyncRoute(async (req, res) => {
+router.post('/event-card', requireAuth, requirePermission('certificates.manage'), asyncRoute(async (req, res) => {
   const attendeeId = Number(req.body.attendeeId || 0);
   const templateKey = String(req.body.templateKey || 'default');
   const fileUrl = req.body.fileUrl || null;
   if (!attendeeId) return fail(res, 400, 'Attendee is required');
 
-  const attendee = await first('SELECT id FROM attendees WHERE id = :attendeeId', { attendeeId });
+  const attendee = await first('SELECT id, event_id FROM attendees WHERE id = :attendeeId', { attendeeId });
   if (!attendee) return fail(res, 404, 'Attendee not found');
+  if (!(await requireEventScope(req, res, attendee.event_id))) return;
 
   const created = await transaction(async (connection) => {
     const [existing] = await connection.execute(

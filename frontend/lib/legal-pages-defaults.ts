@@ -35,10 +35,10 @@ export const DEFAULT_TERMS_PAGE_SETTINGS: LegalPageSettings = {
   lastUpdatedLabelEn: "Last updated",
   lastUpdatedLabelAr: ar.lastUpdated,
   contact: {
-    email: "info@directevents.click",
-    phone: "+20 110 665 3177",
-    addressEn: "Cairo, Egypt",
-    addressAr: "القاهرة، مصر",
+    email: "info@stylish-holidays.com",
+    phone: "+2 0100 607 1661",
+    addressEn: "26 Tarablous Street, Abbas El Akkad, 2nd floor, Flat 5, Nasr City, Cairo, Egypt",
+    addressAr: "\u0662\u0666 \u0634\u0627\u0631\u0639 \u0637\u0631\u0627\u0628\u0644\u0633\u060c \u0639\u0628\u0627\u0633 \u0627\u0644\u0639\u0642\u0627\u062f\u060c \u0627\u0644\u062f\u0648\u0631 \u0627\u0644\u062b\u0627\u0646\u064a\u060c \u0634\u0642\u0629 \u0665\u060c \u0645\u062f\u064a\u0646\u0629 \u0646\u0635\u0631\u060c \u0627\u0644\u0642\u0627\u0647\u0631\u0629\u060c \u0645\u0635\u0631",
   },
   seo: {
     titleEn: "Terms & Conditions | Stylish Events",
@@ -133,10 +133,10 @@ export const DEFAULT_PRIVACY_PAGE_SETTINGS: LegalPageSettings = {
   lastUpdatedLabelEn: "Last updated",
   lastUpdatedLabelAr: ar.lastUpdated,
   contact: {
-    email: "info@directevents.click",
-    phone: "+20 110 665 3177",
-    addressEn: "Cairo, Egypt",
-    addressAr: "القاهرة، مصر",
+    email: "info@stylish-holidays.com",
+    phone: "+2 0100 607 1661",
+    addressEn: "26 Tarablous Street, Abbas El Akkad, 2nd floor, Flat 5, Nasr City, Cairo, Egypt",
+    addressAr: "\u0662\u0666 \u0634\u0627\u0631\u0639 \u0637\u0631\u0627\u0628\u0644\u0633\u060c \u0639\u0628\u0627\u0633 \u0627\u0644\u0639\u0642\u0627\u062f\u060c \u0627\u0644\u062f\u0648\u0631 \u0627\u0644\u062b\u0627\u0646\u064a\u060c \u0634\u0642\u0629 \u0665\u060c \u0645\u062f\u064a\u0646\u0629 \u0646\u0635\u0631\u060c \u0627\u0644\u0642\u0627\u0647\u0631\u0629\u060c \u0645\u0635\u0631",
   },
   seo: {
     titleEn: "Privacy Policy | Stylish Events",

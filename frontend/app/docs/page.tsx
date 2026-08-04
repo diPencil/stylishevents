@@ -64,7 +64,7 @@ export default function Documentation() {
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">Browse Documentation</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Browse Documentation</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Find the information you need to get started and make the most of VideoMetrics.ai.
               </p>
@@ -235,7 +235,7 @@ export default function Documentation() {
         <section className="py-20">
           <div className="container px-4 md:px-6">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">Video Tutorials</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Video Tutorials</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Learn by watching our step-by-step video guides.
               </p>
@@ -355,7 +355,7 @@ export default function Documentation() {
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
             <div className="text-center max-w-3xl mx-auto">
-              <h2 className="text-3xl font-bold mb-4">Need More Help?</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Need More Help?</h2>
               <p className="text-muted-foreground mb-8">
                 Our support team is ready to assist you with any questions or issues.
               </p>

@@ -13,6 +13,7 @@ import { TableDateTime } from "@/components/admin/table-date-time"
 import { useLanguage } from "@/contexts/language-context"
 import { adminT } from "@/lib/admin-translations"
 import { platformApi } from "@/lib/platform-api"
+import { cn } from "@/lib/utils"
 
 type ReportRow = {
   id: string
@@ -47,6 +48,7 @@ function ProgressLine({ value }: { value: number }) {
 
 export function ReportsManager() {
   const { language } = useLanguage()
+  const isRtl = language === "ar"
   const [search, setSearch] = useState("")
   const [rows, setRows] = useState<ReportRow[]>([])
 
@@ -80,7 +82,7 @@ export function ReportsManager() {
     link.click()
     link.remove()
     URL.revokeObjectURL(url)
-    toast.success("Report exported", { description: `${filteredRows.length} rows downloaded as CSV.` })
+    toast.success(adminT(language, "reports.exported"), { description: `${filteredRows.length} ${adminT(language, "reports.exportedCopy")}` })
   }
 
   useEffect(() => {
@@ -102,10 +104,11 @@ export function ReportsManager() {
           const eventAttendees = (attendees || []).filter((attendee: any) => Number(attendee.event_id) === Number(event.id))
           const eventPerformance = (performance || []).filter((item: any) => item.event_title_en === event.title_en)
           const topTicket = [...eventPerformance].sort((a: any, b: any) => Number(b.registrations || 0) - Number(a.registrations || 0))[0]
+          const eventTitle = language === "ar" ? event.title_ar || event.title_en || "فعالية" : event.title_en || event.title_ar || "Event"
           return {
             id: `RPT-${event.id}`,
             eventId: Number(event.id),
-            event: event.title_en || event.title_ar || "Event",
+            event: eventTitle,
             revenue: eventRegistrations.reduce((sum: number, item: any) => sum + Number(item.payment_status === "approved" ? item.selected_price || 0 : 0), 0),
             currency: eventRegistrations.find((item: any) => item.selected_currency)?.selected_currency || defaultCurrency,
             bookings: eventRegistrations.length,
@@ -113,23 +116,23 @@ export function ReportsManager() {
             checkedIn: eventAttendees.filter((attendee: any) => attendee.checked_in_at || attendee.qr_status === "used").length,
             ticketsSold: eventPerformance.reduce((sum: number, item: any) => sum + Number(item.registrations || 0), 0),
             capacity: Number(event.max_attendees || event.venue_capacity || 0),
-            topTicket: topTicket?.ticket_name_en || "-",
+            topTicket: (language === "ar" ? topTicket?.ticket_name_ar || topTicket?.ticket_name_en : topTicket?.ticket_name_en || topTicket?.ticket_name_ar) || "-",
             updatedAt: event.updated_at || event.starts_at || "",
           }
         })
 
         if (!active) return
         setRows(liveRows)
-        if (!liveRows.length && revenueTotal > 0) toast.info("Reports loaded", { description: "Revenue exists, but no event rows matched yet." })
+        if (!liveRows.length && revenueTotal > 0) toast.info(adminT(language, "reports.reportsLoaded"), { description: adminT(language, "reports.reportsLoadedCopy") })
       } catch (error) {
-        if (active) toast.error("Could not load reports", { description: error instanceof Error ? error.message : "Check backend and MySQL." })
+        if (active) toast.error(adminT(language, "reports.loadError"), { description: error instanceof Error ? error.message : adminT(language, "reports.backendError") })
       }
     }
     loadReports()
     return () => {
       active = false
     }
-  }, [])
+  }, [language])
 
   const filteredRows = rows.filter((row) => row.event.toLowerCase().includes(search.toLowerCase()))
 
@@ -143,27 +146,27 @@ export function ReportsManager() {
 
   const renderTable = (mode: "revenue" | "attendance" | "tickets" | "full") => (
     <Card className="overflow-hidden rounded-[28px] border-0 bg-white shadow-[0_16px_35px_rgba(15,23,42,0.06)]">
-      <CardHeader className="flex flex-col gap-3 border-b border-slate-100 md:flex-row md:items-center md:justify-between">
+      <CardHeader className={cn("flex flex-col gap-3 border-b border-slate-100 md:flex-row md:items-center md:justify-between", isRtl && "md:flex-row-reverse text-right")}>
         <div>
           <CardTitle className="text-base font-extrabold">{adminT(language, "reports.table")}</CardTitle>
-          <p className="mt-1 text-sm font-medium text-slate-400">{language === "ar" ? "إيرادات الفعاليات والحضور ونسبة تسجيل الدخول وأداء التذاكر من قاعدة البيانات." : "Live event revenue, attendance, check-in rate, and ticket performance."}</p>
+          <p className="mt-1 text-sm font-medium text-slate-400">{adminT(language, "reports.tableCopy")}</p>
         </div>
-        <TableSearch value={search} onChange={setSearch} placeholder={language === "ar" ? "ابحث في تقارير الفعاليات..." : "Search event report..."} />
+        <TableSearch value={search} onChange={setSearch} placeholder={adminT(language, "reports.search")} />
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table className="min-w-[1080px]">
+        <div className={cn("overflow-x-auto", isRtl && "[direction:rtl]")}>
+          <Table className={cn("min-w-[1080px]", isRtl && "text-right")}>
             <TableHeader>
               <TableRow className="bg-slate-50/70 hover:bg-slate-50/70">
-                <TableHead className="w-14">#</TableHead>
+                <TableHead className={cn("w-14", isRtl && "text-right")}>#</TableHead>
                 <TableHead>{adminT(language, "common.event")}</TableHead>
                 {(mode === "revenue" || mode === "full") && <TableHead>{adminT(language, "overview.revenue")}</TableHead>}
                 {(mode === "revenue" || mode === "full") && <TableHead>{adminT(language, "nav.orders")}</TableHead>}
                 {(mode === "attendance" || mode === "full") && <TableHead>{adminT(language, "nav.attendees")}</TableHead>}
-                {(mode === "attendance" || mode === "full") && <TableHead>{language === "ar" ? "نسبة الحضور" : "Check-in Rate"}</TableHead>}
+                {(mode === "attendance" || mode === "full") && <TableHead>{adminT(language, "reports.checkInRate")}</TableHead>}
                 {(mode === "tickets" || mode === "full") && <TableHead>{adminT(language, "overview.ticketsSold")}</TableHead>}
-                {(mode === "tickets" || mode === "full") && <TableHead>{language === "ar" ? "أعلى تذكرة" : "Top Ticket"}</TableHead>}
-                <TableHead>{language === "ar" ? "آخر تحديث" : "Updated"}</TableHead>
+                {(mode === "tickets" || mode === "full") && <TableHead>{adminT(language, "reports.topTicket")}</TableHead>}
+                <TableHead>{adminT(language, "reports.updated")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -171,13 +174,13 @@ export function ReportsManager() {
                 const checkInRate = percent(row.checkedIn, row.attendees)
                 return (
                   <TableRow key={row.id} className="hover:bg-[hsl(var(--primary)/0.04)]">
-                    <TableCell className="text-sm font-extrabold text-slate-400">{index + 1}</TableCell>
-                    <TableCell className="max-w-[260px]"><p className="line-clamp-2 text-sm font-extrabold text-[#17172f]">{row.event}</p><p className="text-xs font-semibold text-slate-400">{row.id}</p></TableCell>
-                    {(mode === "revenue" || mode === "full") && <TableCell className="text-sm font-extrabold">{money(row.revenue, row.currency)}</TableCell>}
-                    {(mode === "revenue" || mode === "full") && <TableCell className="text-sm font-extrabold">{row.bookings.toLocaleString()}</TableCell>}
-                    {(mode === "attendance" || mode === "full") && <TableCell><p className="text-sm font-extrabold">{row.attendees.toLocaleString()}</p><p className="text-xs font-bold text-slate-400">{language === "ar" ? "السعة" : "Capacity"} {row.capacity.toLocaleString()}</p></TableCell>}
-                    {(mode === "attendance" || mode === "full") && <TableCell><div className="space-y-2"><p className="text-sm font-extrabold">{checkInRate}%</p><ProgressLine value={checkInRate} /></div></TableCell>}
-                    {(mode === "tickets" || mode === "full") && <TableCell className="text-sm font-extrabold">{row.ticketsSold.toLocaleString()}</TableCell>}
+                    <TableCell className="text-sm font-extrabold text-slate-400" dir="ltr">{index + 1}</TableCell>
+                    <TableCell className="max-w-[260px]"><p className="line-clamp-2 text-sm font-extrabold text-[#17172f]">{row.event}</p><p className={cn("text-xs font-semibold text-slate-400", isRtl && "inline-block")} dir="ltr">{row.id}</p></TableCell>
+                    {(mode === "revenue" || mode === "full") && <TableCell className="text-sm font-extrabold" dir="ltr">{money(row.revenue, row.currency)}</TableCell>}
+                    {(mode === "revenue" || mode === "full") && <TableCell className="text-sm font-extrabold" dir="ltr">{row.bookings.toLocaleString()}</TableCell>}
+                    {(mode === "attendance" || mode === "full") && <TableCell><p className="text-sm font-extrabold" dir="ltr">{row.attendees.toLocaleString()}</p><p className="text-xs font-bold text-slate-400">{adminT(language, "reports.capacity")} <span dir="ltr">{row.capacity.toLocaleString()}</span></p></TableCell>}
+                    {(mode === "attendance" || mode === "full") && <TableCell><div className="space-y-2"><p className="text-sm font-extrabold" dir="ltr">{checkInRate}%</p><ProgressLine value={checkInRate} /></div></TableCell>}
+                    {(mode === "tickets" || mode === "full") && <TableCell className="text-sm font-extrabold" dir="ltr">{row.ticketsSold.toLocaleString()}</TableCell>}
                     {(mode === "tickets" || mode === "full") && <TableCell><Badge className="gap-2 rounded-lg bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.08)]"><Ticket className="h-3.5 w-3.5" /> {row.topTicket}</Badge></TableCell>}
                     <TableCell><TableDateTime value={row.updatedAt} /></TableCell>
                   </TableRow>
@@ -185,30 +188,30 @@ export function ReportsManager() {
               })}
             </TableBody>
           </Table>
-          {filteredRows.length === 0 && <div className="p-8 text-center text-sm font-semibold text-slate-400">{language === "ar" ? "لا توجد بيانات تقارير في قاعدة البيانات حالياً." : "No report rows in database yet."}</div>}
+          {filteredRows.length === 0 && <div className="p-8 text-center text-sm font-semibold text-slate-400">{adminT(language, "reports.noRows")}</div>}
         </div>
       </CardContent>
     </Card>
   )
 
   return (
-    <div className="space-y-5">
+    <div className="admin-reports-page space-y-5">
       <AdminPageHeader
-        eyebrow={language === "ar" ? "مركز التحليلات" : "Analytics Center"}
+        eyebrow={adminT(language, "reports.analyticsCenter")}
         title={adminT(language, "reports.title")}
         description={adminT(language, "reports.subtitle")}
         action={{ label: adminT(language, "reports.export"), icon: Download, onClick: () => exportCsv("full") }}
       />
 
       <div className="grid gap-4 md:grid-cols-4">
-        <MetricCard label={language === "ar" ? "إجمالي الإيرادات" : "Total Revenue"} value={money(totals.revenue)} icon={TrendingUp} />
+        <MetricCard label={adminT(language, "reports.totalRevenue")} value={money(totals.revenue)} icon={TrendingUp} />
         <MetricCard label={adminT(language, "nav.orders")} value={totals.bookings.toLocaleString()} icon={CalendarDays} />
-        <MetricCard label={language === "ar" ? "نسبة الحضور" : "Check-in Rate"} value={`${totals.checkInRate}%`} icon={Users} />
+        <MetricCard label={adminT(language, "reports.checkInRate")} value={`${totals.checkInRate}%`} icon={Users} />
         <MetricCard label={adminT(language, "overview.ticketsSold")} value={totals.tickets.toLocaleString()} icon={Ticket} />
       </div>
 
       <Tabs defaultValue="overview" className="space-y-5">
-        <TabsList className="grid w-full grid-cols-5 rounded-2xl bg-white/70 p-1 lg:w-[820px]">
+        <TabsList className="admin-reports-tabs grid h-auto w-full grid-cols-2 rounded-2xl bg-white/70 p-1 sm:grid-cols-3 lg:w-[820px] lg:grid-cols-5">
           <TabsTrigger value="overview" className="rounded-xl">{adminT(language, "reports.overview")}</TabsTrigger>
           <TabsTrigger value="revenue" className="rounded-xl">{adminT(language, "reports.revenue")}</TabsTrigger>
           <TabsTrigger value="attendance" className="rounded-xl">{adminT(language, "reports.attendance")}</TabsTrigger>
@@ -226,7 +229,7 @@ export function ReportsManager() {
                 <CardContent className="p-5">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--primary)/0.10)] text-[hsl(var(--primary))]"><FileSpreadsheet className="h-5 w-5" /></div>
                   <p className="mt-4 text-base font-extrabold text-[#17172f]">{item}</p>
-                  <p className="mt-2 text-sm font-medium leading-6 text-slate-400">{language === "ar" ? "جاهز من بيانات تقارير Stylish Events الحالية." : "Prepared from the current Stylish Events reporting dataset."}</p>
+                  <p className="mt-2 text-sm font-medium leading-6 text-slate-400">{adminT(language, "reports.exportReady")}</p>
                   <Button
                     onClick={() => exportCsv(item.includes("Revenue") ? "revenue" : item.includes("Attendance") ? "attendance" : "tickets")}
                     className="mt-5 h-10 rounded-2xl bg-[hsl(var(--primary))] px-4 text-sm font-extrabold text-white"
@@ -241,14 +244,14 @@ export function ReportsManager() {
       </Tabs>
 
       <Card className="rounded-[28px] border-0 bg-white shadow-[0_16px_35px_rgba(15,23,42,0.06)]">
-        <CardHeader><CardTitle className="flex items-center gap-2 text-base font-extrabold"><BarChart3 className="h-5 w-5 text-[hsl(var(--primary))]" /> {language === "ar" ? "ملخص الأداء" : "Performance Snapshot"}</CardTitle></CardHeader>
+        <CardHeader><CardTitle className={cn("flex items-center gap-2 text-base font-extrabold", isRtl && "flex-row-reverse text-right")}><BarChart3 className="h-5 w-5 text-[hsl(var(--primary))]" /> {adminT(language, "reports.performanceSnapshot")}</CardTitle></CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-4">
           {rows.map((row) => {
             const rate = percent(row.checkedIn, row.attendees)
             return (
               <div key={row.id} className="rounded-2xl bg-slate-50 p-4">
                 <p className="line-clamp-1 text-sm font-extrabold text-[#17172f]">{row.event}</p>
-                <p className="mt-2 text-xs font-bold text-slate-400">{language === "ar" ? "الحضور" : "Check-in"} {rate}%</p>
+                <p className="mt-2 text-xs font-bold text-slate-400">{adminT(language, "reports.attendance")} <span dir="ltr">{rate}%</span></p>
                 <div className="mt-3"><ProgressLine value={rate} /></div>
               </div>
             )

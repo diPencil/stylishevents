@@ -46,7 +46,7 @@ export function CheckinConsole() {
 
   useEffect(() => {
     loadAttendees().catch((error) => {
-      toast.error("Could not load attendees", { description: error instanceof Error ? error.message : "Check backend and MySQL." })
+      toast.error("Could not load attendees", { description: error instanceof Error ? error.message : "Check the backend connection." })
     })
   }, [])
 

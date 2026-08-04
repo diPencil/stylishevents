@@ -118,7 +118,7 @@ export function FaqSection() {
           >
             {isRtl ? siteContent?.homepage?.faqEyebrowAr || "الأسئلة الشائعة" : siteContent?.homepage?.faqEyebrowEn || "FAQs"}
           </motion.div>
-          <h2 className="text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 mb-6 flex flex-wrap items-center justify-center gap-3">
+          <h2 className="text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 mb-6 flex flex-wrap items-center justify-center gap-3">
             {(() => {
               const titleText = isRtl ? siteContent?.homepage?.faqTitleAr || "لديك استفسار؟ لدينا الإجابة" : siteContent?.homepage?.faqTitleEn || "Have questions? We have answers"
               const splitChar = titleText.includes('؟') ? '؟' : (titleText.includes('?') ? '?' : null)

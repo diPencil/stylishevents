@@ -24,7 +24,7 @@ Create a `.env.local` file in the backend directory with the following variables
 SMTP_HOST=smtp.hostinger.com
 SMTP_PORT=465
 SMTP_SECURE=true
-SMTP_USER=info@stylish-events.com
+SMTP_USER=info@stylish-holidays.com
 SMTP_PASS=your_smtp_password
 
 # Frontend URL (for CORS)
@@ -155,7 +155,7 @@ The API validates all incoming data using Zod schema validation. Common errors:
 
 - **Host:** smtp.hostinger.com
 - **Port:** 465 (SSL/TLS)
-- **Username:** info@stylish-events.com
+- **Username:** info@stylish-holidays.com
 - **Password:** Store it securely in `.env.local` locally and in Hostinger environment variables in production.
 
 ## Development Notes
@@ -201,4 +201,4 @@ curl -X POST http://localhost:5000/api/booking \
 
 ## Support
 
-For issues or questions, contact: info@stylish-events.com
+For issues or questions, contact: info@stylish-holidays.com

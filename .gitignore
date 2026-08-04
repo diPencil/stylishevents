@@ -4,6 +4,9 @@ node_modules/
 .next/
 .next-build/
 .next-dev/
+frontend/.next/
+frontend/.next-build/
+.codex-runtime/
 out/
 dist/
 .DS_Store

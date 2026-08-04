@@ -204,6 +204,7 @@ export function LiveEventDetailPage({ id, initialMode }: { id: string; initialMo
           descriptionEn: value(event, "description_en"),
           coverImageUrl: value(event, "cover_image_url"),
           bannerImageUrl: value(event, "banner_image_url"),
+          eventDetailsImageUrl: value(event, "event_details_image_url"),
           gallery: JSON.parse(value(event, "gallery_json") || "[]").join("\n"),
           googleMapsUrl: value(event, "google_maps_url"),
           publicRegistrationEnabled: Number(value(event, "public_registration_enabled") || 1) === 1,
@@ -255,6 +256,7 @@ export function LiveEventDetailPage({ id, initialMode }: { id: string; initialMo
         maxAttendees: Number(form.maxAttendees || 0) || null,
         coverImageUrl: form.coverImageUrl || null,
         bannerImageUrl: form.bannerImageUrl || null,
+        eventDetailsImageUrl: form.eventDetailsImageUrl || null,
         gallery: gallery,
         googleMapsUrl: form.googleMapsUrl || null,
         venueId: event?.venue_id || null,
@@ -441,6 +443,7 @@ export function LiveEventDetailPage({ id, initialMode }: { id: string; initialMo
           <EditorSection icon={ImageIcon} title="Media & Gallery">
             <div className="grid gap-4 lg:grid-cols-2">
               <ImageUrlDropzone label="Cover image URL" value={form.coverImageUrl} onChange={(next) => setForm({ ...form, coverImageUrl: next })} />
+              <ImageUrlDropzone label="Event details image URL" value={form.eventDetailsImageUrl} onChange={(next) => setForm({ ...form, eventDetailsImageUrl: next })} />
               <ImageGalleryDropzone label="Gallery images" value={form.gallery} onChange={(next) => setForm({ ...form, gallery: next })} />
             </div>
           </EditorSection>

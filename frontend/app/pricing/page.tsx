@@ -239,7 +239,7 @@ export default function Pricing() {
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">Compare Features</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Compare Features</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 See which plan is right for your business needs.
               </p>
@@ -366,7 +366,7 @@ export default function Pricing() {
         <section className="py-20">
           <div className="container px-4 md:px-6">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">Frequently Asked Questions</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Frequently Asked Questions</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">Have questions? We've got answers.</p>
             </div>
 
@@ -471,7 +471,7 @@ export default function Pricing() {
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
             <div className="text-center max-w-3xl mx-auto">
-              <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Ready to Get Started?</h2>
               <p className="text-muted-foreground mb-8">Start your 14-day free trial today. No credit card required.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" className="bg-primary hover:bg-primary/90">

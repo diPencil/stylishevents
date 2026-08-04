@@ -29,8 +29,33 @@ export function FinalCtaSection({ settings }: { settings?: Partial<HomepageFinal
 
   if (!content.enabled) return null
 
+  const titleEn = content.titleEn === "Unlock the Power of Stylish Events for Your Next Event"
+    ? DEFAULT_HOMEPAGE_FINAL_CTA.titleEn
+    : content.titleEn || DEFAULT_HOMEPAGE_FINAL_CTA.titleEn
+  const titleAr = content.titleAr === "أطلق العنان لقوة Stylish Events في فعاليتك القادمة"
+    ? DEFAULT_HOMEPAGE_FINAL_CTA.titleAr
+    : content.titleAr || DEFAULT_HOMEPAGE_FINAL_CTA.titleAr
+  const eyebrowEn = content.eyebrowEn === "Partner for Your Success"
+    ? DEFAULT_HOMEPAGE_FINAL_CTA.eyebrowEn
+    : content.eyebrowEn
+  const eyebrowAr = content.eyebrowAr === "شريك في النجاح"
+    ? DEFAULT_HOMEPAGE_FINAL_CTA.eyebrowAr
+    : content.eyebrowAr
+  const descriptionEn = content.descriptionEn === "Join over 500 organizations that trust our platform to organize and manage their most important events."
+    ? DEFAULT_HOMEPAGE_FINAL_CTA.descriptionEn
+    : content.descriptionEn
+  const descriptionAr = content.descriptionAr === "انضم إلى أكثر من 500 مؤسسة تثق بمنصتنا لتنظيم وإدارة أهم فعالياتها."
+    ? DEFAULT_HOMEPAGE_FINAL_CTA.descriptionAr
+    : content.descriptionAr
+  const primaryButtonLabelEn = content.primaryButtonLabelEn === "Start Organizing Your Event"
+    ? DEFAULT_HOMEPAGE_FINAL_CTA.primaryButtonLabelEn
+    : content.primaryButtonLabelEn
+  const primaryButtonLabelAr = content.primaryButtonLabelAr === "ابدأ تنظيم فعاليتك"
+    ? DEFAULT_HOMEPAGE_FINAL_CTA.primaryButtonLabelAr
+    : content.primaryButtonLabelAr
+
   const handlePrimaryClick = () => {
-    const url = content.primaryButtonUrl || "#booking-form"
+    const url = content.primaryButtonUrl || "/contact/"
     if (url.startsWith("#")) {
       document.querySelector(url)?.scrollIntoView({ behavior: "smooth" })
       return
@@ -64,12 +89,40 @@ export function FinalCtaSection({ settings }: { settings?: Partial<HomepageFinal
             className="flex items-center gap-2 px-4 py-1.5 mb-8 text-[11px] font-bold rounded-full bg-slate-50 border border-slate-100 text-slate-500"
           >
             <div className="w-4 h-4 rounded-full bg-brand-blue/10 flex items-center justify-center text-[10px]">*</div>
-            {isRtl ? content.eyebrowAr : content.eyebrowEn}
+            {isRtl ? eyebrowAr : eyebrowEn}
           </motion.div>
 
-          <h2 className={`text-2xl md:text-7xl ${isRtl ? "font-bold" : "font-extrabold"} tracking-tight text-slate-900 mb-8 leading-[1.2] md:leading-[1.1]`}>
-            <span className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
-              {isRtl ? content.titleAr : content.titleEn}
+          <h2 className={`text-2xl md:text-4xl lg:text-5xl ${isRtl ? "font-bold" : "font-extrabold"} tracking-tight text-slate-900 mb-8 leading-[1.2] md:leading-[1.1]`}>
+            {isRtl ? (
+              <span className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+                {titleAr}
+                <span className="w-12 h-12 md:w-16 md:h-16 inline-flex items-center justify-center overflow-hidden shrink-0 align-middle">
+                  <DotLottieReact
+                    src="https://lottie.host/638d4dd8-7e5c-4e60-9313-7ad6928d848f/2jWx4KmHKg.lottie"
+                    loop
+                    autoplay
+                    className="w-full h-full scale-125"
+                  />
+                </span>
+              </span>
+            ) : titleEn === DEFAULT_HOMEPAGE_FINAL_CTA.titleEn ? (
+              <>
+                <span className="block">Tell Us About</span>
+                <span className="inline-flex items-center justify-center gap-x-3">
+                  Your Next Event
+                  <span className="w-12 h-12 md:w-16 md:h-16 inline-flex items-center justify-center overflow-hidden shrink-0 align-middle">
+                    <DotLottieReact
+                      src="https://lottie.host/638d4dd8-7e5c-4e60-9313-7ad6928d848f/2jWx4KmHKg.lottie"
+                      loop
+                      autoplay
+                      className="w-full h-full scale-125"
+                    />
+                  </span>
+                </span>
+              </>
+            ) : (
+              <span className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+                {titleEn}
               <span className="w-12 h-12 md:w-16 md:h-16 inline-flex items-center justify-center overflow-hidden shrink-0 align-middle">
                 <DotLottieReact
                   src="https://lottie.host/638d4dd8-7e5c-4e60-9313-7ad6928d848f/2jWx4KmHKg.lottie"
@@ -78,16 +131,17 @@ export function FinalCtaSection({ settings }: { settings?: Partial<HomepageFinal
                   className="w-full h-full scale-125"
                 />
               </span>
-            </span>
+              </span>
+            )}
           </h2>
 
           <p className="text-lg text-slate-500 max-w-2xl mx-auto font-medium mb-12">
-            {isRtl ? content.descriptionAr : content.descriptionEn}
+            {isRtl ? descriptionAr : descriptionEn}
           </p>
 
           {content.primaryButtonEnabled ? (
             <AnimatedCtaButton onClick={handlePrimaryClick} className="w-full md:w-auto text-base">
-              {isRtl ? content.primaryButtonLabelAr : content.primaryButtonLabelEn}
+              {isRtl ? primaryButtonLabelAr : primaryButtonLabelEn}
             </AnimatedCtaButton>
           ) : null}
         </div>

@@ -96,6 +96,14 @@ export const platformApi = {
     request<any>("/api/contact-inquiries", { method: "POST", body: JSON.stringify(data) }),
   getPublicEvent: (slug: string) =>
     request<any>(`/api/public/events/${encodeURIComponent(slug)}`),
+  getPublicEventReviews: (slug: string) =>
+    request<any>(`/api/public/events/${encodeURIComponent(slug)}/reviews`),
+  getEventReviewEligibility: (slug: string) =>
+    request<any>(`/api/public/events/${encodeURIComponent(slug)}/review-eligibility`),
+  submitEventReview: (slug: string, data: { rating: number; comment?: string }) =>
+    request<any>(`/api/public/events/${encodeURIComponent(slug)}/review`, { method: "POST", body: JSON.stringify(data) }),
+  updateEventReview: (slug: string, data: { rating: number; comment?: string }) =>
+    request<any>(`/api/public/events/${encodeURIComponent(slug)}/review`, { method: "PATCH", body: JSON.stringify(data) }),
   createPublicCheckout: (slug: string, data: Record<string, unknown>) =>
     request<any>(`/api/public/events/${encodeURIComponent(slug)}/checkout`, { method: "POST", body: JSON.stringify(data) }),
   getPublicRegistration: (reference: string, token?: string) =>

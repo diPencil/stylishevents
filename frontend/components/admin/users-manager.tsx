@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
@@ -116,10 +116,15 @@ const permissionCatalog: Omit<PermissionItem, "allowed">[] = [
   { key: "payments.verify", label: "Payment verification", group: "Finance" },
   { key: "attendees.manage", label: "Attendees", group: "Operations" },
   { key: "checkin.manage", label: "QR check-in", group: "Event day" },
-  { key: "certificates.manage", label: "Certificates and cards", group: "Delivery" },
-  { key: "reviews.manage", label: "Reviews", group: "Quality" },
+  { key: "certificates.view", label: "View certificates and cards", group: "Delivery" },
+  { key: "certificates.manage", label: "Manage certificates and cards", group: "Delivery" },
+  { key: "reviews.view", label: "View reviews", group: "Quality" },
+  { key: "reviews.manage", label: "Moderate reviews", group: "Quality" },
   { key: "reports.view", label: "Reports", group: "Analytics" },
   { key: "settings.manage", label: "Settings", group: "Administration" },
+  { key: "contact_inquiries.manage", label: "Contact inquiries", group: "Administration" },
+  { key: "website_content.manage", label: "Website content", group: "Administration" },
+  { key: "theme_identity.manage", label: "Theme identity", group: "Administration" },
   { key: "kiosk.use", label: "Kiosk console", group: "Event day" },
   { key: "profile.manage", label: "Own profile", group: "Account" },
 ]
@@ -131,7 +136,7 @@ const roleSeeds: RoleOption[] = [
     nameEn: "Organizer",
     permissions: permissionCatalog.map((item) => ({
       ...item,
-      allowed: ["dashboard.view", "events.manage", "tickets.manage", "pricing.manage", "registrations.manage", "attendees.manage", "checkin.manage", "certificates.manage", "reviews.manage", "reports.view", "profile.manage"].includes(item.key),
+      allowed: ["dashboard.view", "events.manage", "tickets.manage", "pricing.manage", "registrations.manage", "attendees.manage", "checkin.manage", "certificates.view", "certificates.manage", "reviews.view", "reviews.manage", "reports.view", "profile.manage"].includes(item.key),
     })),
   },
   {
@@ -139,7 +144,7 @@ const roleSeeds: RoleOption[] = [
     nameEn: "Back Office",
     permissions: permissionCatalog.map((item) => ({
       ...item,
-      allowed: ["dashboard.view", "registrations.manage", "payments.verify", "attendees.manage", "checkin.manage", "certificates.manage", "reports.view", "profile.manage"].includes(item.key),
+      allowed: ["dashboard.view", "registrations.manage", "payments.verify", "attendees.manage", "checkin.manage", "certificates.view", "certificates.manage", "reviews.view", "reports.view", "contact_inquiries.manage", "profile.manage"].includes(item.key),
     })),
   },
   {
@@ -147,7 +152,7 @@ const roleSeeds: RoleOption[] = [
     nameEn: "Employee",
     permissions: permissionCatalog.map((item) => ({
       ...item,
-      allowed: ["dashboard.view", "attendees.manage", "checkin.manage", "certificates.manage", "profile.manage"].includes(item.key),
+      allowed: ["dashboard.view", "attendees.manage", "checkin.manage", "profile.manage"].includes(item.key),
     })),
   },
   { code: "doctor", nameEn: "Doctor", permissions: permissionCatalog.map((item) => ({ ...item, allowed: item.key === "profile.manage" })) },
@@ -181,10 +186,15 @@ const permissionLabelsAr: Record<string, string> = {
   "payments.verify": "مراجعة المدفوعات",
   "attendees.manage": "إدارة الحضور",
   "checkin.manage": "تسجيل الحضور عبر QR",
+  "certificates.view": "عرض الشهادات والكروت",
   "certificates.manage": "إدارة الشهادات والكروت",
+  "reviews.view": "عرض المراجعات",
   "reviews.manage": "إدارة المراجعات",
   "reports.view": "عرض التقارير",
   "settings.manage": "إدارة الإعدادات",
+  "contact_inquiries.manage": "إدارة طلبات التواصل",
+  "website_content.manage": "إدارة محتوى الموقع",
+  "theme_identity.manage": "إدارة هوية المنصة",
   "kiosk.use": "استخدام كشك التسجيل",
   "profile.manage": "إدارة الحساب الشخصي",
 }
@@ -271,7 +281,7 @@ export function UsersManager() {
       if (usersResult.status === "fulfilled") {
         setUsers((usersResult.value || []).map((user: AdminUser) => ({ ...user, avatarUrl: apiAssetUrl(user.avatarUrl) })))
       } else {
-        const message = usersResult.reason instanceof Error ? usersResult.reason.message : "Check backend and MySQL connection."
+        const message = usersResult.reason instanceof Error ? usersResult.reason.message : "Check the backend connection."
         toast.error(language === "ar" ? "تعذر تحميل المستخدمين" : "Could not load users", {
           description: message,
         })
@@ -406,7 +416,10 @@ export function UsersManager() {
 
   async function saveRolePermissions(role: RoleOption) {
     try {
-      await platformApi.updateRolePermissions(role.code, rolePayload(role))
+      const result = await platformApi.updateRolePermissions(role.code, rolePayload(role))
+      if (result?.role) {
+        setRoles((current) => current.map((item) => (item.code === result.role.code ? result.role : item)))
+      }
       toast.success(adminT(language, "users.permissionsSaved"), {
         description: language === "ar" ? `تم تحديث صلاحيات ${role.nameAr || role.nameEn}.` : `${role.nameEn} access rules were updated.`,
       })
@@ -699,7 +712,15 @@ export function UsersManager() {
               <Label>{adminT(language, "users.role")}</Label>
               <Select value={form.roleCode} onValueChange={(roleCode) => setForm({ ...form, roleCode })}>
                 <SelectTrigger className="h-12 rounded-2xl"><SelectValue /></SelectTrigger>
-                <SelectContent>{roles.map((role) => <SelectItem key={role.code} value={role.code}>{roleName(roles, role.code, language)}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  {roles
+                    .filter((role) => role.code !== "doctor" || form.roleCode === "doctor")
+                    .map((role) => (
+                      <SelectItem key={role.code} value={role.code}>
+                        {roleName(roles, role.code, language)}{role.code === "doctor" ? " (Legacy)" : ""}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">

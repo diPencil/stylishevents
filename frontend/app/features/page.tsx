@@ -61,7 +61,7 @@ export default function Features() {
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">Core Capabilities</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Core Capabilities</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Our platform offers a comprehensive set of tools to analyze, visualize, and extract insights from your
                 video data.
@@ -297,7 +297,7 @@ export default function Features() {
         <section className="py-20">
           <div className="container px-4 md:px-6">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">Flexible Integration</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Flexible Integration</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Connect to your existing video sources and integrate with your business systems.
               </p>
@@ -348,7 +348,7 @@ export default function Features() {
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">Advanced Capabilities</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Advanced Capabilities</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Explore the powerful features that set VideoMetrics.ai apart from traditional video analytics solutions.
               </p>
@@ -459,7 +459,7 @@ export default function Features() {
           <div className="container px-4 md:px-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div>
-                <h2 className="text-3xl font-bold mb-4">Enterprise-Grade Security & Privacy</h2>
+                <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Enterprise-Grade Security & Privacy</h2>
                 <p className="text-muted-foreground mb-6">
                   We take security and privacy seriously. VideoMetrics.ai is built with enterprise-grade security
                   features and privacy controls to protect your data.
@@ -517,7 +517,7 @@ export default function Features() {
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
             <div className="text-center max-w-3xl mx-auto">
-              <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Video Data?</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Ready to Transform Your Video Data?</h2>
               <p className="text-muted-foreground mb-8">
                 Start turning your video footage into actionable insights today with VideoMetrics.ai.
               </p>

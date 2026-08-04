@@ -53,7 +53,7 @@ export default function HowItWorks() {
         <section className="py-20 bg-gray-50 dark:bg-gray-900">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">The Technology Behind VideoMetrics.ai</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">The Technology Behind VideoMetrics.ai</h2>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
                 Our platform combines cutting-edge AI with scalable cloud architecture to deliver accurate, real-time
                 insights
@@ -287,7 +287,7 @@ export default function HowItWorks() {
         <section className="py-20">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Simple Setup Process</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Simple Setup Process</h2>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
                 Get up and running with VideoMetrics.ai in just a few simple steps
               </p>
@@ -398,7 +398,7 @@ export default function HowItWorks() {
         <section className="py-20 bg-gray-50 dark:bg-gray-900">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Frequently Asked Questions</h2>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
                 Common questions about VideoMetrics.ai and how it works
               </p>
@@ -470,7 +470,7 @@ export default function HowItWorks() {
         <section className="py-20">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Transform Your Video Data?</h2>
+              <h2 className="mb-4 text-2xl font-bold md:text-4xl lg:text-5xl">Ready to Transform Your Video Data?</h2>
               <p className="text-xl text-muted-foreground mb-8">
                 Join thousands of businesses already using VideoMetrics.ai to gain actionable insights and drive better
                 decisions.

@@ -2,6 +2,91 @@ import type { AboutPageSettings, ContactPageSettings, EventInformationSectionSet
 export { DEFAULT_LEGAL_PAGES_SETTINGS, DEFAULT_PRIVACY_PAGE_SETTINGS, DEFAULT_TERMS_PAGE_SETTINGS, normalizeLegalPageSettings, normalizeLegalPagesSettings } from "@/lib/legal-pages-defaults"
 import { DEFAULT_LEGAL_PAGES_SETTINGS, normalizeLegalPagesSettings } from "@/lib/legal-pages-defaults"
 
+export type FooterNavigationLink = {
+  id: string
+  col: "services" | "support"
+  labelEn: string
+  labelAr: string
+  href: string
+}
+
+export type FooterLegalLink = {
+  id: "privacy" | "terms"
+  labelEn: string
+  labelAr: string
+  href: string
+}
+
+export const DEFAULT_FOOTER_LINKS: FooterNavigationLink[] = [
+  { id: "upcoming-events", col: "services", labelEn: "Upcoming Events", labelAr: "الفعاليات القادمة", href: "/upcoming-events" },
+  { id: "previous-events", col: "services", labelEn: "Previous Events", labelAr: "الفعاليات السابقة", href: "/previous-events" },
+  { id: "reception-and-farewell", col: "services", labelEn: "Reception and Farewell", labelAr: "الاستقبال والتوديع", href: "/reception-and-farewell" },
+  { id: "faq", col: "services", labelEn: "Frequently Asked Questions", labelAr: "الأسئلة الشائعة", href: "/faq" },
+  { id: "about", col: "support", labelEn: "About Company", labelAr: "عن الشركة", href: "/about" },
+  { id: "contact", col: "support", labelEn: "Contact Us", labelAr: "تواصل معنا", href: "/contact" },
+  { id: "how-to-create-account", col: "support", labelEn: "How to Create an Account", labelAr: "كيفية إنشاء حساب", href: "/how-to-create-account" },
+  { id: "how-to-register-for-event", col: "support", labelEn: "How to Register for an Event", labelAr: "كيفية التسجيل في فعالية", href: "/how-to-register-for-event" },
+]
+
+export const DEFAULT_FOOTER_LEGAL_LINKS: FooterLegalLink[] = [
+  { id: "terms", labelEn: "Terms and Conditions", labelAr: "الشروط والأحكام", href: "/terms" },
+  { id: "privacy", labelEn: "Privacy Policy", labelAr: "سياسة الخصوصية", href: "/privacy" },
+]
+
+function footerRouteId(href = "", label = "") {
+  const key = `${href} ${label}`.toLowerCase()
+  if (key.includes("upcoming")) return "upcoming-events"
+  if (key.includes("previous")) return "previous-events"
+  if (key.includes("reception")) return "reception-and-farewell"
+  if (key.includes("faq") || key.includes("frequently")) return "faq"
+  if (key.includes("privacy")) return "privacy"
+  if (key.includes("terms")) return "terms"
+  if (key.includes("about")) return "about"
+  if (key.includes("contact")) return "contact"
+  if (key.includes("create-account") || key.includes("create an account")) return "how-to-create-account"
+  if (key.includes("register-for-event") || key.includes("register for an event")) return "how-to-register-for-event"
+  return ""
+}
+
+export function normalizeFooterLinks(savedLinks: any[] = []): FooterNavigationLink[] {
+  const source = Array.isArray(savedLinks) ? savedLinks : []
+  const savedById = new Map<string, any>()
+  source.forEach((link) => {
+    const id = footerRouteId(link?.href, `${link?.labelEn || ""} ${link?.labelAr || ""}`) || link?.id
+    if (id) savedById.set(id, link)
+  })
+
+  return DEFAULT_FOOTER_LINKS.map((fallback) => {
+    const saved = savedById.get(fallback.id)
+    return {
+      ...fallback,
+      ...(saved || {}),
+      id: fallback.id,
+      col: fallback.col,
+      href: saved?.href && saved.href !== "#" ? saved.href : fallback.href,
+    }
+  })
+}
+
+export function normalizeFooterLegalLinks(savedLegalLinks: any[] = [], savedFooterLinks: any[] = []): FooterLegalLink[] {
+  const source = [...(Array.isArray(savedLegalLinks) ? savedLegalLinks : []), ...(Array.isArray(savedFooterLinks) ? savedFooterLinks : [])]
+  const savedById = new Map<string, any>()
+  source.forEach((link) => {
+    const id = footerRouteId(link?.href, `${link?.labelEn || ""} ${link?.labelAr || ""}`)
+    if (id === "privacy" || id === "terms") savedById.set(id, link)
+  })
+
+  return DEFAULT_FOOTER_LEGAL_LINKS.map((fallback) => {
+    const saved = savedById.get(fallback.id)
+    return {
+      ...fallback,
+      ...(saved || {}),
+      id: fallback.id,
+      href: saved?.href && saved.href !== "#" ? saved.href : fallback.href,
+    }
+  })
+}
+
 export const DEFAULT_INFORMATION_SECTION_UPCOMING: EventInformationSectionSettings = {
   enabled: true,
   badgeEn: "",
@@ -168,16 +253,16 @@ export const DEFAULT_HOMEPAGE_REQUEST_SETUP: HomepageRequestSetupSettings = {
 
 export const DEFAULT_HOMEPAGE_FINAL_CTA: HomepageFinalCtaSettings = {
   enabled: true,
-  eyebrowEn: "Partner for Your Success",
-  eyebrowAr: "شريك في النجاح",
-  titleEn: "Unlock the Power of Stylish Events for Your Next Event",
-  titleAr: "أطلق قوة Stylish Events في فعاليتك القادمة",
-  descriptionEn: "Join over 500 organizations that trust our platform to organize and manage their most important events.",
-  descriptionAr: "انضم إلى أكثر من 500 مؤسسة تثق بمنصتنا لتنظيم وإدارة أهم فعالياتها.",
+  eyebrowEn: "Contact Our Team",
+  eyebrowAr: "تواصل مع فريقنا",
+  titleEn: "Tell Us About Your Next Event",
+  titleAr: "حدثنا عن فعاليتك القادمة",
+  descriptionEn: "Send us your event brief and our team will help you choose the right setup, tickets, and attendee flow.",
+  descriptionAr: "أرسل لنا تفاصيل فعاليتك وسيساعدك فريقنا في اختيار الإعداد المناسب والتذاكر ومسار الحضور.",
   primaryButtonEnabled: true,
-  primaryButtonLabelEn: "Start Organizing Your Event",
-  primaryButtonLabelAr: "ابدأ تنظيم فعاليتك",
-  primaryButtonUrl: "#booking-form",
+  primaryButtonLabelEn: "Contact Us",
+  primaryButtonLabelAr: "تواصل معنا",
+  primaryButtonUrl: "/contact/",
   primaryButtonOpenInNewTab: false,
 }
 
@@ -209,11 +294,11 @@ export const DEFAULT_CONTACT_PAGE_SETTINGS: ContactPageSettings = {
       icon: "phone",
       labelEn: "Call Us",
       labelAr: "اتصل بنا",
-      value: "+20 110 665 3177",
+      value: "+2 0100 607 1661",
       supportingTextEn: "Speak directly with our team.",
       supportingTextAr: "تحدث مباشرة مع فريقنا.",
       linkType: "phone",
-      linkValue: "+201106653177",
+      linkValue: "+201006071661",
     },
     {
       id: "contact-email",
@@ -221,11 +306,11 @@ export const DEFAULT_CONTACT_PAGE_SETTINGS: ContactPageSettings = {
       icon: "mail",
       labelEn: "Email Us",
       labelAr: "راسلنا",
-      value: "info@directevents.click",
+      value: "info@stylish-holidays.com",
       supportingTextEn: "Send your questions or event brief.",
       supportingTextAr: "أرسل أسئلتك أو ملخص فعاليتك.",
       linkType: "email",
-      linkValue: "info@directevents.click",
+      linkValue: "info@stylish-holidays.com",
     },
     {
       id: "contact-address",
@@ -233,11 +318,11 @@ export const DEFAULT_CONTACT_PAGE_SETTINGS: ContactPageSettings = {
       icon: "mapPin",
       labelEn: "Visit Us",
       labelAr: "زورنا",
-      value: "Cairo, Egypt",
+      value: "26 Tarablous Street, Abbas El Akkad, 2nd floor, Flat 5, Nasr City, Cairo, Egypt",
       supportingTextEn: "Meet our team by appointment.",
       supportingTextAr: "قابل فريقنا بموعد مسبق.",
       linkType: "map",
-      linkValue: "https://maps.google.com/?q=Cairo%2C%20Egypt",
+      linkValue: "https://maps.google.com/?q=26%20Tarablous%20Street%2C%20Abbas%20El%20Akkad%2C%202nd%20floor%2C%20Flat%205%2C%20Nasr%20City%2C%20Cairo%2C%20Egypt",
     },
     {
       id: "contact-support",
@@ -249,7 +334,7 @@ export const DEFAULT_CONTACT_PAGE_SETTINGS: ContactPageSettings = {
       supportingTextEn: "Get assistance before, during, and after your event.",
       supportingTextAr: "احصل على المساعدة قبل الفعالية وأثناءها وبعدها.",
       linkType: "whatsapp",
-      linkValue: "201106653177",
+      linkValue: "201006071661",
     },
   ],
   requestSection: {
@@ -831,8 +916,10 @@ export function normalizeFeaturesSectionSettings(savedFeaturesSection: any = {},
 export function normalizeHomepageFinalCtaSettings(savedFinalCta: any = {}, savedHomepage: any = {}): HomepageFinalCtaSettings {
   const legacyTitleEn = [savedHomepage?.footerTitle1En, "Stylish Events", savedHomepage?.footerTitle2En].filter(Boolean).join(" ")
   const legacyTitleAr = [savedHomepage?.footerTitle1Ar, "Stylish Events", savedHomepage?.footerTitle2Ar].filter(Boolean).join(" ")
+  const oldTitleEn = "Unlock the Power of Stylish Events for Your Next Event"
+  const oldTitleAr = "أطلق العنان لقوة Stylish Events في فعاليتك القادمة"
 
-  return {
+  const normalized = {
     ...DEFAULT_HOMEPAGE_FINAL_CTA,
     eyebrowEn: savedHomepage?.footerEyebrowEn || DEFAULT_HOMEPAGE_FINAL_CTA.eyebrowEn,
     eyebrowAr: savedHomepage?.footerEyebrowAr || DEFAULT_HOMEPAGE_FINAL_CTA.eyebrowAr,
@@ -844,6 +931,18 @@ export function normalizeHomepageFinalCtaSettings(savedFinalCta: any = {}, saved
     primaryButtonLabelAr: savedHomepage?.footerCtaAr || DEFAULT_HOMEPAGE_FINAL_CTA.primaryButtonLabelAr,
     ...(savedFinalCta || {}),
   }
+
+  if (normalized.eyebrowEn === "Partner for Your Success") normalized.eyebrowEn = DEFAULT_HOMEPAGE_FINAL_CTA.eyebrowEn
+  if (normalized.eyebrowAr === "شريك في النجاح") normalized.eyebrowAr = DEFAULT_HOMEPAGE_FINAL_CTA.eyebrowAr
+  if (normalized.titleEn === oldTitleEn) normalized.titleEn = DEFAULT_HOMEPAGE_FINAL_CTA.titleEn
+  if (normalized.titleAr === oldTitleAr) normalized.titleAr = DEFAULT_HOMEPAGE_FINAL_CTA.titleAr
+  if (normalized.descriptionEn === "Join over 500 organizations that trust our platform to organize and manage their most important events.") normalized.descriptionEn = DEFAULT_HOMEPAGE_FINAL_CTA.descriptionEn
+  if (normalized.descriptionAr === "انضم إلى أكثر من 500 مؤسسة تثق بمنصتنا لتنظيم وإدارة أهم فعالياتها.") normalized.descriptionAr = DEFAULT_HOMEPAGE_FINAL_CTA.descriptionAr
+  if (normalized.primaryButtonLabelEn === "Start Organizing Your Event") normalized.primaryButtonLabelEn = DEFAULT_HOMEPAGE_FINAL_CTA.primaryButtonLabelEn
+  if (normalized.primaryButtonLabelAr === "ابدأ تنظيم فعاليتك") normalized.primaryButtonLabelAr = DEFAULT_HOMEPAGE_FINAL_CTA.primaryButtonLabelAr
+  if (!normalized.primaryButtonUrl || normalized.primaryButtonUrl === "#booking-form") normalized.primaryButtonUrl = DEFAULT_HOMEPAGE_FINAL_CTA.primaryButtonUrl
+
+  return normalized
 }
 
 export function normalizeSiteContentSettings(remote = {}) {
@@ -858,6 +957,8 @@ export function normalizeSiteContentSettings(remote = {}) {
   const contactPage = normalizeContactPageSettings(r.contactPage)
   const aboutPage = normalizeAboutPageSettings(r.aboutPage)
   const legalPages = normalizeLegalPagesSettings(r.legalPages)
+  const footerLinks = normalizeFooterLinks(r.footerLinks)
+  const footerLegalLinks = normalizeFooterLegalLinks(r.footerLegalLinks, r.footerLinks)
 
   const upcoming = { ...(r.upcomingEvents || {}) }
   upcoming.informationSection = { ...DEFAULT_INFORMATION_SECTION_UPCOMING, ...(r.upcomingEvents?.informationSection || {}) }
@@ -874,6 +975,8 @@ export function normalizeSiteContentSettings(remote = {}) {
     contactPage,
     aboutPage,
     legalPages,
+    footerLinks,
+    footerLegalLinks,
     upcomingEvents: upcoming,
     previousEvents: previous,
   }

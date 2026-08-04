@@ -34,6 +34,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { ImageUrlDropzone } from "@/components/admin/image-url-dropzone"
 import { ConfirmAction } from "@/components/admin/confirm-action"
+import { useAdminPermissions } from "@/components/admin/admin-shell"
 import { TableDateTime } from "@/components/admin/table-date-time"
 import { useLanguage } from "@/contexts/language-context"
 import { adminStatusT, adminT } from "@/lib/admin-translations"
@@ -128,6 +129,8 @@ function normalizeDeliveryEvent(row: any): CertificateEvent {
 
 export function CertificatesManager() {
   const { language } = useLanguage()
+  const { can } = useAdminPermissions()
+  const canManageCertificates = can("certificates.manage")
   const [assets, setAssets] = useState<CustomerAsset[]>([])
   const [events, setEvents] = useState<CertificateEvent[]>([])
   const [eventFilter, setEventFilter] = useState("all")
@@ -146,7 +149,7 @@ export function CertificatesManager() {
         setAssets((deliveryRows || []).map(normalizeDelivery))
       } catch (error) {
         if (!active) return
-        toast.error("Could not load certificates", { description: error instanceof Error ? error.message : "Check backend and MySQL." })
+        toast.error("Could not load certificates", { description: error instanceof Error ? error.message : "Check the backend connection." })
       }
     }
     loadDelivery()
@@ -208,12 +211,14 @@ export function CertificatesManager() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" className="h-10 rounded-2xl bg-white px-4 text-sm font-extrabold">
-            <Link href="/admin/certificates/builder">
-              <Sparkles className="h-4 w-4" />
-              {adminT(language, "certificates.builder")}
-            </Link>
-          </Button>
+          {canManageCertificates && (
+            <Button asChild variant="outline" className="h-10 rounded-2xl bg-white px-4 text-sm font-extrabold">
+              <Link href="/admin/certificates/builder">
+                <Sparkles className="h-4 w-4" />
+                {adminT(language, "certificates.builder")}
+              </Link>
+            </Button>
+          )}
           <Button className="h-10 rounded-2xl bg-[hsl(var(--primary))] px-4 text-sm font-extrabold text-white hover:bg-[hsl(var(--primary)/0.9)]">
             <Download className="h-4 w-4" />
             {language === "ar" ? "تصدير السجل" : "Export Log"}
@@ -333,45 +338,49 @@ export function CertificatesManager() {
                                 Preview event card
                               </Link>
                             </DropdownMenuItem>
-                            <ConfirmAction
-                              title="Send certificate PDF?"
-                              description="This customer's certificate will be marked as sent."
-                              confirmLabel="Send PDF"
-                              tone="success"
-                              onConfirm={() => sendCertificate(asset)}
-                            >
-                              <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700">
-                                <Send className="h-4 w-4" />
-                                Send certificate
-                              </DropdownMenuItem>
-                            </ConfirmAction>
-                            <ConfirmAction
-                              title="Send event card?"
-                              description="This customer's event card will be marked as sent."
-                              confirmLabel="Send card"
-                              tone="success"
-                              onConfirm={() => sendCard(asset)}
-                            >
-                              <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-blue-600 focus:bg-blue-50 focus:text-blue-700">
-                                <Mail className="h-4 w-4" />
-                                Send event card
-                              </DropdownMenuItem>
-                            </ConfirmAction>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-slate-600"
-                              onClick={() => sendCertificate(asset)}
-                            >
-                              <RotateCcw className="h-4 w-4" />
-                              Resend certificate
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-slate-600"
-                              onClick={() => sendCard(asset)}
-                            >
-                              <RotateCcw className="h-4 w-4" />
-                              Resend event card
-                            </DropdownMenuItem>
+                            {canManageCertificates && (
+                              <>
+                                <ConfirmAction
+                                  title="Send certificate PDF?"
+                                  description="This customer's certificate will be marked as sent."
+                                  confirmLabel="Send PDF"
+                                  tone="success"
+                                  onConfirm={() => sendCertificate(asset)}
+                                >
+                                  <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700">
+                                    <Send className="h-4 w-4" />
+                                    Send certificate
+                                  </DropdownMenuItem>
+                                </ConfirmAction>
+                                <ConfirmAction
+                                  title="Send event card?"
+                                  description="This customer's event card will be marked as sent."
+                                  confirmLabel="Send card"
+                                  tone="success"
+                                  onConfirm={() => sendCard(asset)}
+                                >
+                                  <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-blue-600 focus:bg-blue-50 focus:text-blue-700">
+                                    <Mail className="h-4 w-4" />
+                                    Send event card
+                                  </DropdownMenuItem>
+                                </ConfirmAction>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-slate-600"
+                                  onClick={() => sendCertificate(asset)}
+                                >
+                                  <RotateCcw className="h-4 w-4" />
+                                  Resend certificate
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-slate-600"
+                                  onClick={() => sendCard(asset)}
+                                >
+                                  <RotateCcw className="h-4 w-4" />
+                                  Resend event card
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -464,7 +473,7 @@ export function CertificateBuilder() {
         setSelectedAssetId((current) => current || normalizedAssets[0]?.id || "")
       } catch (error) {
         if (!active) return
-        toast.error("Could not load builder data", { description: error instanceof Error ? error.message : "Check backend and MySQL." })
+        toast.error("Could not load builder data", { description: error instanceof Error ? error.message : "Check the backend connection." })
       }
     }
     loadBuilderData()
@@ -505,7 +514,7 @@ export function CertificateBuilder() {
         isDefault: true,
         isActive: true,
       })
-      setActivity(`${selectedEvent.templateName} saved to MySQL.`)
+      setActivity(`${selectedEvent.templateName} saved.`)
       toast.success("Template saved", { description: selectedEvent.title })
     } catch (error) {
       toast.error("Template save failed", { description: error instanceof Error ? error.message : "Could not save template." })

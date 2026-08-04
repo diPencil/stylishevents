@@ -1,7 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 import { first, query, transaction } from '../db/mysql.js';
-import { requireAuth, requireRole } from '../middleware/auth.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/security.js';
 import { asyncRoute, fail, ok } from '../utils/apiResponse.js';
 import { auditLog } from '../utils/auth.js';
@@ -208,7 +208,7 @@ router.post('/', rateLimit({ windowMs: 60_000, max: 5 }), asyncRoute(async (req,
   });
 }));
 
-router.get('/', requireAuth, requireRole('admin'), asyncRoute(async (req, res) => {
+router.get('/', requireAuth, requirePermission('contact_inquiries.manage'), asyncRoute(async (req, res) => {
   const limit = Math.min(Math.max(Number(req.query.limit || 10), 1), 50);
   const offset = Math.max(Number(req.query.offset || 0), 0);
   const search = String(req.query.search || '').trim();
@@ -240,13 +240,13 @@ router.get('/', requireAuth, requireRole('admin'), asyncRoute(async (req, res) =
   });
 }));
 
-router.get('/:id', requireAuth, requireRole('admin'), asyncRoute(async (req, res) => {
+router.get('/:id', requireAuth, requirePermission('contact_inquiries.manage'), asyncRoute(async (req, res) => {
   const row = await first('SELECT * FROM contact_inquiries WHERE id = :id LIMIT 1', { id: req.params.id });
   if (!row) return fail(res, 404, 'Inquiry not found');
   ok(res, mapInquiry(row));
 }));
 
-router.patch('/:id', requireAuth, requireRole('admin'), asyncRoute(async (req, res) => {
+router.patch('/:id', requireAuth, requirePermission('contact_inquiries.manage'), asyncRoute(async (req, res) => {
   const parsed = adminUpdateSchema.safeParse(req.body || {});
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
   const current = await first('SELECT * FROM contact_inquiries WHERE id = :id LIMIT 1', { id: req.params.id });

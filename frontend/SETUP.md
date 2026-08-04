@@ -1,13 +1,13 @@
-# Stylish Events - Setup & Running Guide
+﻿# Stylish Events - Setup & Running Guide
 
 ## Project Structure
 
 ```
 directevents/
-├── app/               # Next.js app (Frontend)
-├── components/        # React components
-├── backend/          # Express.js server
-└── ...other files
+â”œâ”€â”€ app/               # Next.js app (Frontend)
+â”œâ”€â”€ components/        # React components
+â”œâ”€â”€ backend/          # Express.js server
+â””â”€â”€ ...other files
 ```
 
 ## Setup Instructions
@@ -35,8 +35,7 @@ Create `.env.local` in the `backend/` directory:
 SMTP_HOST=smtp.hostinger.com
 SMTP_PORT=465
 SMTP_SECURE=true
-SMTP_USER=info@stylish-events.com
-SMTP_PASS=>oHwxDKC|9aL
+SMTP_USER=info@stylish-holidays.comSMTP_PASS=>oHwxDKC|9aL
 
 # Frontend URL (for CORS)
 FRONTEND_URL=http://localhost:3000
@@ -46,7 +45,7 @@ PORT=5000
 NODE_ENV=development
 ```
 
-> ⚠️ **IMPORTANT**: Never commit `.env.local` to git. It's listed in `.gitignore`.
+> âš ï¸ **IMPORTANT**: Never commit `.env.local` to git. It's listed in `.gitignore`.
 
 ---
 
@@ -77,15 +76,14 @@ npm start
 
 Server output:
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚀 Stylish Events Backend Started
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📍 Server URL: http://localhost:5000
-📧 Email: info@stylish-events.com
-🔧 Environment: development
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+ðŸš€ Stylish Events Backend Started
+â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+ðŸ“ Server URL: http://localhost:5000
+ðŸ“§ Email: info@stylish-holidays.comðŸ”§ Environment: development
+â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
 
-✅ SMTP Server Ready. Messages can be sent.
+âœ… SMTP Server Ready. Messages can be sent.
 ```
 
 ---
@@ -173,30 +171,29 @@ Frontend displays success modal showing:
 - **Provider**: Hostinger
 - **Host**: smtp.hostinger.com
 - **Port**: 465 (SSL/TLS)
-- **Username**: info@stylish-events.com
-- **Authentication**: Password-based
+- **Username**: info@stylish-holidays.com- **Authentication**: Password-based
 
 ### Email Content
 
 The confirmation email includes:
 
-- ✅ Unique booking reference number
-- ✅ User contact information
-- ✅ Event details (name, type, location, date)
-- ✅ Expected attendance
-- ✅ Selected services
-- ✅ Multilingual support (Arabic & English)
-- ✅ Professional branding and footer
+- âœ… Unique booking reference number
+- âœ… User contact information
+- âœ… Event details (name, type, location, date)
+- âœ… Expected attendance
+- âœ… Selected services
+- âœ… Multilingual support (Arabic & English)
+- âœ… Professional branding and footer
 
 Example email sections:
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-تأكيد طلب حجز الفعالية
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+ØªØ£ÙƒÙŠØ¯ Ø·Ù„Ø¨ Ø­Ø¬Ø² Ø§Ù„ÙØ¹Ø§Ù„ÙŠØ©
+â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
 
-🔐 رقم الحجز: CONF-XXXXXXXX-XXXXX
-👤 الاسم: محمود شعبان
-📧 البريد: user@example.com
+ðŸ” Ø±Ù‚Ù… Ø§Ù„Ø­Ø¬Ø²: CONF-XXXXXXXX-XXXXX
+ðŸ‘¤ Ø§Ù„Ø§Ø³Ù…: Ù…Ø­Ù…ÙˆØ¯ Ø´Ø¹Ø¨Ø§Ù†
+ðŸ“§ Ø§Ù„Ø¨Ø±ÙŠØ¯: user@example.com
 ...
 ```
 
@@ -262,11 +259,11 @@ npm start
 
 ### Important for Production
 
-- ✅ Use strong SMTP password
-- ✅ Keep `.env.local` **secure** and never commit
-- ✅ Configure proper CORS origins
-- ✅ Use HTTPS only
-- ✅ Enable error logging and monitoring
+- âœ… Use strong SMTP password
+- âœ… Keep `.env.local` **secure** and never commit
+- âœ… Configure proper CORS origins
+- âœ… Use HTTPS only
+- âœ… Enable error logging and monitoring
 
 ---
 
@@ -274,9 +271,9 @@ npm start
 
 For issues or questions:
 
-📧 **Email**: info@stylish-events.com  
-🌐 **Website**: https://stylish-events.com  
-💬 **WhatsApp**: https://wa.me/201106653177
+- Email: info@stylish-holidays.com
+- Website: https://stylish-events.com
+- WhatsApp: https://wa.me/201006071661
 
 ---
 

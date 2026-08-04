@@ -280,7 +280,7 @@ export function EventsManager() {
         setTickets([])
         setPricePeriods([])
         toast.error("Could not load events", {
-          description: error instanceof Error ? error.message : "Please check the backend and MySQL connection.",
+          description: error instanceof Error ? error.message : "Please check the backend connection.",
         })
       }
     }
@@ -354,7 +354,7 @@ export function EventsManager() {
       setActiveEventId(eventId)
       setActiveTicketId(nextTicket.id)
       setTicketForm({ ...emptyTicketForm, eventId: String(eventId) })
-      toast.success("Ticket created", { description: "Ticket type and pricing periods were saved to MySQL." })
+      toast.success("Ticket created", { description: "Ticket type and pricing periods were saved." })
     } catch (error) {
       toast.error("Ticket creation failed", { description: error instanceof Error ? error.message : "Please check the ticket data." })
     }
@@ -376,7 +376,7 @@ export function EventsManager() {
       })
       setPricePeriods((current) => [normalizePeriod(saved, selectedTicket.event_id), ...current])
       setPeriodForm({ label: "Special Window", startsAt: "", endsAt: "", price: "100", currency: currencySettings.baseCurrency })
-      toast.success("Pricing period added", { description: "The new date window was saved to MySQL." })
+      toast.success("Pricing period added", { description: "The new date window was saved." })
     } catch (error) {
       toast.error("Pricing period failed", { description: error instanceof Error ? error.message : "Could not save this period." })
     }

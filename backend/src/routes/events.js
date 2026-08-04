@@ -33,6 +33,7 @@ const eventSchema = z.object({
   maxAttendees: z.number().int().positive().optional().nullable(),
   coverImageUrl: z.string().optional().nullable(),
   bannerImageUrl: z.string().optional().nullable(),
+  eventDetailsImageUrl: z.string().optional().nullable(),
   gallery: z.array(z.string()).default([]),
   googleMapsUrl: z.string().optional().nullable(),
   venueId: z.number().int().positive().optional().nullable(),
@@ -71,6 +72,7 @@ function eventSelect() {
       e.timezone,
       e.cover_image_url,
       e.banner_image_url,
+      e.event_details_image_url,
       e.gallery_json,
       e.google_maps_url,
       e.max_attendees,
@@ -121,6 +123,7 @@ function eventParams(event) {
     maxAttendees: event.maxAttendees || null,
     coverImageUrl: event.coverImageUrl || null,
     bannerImageUrl: event.bannerImageUrl || null,
+    eventDetailsImageUrl: event.eventDetailsImageUrl || null,
     gallery: JSON.stringify(event.gallery || []),
     googleMapsUrl: event.googleMapsUrl || null,
     venueId: event.venueId || null,
@@ -273,6 +276,7 @@ router.post('/', requireAuth, requirePermission('events.manage'), asyncRoute(asy
       timezone,
       cover_image_url,
       banner_image_url,
+      event_details_image_url,
       gallery_json,
       google_maps_url,
       max_attendees
@@ -302,6 +306,7 @@ router.post('/', requireAuth, requirePermission('events.manage'), asyncRoute(asy
       :timezone,
       :coverImageUrl,
       :bannerImageUrl,
+      :eventDetailsImageUrl,
       :gallery,
       :googleMapsUrl,
       :maxAttendees
@@ -349,6 +354,7 @@ router.put('/:id', requireAuth, requirePermission('events.manage'), asyncRoute(a
       timezone = :timezone,
       cover_image_url = :coverImageUrl,
       banner_image_url = :bannerImageUrl,
+      event_details_image_url = :eventDetailsImageUrl,
       gallery_json = :gallery,
       google_maps_url = :googleMapsUrl,
       max_attendees = :maxAttendees

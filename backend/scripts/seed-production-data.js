@@ -25,6 +25,7 @@ const migrations = [
   '009_public_checkout_confirmation_security.sql',
   '010_capacity_reservation_expiry.sql',
   '011_event_registration_policy.sql',
+  '012_event_details_image_reviews.sql',
 ];
 
 const envAdminPassword = process.env.ADMIN_PASSWORD;
@@ -460,7 +461,7 @@ async function seed() {
       {
         roleCode: 'organizer',
         name: 'Operations Manager',
-        email: 'operations@stylish-events.com',
+        email: 'info@stylish-holidays.com',
         phone: '+20 111 222 3333',
         countryCode: 'EG',
         countryName: 'Egypt',
@@ -698,7 +699,7 @@ async function seed() {
     for (const seedEvent of eventSeeds) {
       const event = await upsertEvent(db, {
         ...seedEvent,
-        organizerId: users['operations@stylish-events.com'].id,
+        organizerId: users['info@stylish-holidays.com'].id,
         venueId: venues[seedEvent.venueKey].id,
         timezone: 'Africa/Cairo',
         googleMapsUrl: 'https://maps.google.com',
@@ -1047,10 +1048,10 @@ async function seed() {
             imageAltAr: 'فريق تنظيم فعاليات يناقش تجهيز القاعة',
           },
           contactCards: [
-            { id: 'phone', enabled: true, icon: 'phone', labelEn: 'Phone', labelAr: 'الهاتف', value: '+20 110 665 3177', supportingTextEn: 'Speak with our team directly.', supportingTextAr: 'تحدث مباشرة مع فريقنا.', linkType: 'phone', linkValue: '+201106653177' },
-            { id: 'email', enabled: true, icon: 'mail', labelEn: 'Email', labelAr: 'البريد الإلكتروني', value: 'info@directevents.click', supportingTextEn: 'Send briefs, files, and questions.', supportingTextAr: 'أرسل التفاصيل والملفات والأسئلة.', linkType: 'email', linkValue: 'info@directevents.click' },
-            { id: 'address', enabled: true, icon: 'mapPin', labelEn: 'Address', labelAr: 'العنوان', value: 'Cairo, Egypt', supportingTextEn: 'Available for regional event planning.', supportingTextAr: 'متاحون لتخطيط الفعاليات إقليميا.', linkType: 'map', linkValue: 'https://maps.google.com/?q=Cairo%2C%20Egypt' },
-            { id: 'support', enabled: true, icon: 'headphones', labelEn: 'Support', labelAr: 'الدعم', value: '24/7', supportingTextEn: 'Ongoing assistance before and during your event.', supportingTextAr: 'مساعدة مستمرة قبل وأثناء الفعالية.', linkType: 'whatsapp', linkValue: '+201106653177' },
+            { id: 'phone', enabled: true, icon: 'phone', labelEn: 'Phone', labelAr: 'الهاتف', value: '+2 0100 607 1661', supportingTextEn: 'Speak with our team directly.', supportingTextAr: 'تحدث مباشرة مع فريقنا.', linkType: 'phone', linkValue: '+201006071661' },
+            { id: 'email', enabled: true, icon: 'mail', labelEn: 'Email', labelAr: 'البريد الإلكتروني', value: 'info@stylish-holidays.com', supportingTextEn: 'Send briefs, files, and questions.', supportingTextAr: 'أرسل التفاصيل والملفات والأسئلة.', linkType: 'email', linkValue: 'info@stylish-holidays.com' },
+            { id: 'address', enabled: true, icon: 'mapPin', labelEn: 'Address', labelAr: 'العنوان', value: '26 Tarablous Street, Abbas El Akkad, 2nd floor, Flat 5, Nasr City, Cairo, Egypt', supportingTextEn: 'Available for regional event planning.', supportingTextAr: 'متاحون لتخطيط الفعاليات إقليميا.', linkType: 'map', linkValue: 'https://maps.google.com/?q=26%20Tarablous%20Street%2C%20Abbas%20El%20Akkad%2C%202nd%20floor%2C%20Flat%205%2C%20Nasr%20City%2C%20Cairo%2C%20Egypt' },
+            { id: 'support', enabled: true, icon: 'headphones', labelEn: 'Support', labelAr: 'الدعم', value: '24/7', supportingTextEn: 'Ongoing assistance before and during your event.', supportingTextAr: 'مساعدة مستمرة قبل وأثناء الفعالية.', linkType: 'whatsapp', linkValue: '+201006071661' },
           ],
           requestSection: {
             enabled: true,

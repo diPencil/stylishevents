@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import express from 'express';
 import { z } from 'zod';
 import { first, query, transaction } from '../db/mysql.js';
+import { requireAuth } from '../middleware/auth.js';
 import { asyncRoute, fail, ok } from '../utils/apiResponse.js';
 import {
   countActiveReservations,
@@ -28,6 +29,11 @@ const checkoutSchema = z.object({
   preferredLanguage: z.enum(['ar', 'en']).default('en'),
   paymentReference: z.string().max(180).optional().nullable(),
   paymentProofUrl: z.string().max(500).optional().nullable(),
+});
+
+const reviewSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().max(1200).optional().nullable(),
 });
 
 function isEgyptianCountry(countryCode = '', countryName = '', nationality = '') {
@@ -69,6 +75,21 @@ function confirmationToken() {
 
 function tokenHash(token) {
   return crypto.createHash('sha256').update(String(token || '')).digest('hex');
+}
+
+function cleanText(value = '') {
+  return String(value || '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/[<>]/g, '')
+    .trim()
+    .slice(0, 1200);
+}
+
+function reviewerName(row) {
+  const name = String(row.customer_name || row.attendee_name || 'Attendee').trim();
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return name;
+  return `${parts[0]} ${parts[1]?.slice(0, 1) || ''}.`;
 }
 
 function cookieValue(req, name) {
@@ -127,6 +148,7 @@ function publicEventSelect() {
       e.timezone,
       e.cover_image_url,
       e.banner_image_url,
+      e.event_details_image_url,
       e.gallery_json,
       e.google_maps_url,
       e.max_attendees,
@@ -140,6 +162,104 @@ function publicEventSelect() {
     FROM events e
     LEFT JOIN venues v ON v.id = e.venue_id
   `;
+}
+
+async function ratingSummary(eventId) {
+  const [summary, distribution, reviews] = await Promise.all([
+    first(`
+      SELECT COUNT(*) AS review_count, COALESCE(AVG(rating), 0) AS average_rating
+      FROM reviews
+      WHERE event_id = :eventId AND status = 'approved'
+    `, { eventId }),
+    query(`
+      SELECT rating, COUNT(*) AS total
+      FROM reviews
+      WHERE event_id = :eventId AND status = 'approved'
+      GROUP BY rating
+    `, { eventId }),
+    query(`
+      SELECT
+        r.id,
+        r.rating,
+        r.comment,
+        r.created_at,
+        u.name AS customer_name,
+        a.full_name AS attendee_name
+      FROM reviews r
+      LEFT JOIN users u ON u.id = r.customer_id
+      LEFT JOIN attendees a ON a.id = r.attendee_id
+      WHERE r.event_id = :eventId AND r.status = 'approved'
+      ORDER BY r.created_at DESC, r.id DESC
+      LIMIT 12
+    `, { eventId }),
+  ]);
+
+  const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  for (const row of distribution) dist[Number(row.rating)] = Number(row.total || 0);
+  return {
+    average: Number(Number(summary?.average_rating || 0).toFixed(1)),
+    count: Number(summary?.review_count || 0),
+    distribution: dist,
+    reviews: reviews.map((row) => ({
+      id: row.id,
+      rating: Number(row.rating || 0),
+      comment: row.comment || '',
+      created_at: row.created_at,
+      reviewer_name: reviewerName(row),
+    })),
+  };
+}
+
+async function reviewEligibility(req, eventId) {
+  if (!req.user?.id) return { eligible: false, state: 'login_required', reason: 'Log in to rate this event.' };
+  if (!['customer', 'doctor'].includes(String(req.user.role_code || ''))) {
+    return { eligible: false, state: 'role_denied', reason: 'Only registered customers can rate this event.' };
+  }
+
+  const event = await first('SELECT id, title_en, title_ar, ends_at, status FROM events WHERE id = :eventId LIMIT 1', { eventId });
+  if (!event || event.status !== 'published') return { eligible: false, state: 'event_unavailable', reason: 'Event is not available for reviews.' };
+  if (!event.ends_at || new Date(event.ends_at).getTime() > Date.now()) {
+    return { eligible: false, state: 'event_not_ended', reason: 'You can rate this event after it ends.' };
+  }
+
+  const registration = await first(`
+    SELECT
+      r.id,
+      r.registration_status,
+      r.event_id,
+      a.id AS attendee_id,
+      existing.id AS review_id,
+      existing.rating AS review_rating,
+      existing.comment AS review_comment,
+      existing.status AS review_status
+    FROM registrations r
+    JOIN doctors d ON d.id = r.doctor_id
+    LEFT JOIN generated_tickets gt ON gt.registration_id = r.id
+    LEFT JOIN attendees a ON a.id = gt.attendee_id
+    LEFT JOIN reviews existing ON existing.event_id = r.event_id AND existing.customer_id = :userId
+    WHERE r.event_id = :eventId
+      AND d.user_id = :userId
+    ORDER BY r.created_at DESC
+    LIMIT 1
+  `, { eventId, userId: req.user.id });
+
+  if (!registration) return { eligible: false, state: 'not_registered', reason: 'Only registered attendees can rate this event.' };
+  if (registration.registration_status !== 'approved') {
+    return { eligible: false, state: 'registration_not_eligible', reason: 'Your registration is not yet eligible for rating.' };
+  }
+
+  return {
+    eligible: true,
+    state: registration.review_id ? 'already_reviewed' : 'eligible',
+    registrationId: registration.id,
+    attendeeId: registration.attendee_id || null,
+    review: registration.review_id ? {
+      id: registration.review_id,
+      rating: Number(registration.review_rating || 0),
+      comment: registration.review_comment || '',
+      status: registration.review_status,
+    } : null,
+  };
 }
 
 async function activeBankAccount(currency) {
@@ -310,6 +430,67 @@ router.get('/registrations/:reference', asyncRoute(async (req, res) => {
   ok(res, { registration: await registrationSummary(row.id) });
 }));
 
+router.get('/:slug/reviews', asyncRoute(async (req, res) => {
+  const event = await first('SELECT id FROM events WHERE slug = :slug AND status = "published" LIMIT 1', { slug: req.params.slug });
+  if (!event) return fail(res, 404, 'Event not found');
+  ok(res, await ratingSummary(event.id));
+}));
+
+router.get('/:slug/review-eligibility', requireAuth, asyncRoute(async (req, res) => {
+  const event = await first('SELECT id FROM events WHERE slug = :slug AND status = "published" LIMIT 1', { slug: req.params.slug });
+  if (!event) return fail(res, 404, 'Event not found');
+  ok(res, await reviewEligibility(req, event.id));
+}));
+
+router.post('/:slug/review', requireAuth, asyncRoute(async (req, res) => {
+  const parsed = reviewSchema.safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
+  const event = await first('SELECT id FROM events WHERE slug = :slug AND status = "published" LIMIT 1', { slug: req.params.slug });
+  if (!event) return fail(res, 404, 'Event not found');
+  const eligibility = await reviewEligibility(req, event.id);
+  if (!eligibility.eligible) return fail(res, 403, eligibility.reason, { state: eligibility.state });
+  if (eligibility.review) return fail(res, 409, 'You already reviewed this event', { review: eligibility.review });
+
+  try {
+    const result = await query(`
+      INSERT INTO reviews (event_id, attendee_id, customer_id, rating, title, comment, status)
+      VALUES (:eventId, :attendeeId, :customerId, :rating, NULL, :comment, 'pending')
+    `, {
+      eventId: event.id,
+      attendeeId: eligibility.attendeeId || null,
+      customerId: req.user.id,
+      rating: parsed.data.rating,
+      comment: cleanText(parsed.data.comment || ''),
+    });
+    ok(res, { id: result.insertId, status: 'pending' }, 'Review submitted for moderation');
+  } catch (error) {
+    if (error?.code === 'ER_DUP_ENTRY') return fail(res, 409, 'You already reviewed this event');
+    throw error;
+  }
+}));
+
+router.patch('/:slug/review', requireAuth, asyncRoute(async (req, res) => {
+  const parsed = reviewSchema.safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
+  const event = await first('SELECT id FROM events WHERE slug = :slug AND status = "published" LIMIT 1', { slug: req.params.slug });
+  if (!event) return fail(res, 404, 'Event not found');
+  const eligibility = await reviewEligibility(req, event.id);
+  if (!eligibility.eligible) return fail(res, 403, eligibility.reason, { state: eligibility.state });
+  if (!eligibility.review) return fail(res, 404, 'Review not found');
+
+  await query(`
+    UPDATE reviews
+    SET rating = :rating, comment = :comment, status = 'pending'
+    WHERE id = :id AND customer_id = :customerId
+  `, {
+    id: eligibility.review.id,
+    customerId: req.user.id,
+    rating: parsed.data.rating,
+    comment: cleanText(parsed.data.comment || ''),
+  });
+  ok(res, { id: eligibility.review.id, status: 'pending' }, 'Review updated for moderation');
+}));
+
 router.get('/:slug', asyncRoute(async (req, res) => {
   const event = await first(`${publicEventSelect()} WHERE e.slug = :slug AND e.status = 'published' LIMIT 1`, {
     slug: req.params.slug,
@@ -319,7 +500,7 @@ router.get('/:slug', asyncRoute(async (req, res) => {
     await releaseExpiredReservations(connection, { eventId: event.id });
   });
 
-  const [sessions, tickets, totals] = await Promise.all([
+  const [sessions, tickets, totals, reviews] = await Promise.all([
     query(`
       SELECT id, title_en, title_ar, speaker_name, starts_at, ends_at, room_name
       FROM event_sessions
@@ -374,6 +555,7 @@ router.get('/:slug', asyncRoute(async (req, res) => {
         AND registration_status NOT IN ('rejected', 'cancelled', 'expired')
         AND COALESCE(capacity_reservation_status, 'active') = 'active'
     `, { eventId: event.id }),
+    ratingSummary(event.id),
   ]);
 
   const soldOut = event.max_attendees ? Number(totals?.reserved_count || 0) >= Number(event.max_attendees) : false;
@@ -384,8 +566,10 @@ router.get('/:slug', asyncRoute(async (req, res) => {
       state: eventState(event, soldOut),
       registration_policy: normalizeEventPolicy(event),
       reserved_count: Number(totals?.reserved_count || 0),
+      rating_summary: { average: reviews.average, count: reviews.count, distribution: reviews.distribution },
     },
     sessions,
+    reviews: reviews.reviews,
     tickets: tickets.map((ticket) => ({
       ...ticket,
       sold_count: Number(ticket.sold_count || 0),

@@ -3,6 +3,7 @@ import express from 'express';
 import { z } from 'zod';
 import { first, query, transaction } from '../db/mysql.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
+import { eventScopeCondition, requireEventScope } from '../auth/scope.js';
 import { asyncRoute, fail, ok } from '../utils/apiResponse.js';
 
 const router = express.Router();
@@ -26,8 +27,10 @@ function qrToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-router.get('/', asyncRoute(async (req, res) => {
+router.get('/', requireAuth, requirePermission('attendees.manage'), asyncRoute(async (req, res) => {
   const eventId = Number(req.query.eventId || 0);
+  if (eventId && !(await requireEventScope(req, res, eventId))) return;
+  const scope = eventScopeCondition(req.user, 'e');
 
   const rows = await query(`
     SELECT
@@ -52,15 +55,16 @@ router.get('/', asyncRoute(async (req, res) => {
     FROM attendees a
     JOIN events e ON e.id = a.event_id
     JOIN ticket_types tt ON tt.id = a.ticket_type_id
-    ${eventId ? 'WHERE a.event_id = :eventId' : ''}
+    WHERE (:eventId = 0 OR a.event_id = :eventId)
+      AND (${scope.clause})
     ORDER BY a.created_at DESC
     LIMIT 250
-  `, { eventId });
+  `, { eventId, ...scope.params });
 
   ok(res, rows);
 }));
 
-router.get('/:id', asyncRoute(async (req, res) => {
+router.get('/:id', requireAuth, requirePermission('attendees.manage'), asyncRoute(async (req, res) => {
   const attendee = await first(`
     SELECT
       a.id,
@@ -102,12 +106,14 @@ router.get('/:id', asyncRoute(async (req, res) => {
   `, { id: Number(req.params.id) });
 
   if (!attendee) return fail(res, 404, 'Attendee not found');
+  if (!(await requireEventScope(req, res, attendee.event_id))) return;
   ok(res, attendee);
 }));
 
-router.post('/', asyncRoute(async (req, res) => {
+router.post('/', requireAuth, requirePermission('attendees.manage'), asyncRoute(async (req, res) => {
   const parsed = attendeeSchema.safeParse(req.body);
   if (!parsed.success) return fail(res, 400, 'Validation failed', parsed.error.flatten());
+  if (!(await requireEventScope(req, res, parsed.data.eventId))) return;
 
   const attendee = {
     ...parsed.data,
@@ -156,6 +162,7 @@ router.post('/checkin', requireAuth, requirePermission('checkin.manage'), asyncR
   `, { token });
 
   if (!attendee) return fail(res, 404, 'Invalid QR code', { result: 'invalid' });
+  if (!(await requireEventScope(req, res, attendee.event_id))) return;
   if (attendee.checked_in_at) {
     await query(`
       INSERT INTO checkin_logs (attendee_id, event_id, scan_result, notes)
@@ -196,9 +203,12 @@ router.post('/checkin', requireAuth, requirePermission('checkin.manage'), asyncR
   ok(res, checkedIn, 'Check-in accepted');
 }));
 
-router.patch('/:id/qr-status', asyncRoute(async (req, res) => {
+router.patch('/:id/qr-status', requireAuth, requirePermission('attendees.manage'), asyncRoute(async (req, res) => {
   const status = ['active', 'revoked', 'used'].includes(req.body.status) ? req.body.status : null;
   if (!status) return fail(res, 400, 'Invalid QR status');
+  const attendee = await first('SELECT id, event_id FROM attendees WHERE id = :id LIMIT 1', { id: Number(req.params.id) });
+  if (!attendee) return fail(res, 404, 'Attendee not found');
+  if (!(await requireEventScope(req, res, attendee.event_id))) return;
 
   await query('UPDATE attendees SET qr_status = :status WHERE id = :id', {
     id: Number(req.params.id),

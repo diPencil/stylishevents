@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import { requireAuth } from '../middleware/auth.js';
 import { first, query, transaction } from '../db/mysql.js';
 import { asyncRoute, fail, ok } from '../utils/apiResponse.js';
-import { auditLog, createToken, hashPassword, verifyPassword } from '../utils/auth.js';
+import { auditLog, createToken, getRolePermissionKeys, hashPassword, verifyPassword } from '../utils/auth.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -158,6 +158,7 @@ router.post('/login', asyncRoute(async (req, res) => {
   await auditLog({ ...req, user }, 'auth.login', 'user', user.id);
 
   delete user.password_hash;
+  user.permissions = await getRolePermissionKeys(user.role_code);
   ok(res, { user, token: createToken(user) }, 'Logged in successfully');
 }));
 
@@ -283,6 +284,7 @@ router.post('/register', asyncRoute(async (req, res) => {
   `, { id: result.insertId });
 
   await auditLog({ ...req, user }, 'auth.register', 'user', user.id);
+  user.permissions = await getRolePermissionKeys(user.role_code);
   ok(res, { user, token: createToken(user) }, 'Account created successfully');
 }));
 
@@ -440,6 +442,7 @@ router.post('/bootstrap-admin', asyncRoute(async (req, res) => {
   };
 
   await auditLog({ ...req, user }, 'auth.bootstrap_admin', 'user', user.id);
+  user.permissions = await getRolePermissionKeys(user.role_code);
   ok(res, { user, token: createToken(user) }, 'Admin user created');
 }));
 

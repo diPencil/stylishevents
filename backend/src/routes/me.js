@@ -152,7 +152,7 @@ async function customerRegistrations(req, options = {}) {
   return { rows, total: Number(count?.total || 0), page: pageState.page, perPage };
 }
 
-router.use(requireAuth, requireRole('customer'));
+router.use(requireAuth, requireRole('customer', 'doctor'));
 
 router.get('/dashboard', asyncRoute(async (req, res) => {
   const recent = await customerRegistrations(req, { page: 1, perPage: 5, period: 'all' });
@@ -161,12 +161,12 @@ router.get('/dashboard', asyncRoute(async (req, res) => {
     page: 1,
     perPage: 1,
     period: 'upcoming',
-    registrationStatuses: ['pending_verification', 'pending_payment', 'pending'],
+    registrationStatuses: ['pending_verification', 'pending_payment', 'pending_review', 'pending'],
   });
   const counts = await first(`
     SELECT
       COUNT(*) AS total_registrations,
-      SUM(CASE WHEN e.starts_at >= NOW() AND r.registration_status IN ('approved','pending_payment','pending_verification') THEN 1 ELSE 0 END) AS upcoming_registrations,
+      SUM(CASE WHEN e.starts_at >= NOW() AND r.registration_status IN ('approved','pending_payment','pending_verification','pending_review') THEN 1 ELSE 0 END) AS upcoming_registrations,
       SUM(CASE WHEN gt.id IS NOT NULL AND COALESCE(a.qr_status, 'active') = 'active' THEN 1 ELSE 0 END) AS active_tickets,
       SUM(CASE WHEN c.id IS NOT NULL AND c.status = 'issued' THEN 1 ELSE 0 END) AS available_certificates
     FROM registrations r

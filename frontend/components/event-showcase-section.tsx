@@ -111,7 +111,7 @@ export function EventShowcaseSection() {
             <Badge className="mb-4 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-[13px] font-bold text-slate-600 shadow-sm hover:bg-white">
               {isRtl ? "الفعاليات المتاحة" : "Available Events"}
             </Badge>
-            <h2 className="max-w-3xl text-3xl font-black tracking-tight text-slate-950 md:text-5xl">
+            <h2 className="max-w-3xl text-2xl font-black tracking-tight text-slate-950 md:text-4xl lg:text-5xl">
               {isRtl
                 ? siteContent?.homepage?.showcaseTitleAr || "اكتشف فعاليات جاهزة للحجز والمتابعة"
                 : siteContent?.homepage?.showcaseTitleEn || "Discover events ready for booking and operations"}
@@ -151,7 +151,7 @@ export function EventShowcaseSection() {
                     <CalendarDays className="h-5 w-5" />
                   </div>
                 </div>
-                <h3 className="relative z-10 mt-8 text-2xl font-black leading-tight drop-shadow-md">
+                <h3 className="relative z-10 mt-8 text-xl font-black leading-tight drop-shadow-md">
                   {isRtl ? event.titleAr : event.titleEn}
                 </h3>
               </div>

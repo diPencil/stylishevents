@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Menu, X } from "lucide-react"
+import { CalendarDays, History, Home, Info, Languages, LayoutDashboard, LogIn, Mail, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AnimatedCtaButton } from "@/components/ui/animated-cta-button"
 import { useLanguage } from "@/contexts/language-context"
@@ -22,13 +22,12 @@ type PublicMenuLink = {
 const siteMenuStorageKey = "stylish-events-site-content-settings"
 const pageHrefs = ["/upcoming-events", "/previous-events", "/about", "/contact"]
 const arabicNavLabels: Record<string, string> = {
-  "/": "الرئيسية",
-  "/upcoming-events": "الفعاليات القادمة",
-  "/previous-events": "فعاليات سابقة",
-  "/about": "عن الشركة",
-  "/contact": "تواصل معنا",
+  "/": "\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629",
+  "/upcoming-events": "\u0627\u0644\u0641\u0639\u0627\u0644\u064a\u0627\u062a \u0627\u0644\u0642\u0627\u062f\u0645\u0629",
+  "/previous-events": "\u0641\u0639\u0627\u0644\u064a\u0627\u062a \u0633\u0627\u0628\u0642\u0629",
+  "/about": "\u0639\u0646 \u0627\u0644\u0634\u0631\u0643\u0629",
+  "/contact": "\u062a\u0648\u0627\u0635\u0644 \u0645\u0639\u0646\u0627",
 }
-
 function hasCorruptedText(value: unknown): boolean {
   return typeof value === "string" && /(Ãƒ|Ã‚|Ã˜|Ã™|Ã¢â‚¬|Ã¯Â¿Â½|ï¿½|�|\?{4,})/.test(value)
 }
@@ -84,6 +83,15 @@ function readAuthCta() {
   }
 }
 
+function MobileNavIcon({ href }: { href: string }) {
+  if (href === "/") return <Home className="h-4 w-4" />
+  if (href.startsWith("/upcoming-events")) return <CalendarDays className="h-4 w-4" />
+  if (href.startsWith("/previous-events")) return <History className="h-4 w-4" />
+  if (href.startsWith("/about")) return <Info className="h-4 w-4" />
+  if (href.startsWith("/contact")) return <Mail className="h-4 w-4" />
+  return <Menu className="h-4 w-4" />
+}
+
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -91,7 +99,7 @@ export function Navbar() {
   const [brandAssets, setBrandAssets] = useState(() => brandAssetsFromTheme(defaultPlatformTheme))
   const [authCta, setAuthCta] = useState({ href: "/login", isLoggedIn: false })
   const pathname = usePathname()
-  const { language, setLanguage, t, isRtl } = useLanguage()
+  const { language, setLanguage, isRtl } = useLanguage()
 
   useEffect(() => {
     setAuthCta(readAuthCta())
@@ -214,13 +222,15 @@ export function Navbar() {
             {language === "ar" ? "EN" : "AR"}
           </Button>
 
-          <Link href={authCta.href}>
-            <div className="flex items-center">
+          <Link href={authCta.href} aria-label={authCta.isLoggedIn ? (isRtl ? "\u0644\u0648\u062d\u0629 \u0627\u0644\u062a\u062d\u0643\u0645" : "Dashboard") : (isRtl ? "\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644" : "Log in")}>
+            <div className="hidden items-center md:flex">
               <AnimatedCtaButton style={{ '--main-size': '0.8em' } as React.CSSProperties}>
-                <span className="hidden md:inline">{authCta.isLoggedIn ? (isRtl ? "لوحة التحكم" : "Dashboard") : (isRtl ? "تسجيل الدخول" : "Log in")}</span>
-                <span className="md:hidden">{authCta.isLoggedIn ? (isRtl ? "لوحة" : "Dashboard") : (isRtl ? "دخول" : "Log in")}</span>
+                {authCta.isLoggedIn ? (isRtl ? "\u0644\u0648\u062d\u0629 \u0627\u0644\u062a\u062d\u0643\u0645" : "Dashboard") : (isRtl ? "\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644" : "Log in")}
               </AnimatedCtaButton>
             </div>
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(var(--primary))] text-white shadow-[0_12px_25px_hsl(var(--primary)/0.25)] md:hidden">
+              {authCta.isLoggedIn ? <LayoutDashboard className="h-4 w-4" /> : <LogIn className="h-4 w-4" />}
+            </span>
           </Link>
 
           <button
@@ -252,43 +262,58 @@ export function Navbar() {
               transition={{ type: "spring", damping: 26, stiffness: 210 }}
               className={`fixed bottom-0 top-0 z-[70] flex w-4/5 max-w-sm flex-col bg-white shadow-2xl lg:hidden ${isRtl ? "left-0" : "right-0"}`}
             >
-              <div className="flex items-center justify-between border-b border-slate-100 p-6">
-                <span className="text-xl font-black text-slate-900">{t("common.brand")}</span>
+              <div className="flex items-center justify-between border-b border-slate-100 p-5">
+                <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="relative h-11 w-40 overflow-hidden">
+                  <img
+                    src={apiAssetUrl(isRtl ? brandAssets.logoArUrl : brandAssets.logoEnUrl) || (isRtl ? "/LogoAR.png" : "/logo.png")}
+                    alt="Stylish Events"
+                    className="h-full w-full object-contain object-left"
+                  />
+                </Link>
                 <button type="button" onClick={() => setIsMobileMenuOpen(false)} className="rounded-full bg-slate-50 p-2 text-slate-500">
-                  <X className="h-6 w-6" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6">
-                <nav className="flex flex-col gap-5">
+              <div className="flex-1 overflow-y-auto p-5">
+                <nav className="flex flex-col gap-3">
                   {menuLinks.map((link) => (
                     <Link
                       key={link.href}
                       href={link.href}
-                      className="text-2xl font-black text-slate-800 transition-colors hover:text-primary"
+                      className={`flex min-h-11 items-center gap-3 rounded-2xl px-4 text-base font-extrabold transition-colors ${
+                        isActive(link.href) ? "bg-[hsl(var(--primary)/0.10)] text-[hsl(var(--primary))]" : "bg-slate-50 text-slate-700 hover:text-[hsl(var(--primary))]"
+                      }`}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-[hsl(var(--primary))] shadow-sm">
+                        <MobileNavIcon href={link.href} />
+                      </span>
                       {navLabel(link)}
                     </Link>
                   ))}
                 </nav>
 
-                <div className="mt-12 space-y-5">
+                <div className="mt-8 space-y-4">
                   <button
                     type="button"
                     onClick={toggleLanguage}
-                    className="flex w-full items-center justify-between rounded-2xl bg-slate-50 p-4"
+                    className="flex min-h-11 w-full items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-2.5"
                   >
-                    <span className="text-sm font-extrabold text-slate-600">{isRtl ? "Ø§Ù„Ù„ØºØ©" : "Language"}</span>
-                    <span className="text-sm font-extrabold uppercase text-primary">{language === "ar" ? "English" : "Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©"}</span>
+                    <span className="flex items-center gap-3 text-sm font-extrabold text-slate-600">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[hsl(var(--primary))] shadow-sm">
+                        <Languages className="h-4 w-4" />
+                      </span>
+                      {isRtl ? "\u0627\u0644\u0644\u063a\u0629" : "Language"}
+                    </span>
+                    <span className="text-sm font-extrabold uppercase text-primary">{language === "ar" ? "English" : "\u0627\u0644\u0639\u0631\u0628\u064a\u0629"}</span>
                   </button>
 
                   <Link href={authCta.href} onClick={() => setIsMobileMenuOpen(false)}>
-                      <div className="mt-4 flex justify-center">
-                        <AnimatedCtaButton style={{ '--main-size': '0.9em' } as React.CSSProperties}>
-                          {authCta.isLoggedIn ? (isRtl ? "لوحة التحكم" : "Dashboard") : (isRtl ? "تسجيل الدخول" : "Log in")}
-                        </AnimatedCtaButton>
-                      </div>
+                    <Button className="h-11 w-full rounded-2xl bg-[hsl(var(--primary))] text-sm font-extrabold text-white shadow-[0_12px_25px_hsl(var(--primary)/0.20)] hover:bg-[hsl(var(--primary)/0.90)]">
+                      {authCta.isLoggedIn ? <LayoutDashboard className="h-4 w-4" /> : <LogIn className="h-4 w-4" />}
+                      {authCta.isLoggedIn ? (isRtl ? "\u0644\u0648\u062d\u0629 \u0627\u0644\u062a\u062d\u0643\u0645" : "Dashboard") : (isRtl ? "\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644" : "Log in")}
+                    </Button>
                   </Link>
                 </div>
               </div>

@@ -79,7 +79,7 @@ export function ThemeSettingsPanel() {
       window.dispatchEvent(new CustomEvent("stylish-events-theme-settings-updated", { detail: next }))
       setSaveState("saved")
       toast.success(isAr ? "تم حفظ إعدادات الثيم" : "Theme settings saved", {
-        description: isAr ? "تم حفظ إعدادات الثيم في MySQL." : "Theme settings are now stored in MySQL.",
+        description: isAr ? "تم حفظ إعدادات الثيم." : "Theme settings are saved.",
       })
     } catch (error) {
       localStorage.setItem(platformThemeStorageKey, JSON.stringify(theme))
@@ -141,6 +141,55 @@ export function ThemeSettingsPanel() {
                 onChange={(value) => updateTheme("faviconUrl", value)}
                 placeholder="/favicon.png"
               />
+            </div>
+          </section>
+
+          <section className="rounded-[24px] bg-slate-50 p-4">
+            <SectionHeading
+              title={isAr ? "بيانات التواصل في الفوتر" : "Footer contact details"}
+              description={isAr ? "تظهر هذه البيانات أسفل تعريف الشركة في الفوتر العام." : "These details appear below the company description in the public footer."}
+            />
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="rounded-[20px] bg-white p-3 shadow-sm">
+                <Label className="text-xs font-extrabold uppercase tracking-[0.08em] text-slate-500">{isAr ? "الموقع بالإنجليزية" : "Location in English"}</Label>
+                <Input
+                  value={theme.footerLocationEn}
+                  onChange={(event) => updateTheme("footerLocationEn", event.target.value)}
+                  placeholder="Dubai, United Arab Emirates"
+                  className="mt-2 h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold"
+                  dir="ltr"
+                />
+              </div>
+              <div className="rounded-[20px] bg-white p-3 shadow-sm">
+                <Label className="text-xs font-extrabold uppercase tracking-[0.08em] text-slate-500">{isAr ? "الموقع بالعربية" : "Location in Arabic"}</Label>
+                <Input
+                  value={theme.footerLocationAr}
+                  onChange={(event) => updateTheme("footerLocationAr", event.target.value)}
+                  placeholder="دبي، الإمارات العربية المتحدة"
+                  className="mt-2 h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold"
+                  dir="rtl"
+                />
+              </div>
+              <div className="rounded-[20px] bg-white p-3 shadow-sm">
+                <Label className="text-xs font-extrabold uppercase tracking-[0.08em] text-slate-500">{isAr ? "رقم الموبايل" : "Mobile number"}</Label>
+                <Input
+                  value={theme.footerMobile}
+                  onChange={(event) => updateTheme("footerMobile", event.target.value)}
+                  placeholder="+2 0100 607 1661"
+                  className="mt-2 h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold"
+                  dir="ltr"
+                />
+              </div>
+              <div className="rounded-[20px] bg-white p-3 shadow-sm">
+                <Label className="text-xs font-extrabold uppercase tracking-[0.08em] text-slate-500">{isAr ? "رقم واتساب" : "WhatsApp number"}</Label>
+                <Input
+                  value={theme.footerWhatsapp}
+                  onChange={(event) => updateTheme("footerWhatsapp", event.target.value)}
+                  placeholder="+2 0100 607 1661"
+                  className="mt-2 h-11 rounded-2xl border-slate-200 bg-slate-50 font-bold"
+                  dir="ltr"
+                />
+              </div>
             </div>
           </section>
 

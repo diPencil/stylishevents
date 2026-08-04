@@ -1,19 +1,28 @@
 import express from 'express';
 import { query } from '../db/mysql.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
+import { eventScopeCondition, requireEventScope } from '../auth/scope.js';
 import { asyncRoute, ok } from '../utils/apiResponse.js';
 
 const router = express.Router();
 
-function eventFilter(req) {
+router.use(requireAuth, requirePermission('reports.view'));
+
+async function eventFilter(req, res) {
   const eventId = Number(req.query.eventId || 0);
+  if (eventId && !(await requireEventScope(req, res, eventId))) return null;
+  const scope = eventScopeCondition(req.user, 'e');
   return {
     eventId,
-    clause: eventId ? 'WHERE e.id = :eventId' : '',
+    clause: `WHERE (:eventId = 0 OR e.id = :eventId) AND (${scope.clause})`,
+    params: { eventId, ...scope.params },
   };
 }
 
 router.get('/summary', asyncRoute(async (req, res) => {
-  const { eventId, clause } = eventFilter(req);
+  const filter = await eventFilter(req, res);
+  if (!filter) return;
+  const { clause, params } = filter;
 
   const [registrations, payments, revenue, certificates] = await Promise.all([
     query(`
@@ -24,7 +33,7 @@ router.get('/summary', asyncRoute(async (req, res) => {
       JOIN events e ON e.id = r.event_id
       ${clause}
       GROUP BY r.registration_status
-    `, { eventId }),
+    `, params),
     query(`
       SELECT
         r.payment_status AS status,
@@ -33,7 +42,7 @@ router.get('/summary', asyncRoute(async (req, res) => {
       JOIN events e ON e.id = r.event_id
       ${clause}
       GROUP BY r.payment_status
-    `, { eventId }),
+    `, params),
     query(`
       SELECT
         o.currency,
@@ -41,9 +50,9 @@ router.get('/summary', asyncRoute(async (req, res) => {
         COUNT(*) AS paid_orders
       FROM orders o
       JOIN events e ON e.id = o.event_id
-      ${clause ? `${clause} AND o.status = 'paid'` : "WHERE o.status = 'paid'"}
+      ${clause} AND o.status = 'paid'
       GROUP BY o.currency
-    `, { eventId }),
+    `, params),
     query(`
       SELECT
         c.status,
@@ -53,14 +62,16 @@ router.get('/summary', asyncRoute(async (req, res) => {
       JOIN events e ON e.id = a.event_id
       ${clause}
       GROUP BY c.status
-    `, { eventId }),
+    `, params),
   ]);
 
   ok(res, { registrations, payments, revenue, certificates });
 }));
 
 router.get('/registrations', asyncRoute(async (req, res) => {
-  const { eventId, clause } = eventFilter(req);
+  const filter = await eventFilter(req, res);
+  if (!filter) return;
+  const { clause, params } = filter;
   const rows = await query(`
     SELECT
       r.registration_number,
@@ -86,13 +97,15 @@ router.get('/registrations', asyncRoute(async (req, res) => {
     ${clause}
     ORDER BY r.created_at DESC
     LIMIT 1000
-  `, { eventId });
+  `, params);
 
   ok(res, rows);
 }));
 
 router.get('/nationalities', asyncRoute(async (req, res) => {
-  const { eventId, clause } = eventFilter(req);
+  const filter = await eventFilter(req, res);
+  if (!filter) return;
+  const { clause, params } = filter;
   const rows = await query(`
     SELECT
       d.nationality,
@@ -104,13 +117,15 @@ router.get('/nationalities', asyncRoute(async (req, res) => {
     ${clause}
     GROUP BY d.nationality, d.country_name
     ORDER BY registrations DESC
-  `, { eventId });
+  `, params);
 
   ok(res, rows);
 }));
 
 router.get('/specialties', asyncRoute(async (req, res) => {
-  const { eventId, clause } = eventFilter(req);
+  const filter = await eventFilter(req, res);
+  if (!filter) return;
+  const { clause, params } = filter;
   const rows = await query(`
     SELECT
       d.specialty,
@@ -121,13 +136,15 @@ router.get('/specialties', asyncRoute(async (req, res) => {
     ${clause}
     GROUP BY d.specialty
     ORDER BY registrations DESC
-  `, { eventId });
+  `, params);
 
   ok(res, rows);
 }));
 
 router.get('/ticket-performance', asyncRoute(async (req, res) => {
-  const { eventId, clause } = eventFilter(req);
+  const filter = await eventFilter(req, res);
+  if (!filter) return;
+  const { clause, params } = filter;
   const rows = await query(`
     SELECT
       e.title_en AS event_title_en,
@@ -143,7 +160,7 @@ router.get('/ticket-performance', asyncRoute(async (req, res) => {
     ${clause}
     GROUP BY e.id, tt.id
     ORDER BY registrations DESC
-  `, { eventId });
+  `, params);
 
   ok(res, rows);
 }));

@@ -141,7 +141,7 @@ export function CurrencySettingsPanel() {
       localStorage.setItem(storageKey, JSON.stringify(saved || settings))
       window.dispatchEvent(new Event("stylish-events-currency-settings-updated"))
       setSaveState("saved")
-      toast.success(language === "ar" ? "تم حفظ إعدادات العملة" : "Currency settings saved", { description: language === "ar" ? "تم حفظ أسعار التحويل في MySQL." : "Exchange rates are now stored in MySQL." })
+      toast.success(language === "ar" ? "تم حفظ إعدادات العملة" : "Currency settings saved", { description: language === "ar" ? "تم حفظ أسعار التحويل." : "Exchange rates are saved." })
     } catch (error) {
       localStorage.setItem(storageKey, JSON.stringify(settings))
       window.dispatchEvent(new Event("stylish-events-currency-settings-updated"))

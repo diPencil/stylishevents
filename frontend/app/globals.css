@@ -178,6 +178,198 @@
   }
 }
 
+.admin-overview-shell {
+  overflow: visible;
+}
+
+.admin-dashboard-density {
+  container-type: inline-size;
+  transform-origin: top left;
+}
+
+[dir="rtl"] .admin-dashboard-density {
+  transform-origin: top right;
+}
+
+@media (min-width: 1280px) {
+  .admin-dashboard-density {
+    --dashboard-density: 0.9;
+    zoom: var(--dashboard-density);
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+.dashboard-metric-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.dashboard-secondary-grid,
+.dashboard-analytics-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.dashboard-operations-grid,
+.dashboard-activity-grid,
+.dashboard-final-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.dashboard-final-grid {
+  align-items: start;
+}
+
+.quick-actions-card {
+  align-self: start;
+}
+
+.quick-actions-list {
+  align-content: start;
+}
+
+[dir="rtl"] .quick-action-arrow {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .admin-reports-page th,
+[dir="rtl"] .admin-reports-page td {
+  text-align: right;
+}
+
+[dir="rtl"] .admin-reports-page [dir="ltr"],
+[dir="rtl"] .admin-settings-page [dir="ltr"] {
+  unicode-bidi: isolate;
+}
+
+[dir="rtl"] .admin-reports-tabs {
+  direction: rtl;
+}
+
+.settings-tabs-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.4) transparent;
+}
+
+[dir="rtl"] .settings-tabs-scroll {
+  direction: rtl;
+}
+
+[dir="rtl"] .settings-tabs-scroll > * {
+  direction: rtl;
+}
+
+.dashboard-info-grid {
+  display: grid;
+  gap: 0 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.dashboard-info-grid > :nth-last-child(-n + 2) {
+  border-bottom-width: 0;
+}
+
+.dashboard-metric-grid > *,
+.dashboard-secondary-grid > *,
+.dashboard-operations-grid > *,
+.dashboard-activity-grid > *,
+.dashboard-final-grid > *,
+.dashboard-analytics-grid > * {
+  min-width: 0;
+}
+
+@container (min-width: 560px) {
+  .dashboard-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-secondary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 760px) {
+  .dashboard-analytics-grid {
+    grid-template-columns: minmax(290px, 1fr) minmax(290px, 1fr);
+  }
+
+  .dashboard-analytics-grid > :nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .dashboard-analytics-grid > :nth-child(3) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .dashboard-operations-grid,
+  .dashboard-activity-grid,
+  .dashboard-final-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-operations-grid > :nth-child(3),
+  .dashboard-activity-grid > :nth-child(1),
+  .dashboard-final-grid > :nth-child(1) {
+    grid-column: 1 / -1;
+  }
+}
+
+@container (min-width: 1080px) {
+  .dashboard-metric-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .dashboard-analytics-grid {
+    grid-template-columns: minmax(280px, 0.9fr) minmax(520px, 1.9fr) minmax(280px, 0.9fr);
+  }
+
+  .dashboard-analytics-grid > :nth-child(2) {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .dashboard-analytics-grid > :nth-child(3) {
+    grid-row: auto;
+    grid-column: auto;
+  }
+
+  .dashboard-operations-grid {
+    grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr) minmax(480px, 1.7fr);
+  }
+
+  .dashboard-activity-grid {
+    grid-template-columns: minmax(380px, 1.45fr) minmax(250px, 0.8fr) minmax(310px, 1fr);
+  }
+
+  .dashboard-final-grid {
+    grid-template-columns: minmax(560px, 2fr) minmax(300px, 1fr);
+    align-items: stretch;
+  }
+
+  .quick-actions-card {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+  }
+
+  .quick-actions-list {
+    flex: 1 1 auto;
+  }
+
+  .dashboard-operations-grid > :nth-child(3),
+  .dashboard-activity-grid > :nth-child(1),
+  .dashboard-final-grid > :nth-child(1) {
+    grid-column: auto;
+  }
+}
+
 .admin-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--primary) / 0.55) transparent;

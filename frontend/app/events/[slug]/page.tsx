@@ -3,11 +3,11 @@
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
-import { ArrowRight, CalendarDays, CheckCircle2, MapPin, Star, Ticket, Users } from "lucide-react"
+import { ArrowRight, CalendarDays, CheckCircle2, MapPin, MessageSquareText, Star, Ticket, Users } from "lucide-react"
 import { PublicPageFrame, PublicPageHero } from "@/components/public/page-building-blocks"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/contexts/language-context"
-import { apiAssetUrl, platformApi } from "@/lib/platform-api"
+import { apiAssetUrl, currentAuthToken, platformApi } from "@/lib/platform-api"
 import { cn } from "@/lib/utils"
 
 function formatDate(value?: string, locale = "en-US") {
@@ -18,7 +18,7 @@ function formatDate(value?: string, locale = "en-US") {
 function stateLabel(state: string, isRtl: boolean) {
   const labels: Record<string, { en: string; ar: string }> = {
     open: { en: "Registration open", ar: "التسجيل متاح" },
-    opens_soon: { en: "Opens soon", ar: "يفتح قريباً" },
+    opens_soon: { en: "Opens soon", ar: "يفتح قريبا" },
     closed: { en: "Registration closed", ar: "التسجيل مغلق" },
     sold_out: { en: "Sold out", ar: "مكتمل العدد" },
     ended: { en: "Ended", ar: "انتهت الفعالية" },
@@ -55,7 +55,9 @@ export default function PublicEventPage() {
         <section className="px-4 py-40 text-center">
           <h1 className="text-3xl font-black text-slate-950">{isRtl ? "الفعالية غير متاحة" : "Event unavailable"}</h1>
           <p className="mt-3 font-semibold text-slate-500">{error}</p>
-          <Button asChild className="mt-8 rounded-full px-6 font-black"><Link href="/upcoming-events">{isRtl ? "العودة للفعاليات" : "Back to events"}</Link></Button>
+          <Button asChild className="mt-8 rounded-full px-6 font-black">
+            <Link href="/upcoming-events">{isRtl ? "العودة للفعاليات" : "Back to events"}</Link>
+          </Button>
         </section>
       </PublicPageFrame>
     )
@@ -70,6 +72,7 @@ export default function PublicEventPage() {
   }
 
   const heroImage = apiAssetUrl(event.banner_image_url || event.cover_image_url)
+  const detailsImage = apiAssetUrl(event.event_details_image_url)
   const hasAvailableTicket = tickets.some((ticket: any) => ticket.price_period_id && !ticket.is_sold_out)
   const isLoginRequired = policy.access === "login_required"
   const canRegister = Boolean(policy.publicRegistrationEnabled !== false && event.state === "open" && hasAvailableTicket)
@@ -84,14 +87,24 @@ export default function PublicEventPage() {
         imageAlt={isRtl ? event.title_ar : event.title_en}
       />
       <section className="px-4 py-12 sm:px-6 lg:py-16" dir={isRtl ? "rtl" : "ltr"}>
-        <div className="container mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_380px]">
+        <div className="container mx-auto grid max-w-7xl items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
           <div className="space-y-6">
+            {detailsImage ? (
+              <div className="overflow-hidden rounded-[32px] bg-white shadow-[0_22px_70px_rgba(15,23,42,0.08)]">
+                <img
+                  src={detailsImage}
+                  alt={isRtl ? event.title_ar : event.title_en}
+                  className="aspect-[16/8] w-full object-cover"
+                />
+              </div>
+            ) : null}
+
             <div className="rounded-[32px] bg-white p-6 shadow-[0_22px_70px_rgba(15,23,42,0.08)] md:p-8">
               <div className="flex flex-wrap gap-3">
                 <Badge icon={Ticket} label={event.type} />
                 <Badge icon={CheckCircle2} label={stateLabel(event.state, isRtl)} />
               </div>
-              <h2 className="mt-7 text-3xl font-black text-slate-950">{isRtl ? "عن الفعالية" : "About this event"}</h2>
+              <h2 className="mt-7 text-2xl font-black text-slate-950 md:text-4xl lg:text-5xl">{isRtl ? "عن الفعالية" : "About this event"}</h2>
               <p className="mt-4 whitespace-pre-line text-base font-semibold leading-8 text-slate-600">
                 {isRtl ? event.description_ar || event.summary_ar : event.description_en || event.summary_en}
               </p>
@@ -117,12 +130,14 @@ export default function PublicEventPage() {
                 </div>
               </div>
             ) : null}
+
+            <ReviewsSection slug={slug} data={data} setData={setData} isRtl={isRtl} />
           </div>
 
-          <aside className="lg:sticky lg:top-28 lg:self-start">
-            <div className="rounded-[32px] bg-white p-5 shadow-[0_22px_70px_rgba(15,23,42,0.10)]">
+          <aside className="lg:sticky lg:top-[116px] lg:self-start">
+            <div className="rounded-[32px] bg-white p-5 shadow-[0_22px_70px_rgba(15,23,42,0.10)] lg:max-h-[calc(100vh-140px)] lg:overflow-hidden">
               <h2 className="text-2xl font-black text-slate-950">{isRtl ? "التذاكر المتاحة" : "Available tickets"}</h2>
-              <div className="mt-5 space-y-3">
+              <div className="mt-5 space-y-3 lg:max-h-[calc(100vh-320px)] lg:overflow-y-auto lg:pr-1">
                 {tickets.map((ticket: any) => {
                   const currency = isRtl ? "EGP" : "USD"
                   const price = currency === "EGP" ? ticket.price_egp ?? ticket.price : ticket.price_usd ?? ticket.price
@@ -155,6 +170,171 @@ export default function PublicEventPage() {
         </div>
       </section>
     </PublicPageFrame>
+  )
+}
+
+function ReviewsSection({ slug, data, setData, isRtl }: { slug: string; data: any; setData: (data: any) => void; isRtl: boolean }) {
+  const [eligibility, setEligibility] = useState<any>(null)
+  const [loadingEligibility, setLoadingEligibility] = useState(false)
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [notice, setNotice] = useState("")
+  const [error, setError] = useState("")
+  const summary = data?.event?.rating_summary || { average: 0, count: 0, distribution: {} }
+  const reviews = data?.reviews || []
+  const reviewStatus = eligibility?.review?.status
+
+  useEffect(() => {
+    let active = true
+    const hasToken = Boolean(currentAuthToken())
+    if (!slug || !hasToken) {
+      setEligibility({ eligible: false, state: "login_required", reason: isRtl ? "سجل الدخول بعد حضور الفعالية لإضافة تقييمك." : "Log in after attending this event to leave a review." })
+      return () => { active = false }
+    }
+
+    setLoadingEligibility(true)
+    platformApi.getEventReviewEligibility(slug)
+      .then((result) => {
+        if (!active) return
+        setEligibility(result)
+        if (result.review) {
+          setRating(Number(result.review.rating || 0))
+          setComment(result.review.comment || "")
+        }
+      })
+      .catch((err) => {
+        if (active) setEligibility({ eligible: false, state: "unavailable", reason: err instanceof Error ? err.message : "Review is unavailable." })
+      })
+      .finally(() => { if (active) setLoadingEligibility(false) })
+    return () => { active = false }
+  }, [slug, isRtl])
+
+  async function submitReview() {
+    if (!rating) {
+      setError(isRtl ? "اختار تقييم من 1 إلى 5." : "Choose a rating from 1 to 5.")
+      return
+    }
+    setSubmitting(true)
+    setError("")
+    setNotice("")
+    try {
+      if (eligibility?.review) {
+        await platformApi.updateEventReview(slug, { rating, comment })
+      } else {
+        await platformApi.submitEventReview(slug, { rating, comment })
+      }
+      const [freshEvent, freshEligibility] = await Promise.all([
+        platformApi.getPublicEvent(slug),
+        platformApi.getEventReviewEligibility(slug),
+      ])
+      setData(freshEvent)
+      setEligibility(freshEligibility)
+      setNotice(isRtl ? "تم إرسال تقييمك للمراجعة قبل النشر." : "Your review was sent for moderation before publishing.")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : (isRtl ? "تعذر إرسال التقييم." : "Could not submit review."))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="rounded-[32px] bg-white p-6 shadow-[0_22px_70px_rgba(15,23,42,0.08)] md:p-8">
+      <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
+        <div>
+          <Badge icon={Star} label={isRtl ? "تقييمات الحضور" : "Attendee reviews"} />
+          <h2 className="mt-5 text-2xl font-black text-slate-950 md:text-4xl lg:text-5xl">{isRtl ? "آراء الحضور" : "Event reviews"}</h2>
+          <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-500">
+            {isRtl ? "تظهر هنا التقييمات المعتمدة فقط بعد مراجعة الإدارة." : "Only approved attendee reviews are shown here after admin moderation."}
+          </p>
+        </div>
+        <div className="rounded-3xl bg-slate-50 px-5 py-4 text-center">
+          <p className="text-3xl font-black text-primary" dir="ltr">{Number(summary.average || 0).toFixed(1)}</p>
+          <div className="mt-1 flex justify-center gap-1 text-primary" aria-label={`${summary.average} stars`}>
+            {[1, 2, 3, 4, 5].map((star) => <Star key={star} className={cn("h-4 w-4", star <= Math.round(summary.average || 0) && "fill-current")} />)}
+          </div>
+          <p className="mt-1 text-xs font-black uppercase text-slate-400">{Number(summary.count || 0).toLocaleString()} {isRtl ? "تقييم" : "reviews"}</p>
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-3">
+          {reviews.length ? reviews.map((review: any) => (
+            <div key={review.id} className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-black text-slate-950">{review.reviewer_name}</p>
+                <div className="flex gap-1 text-primary" dir="ltr">
+                  {[1, 2, 3, 4, 5].map((star) => <Star key={star} className={cn("h-4 w-4", star <= Number(review.rating || 0) && "fill-current")} />)}
+                </div>
+              </div>
+              {review.comment ? <p className="mt-3 text-sm font-semibold leading-7 text-slate-600">{review.comment}</p> : null}
+            </div>
+          )) : (
+            <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm font-bold text-slate-500">
+              {isRtl ? "لا توجد تقييمات معتمدة لهذه الفعالية حتى الآن." : "No approved reviews for this event yet."}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-3xl bg-slate-50 p-4">
+          <div className="flex items-center gap-2 text-sm font-black text-slate-950">
+            <MessageSquareText className="h-5 w-5 text-primary" />
+            {isRtl ? "أضف تقييمك" : "Leave your review"}
+          </div>
+          {loadingEligibility ? (
+            <p className="mt-4 text-sm font-bold text-slate-500">{isRtl ? "جاري التحقق..." : "Checking eligibility..."}</p>
+          ) : eligibility?.eligible ? (
+            <div className="mt-4 space-y-4">
+              <div className="flex gap-1" dir="ltr">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className="rounded-xl p-1 text-primary transition hover:bg-primary/10"
+                    aria-label={`Rate ${star} stars`}
+                    aria-pressed={star <= rating}
+                  >
+                    <Star className={cn("h-7 w-7", star <= rating && "fill-current")} />
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs font-bold text-slate-500" aria-live="polite">
+                {rating ? (isRtl ? `التقييم المختار ${rating} من 5` : `Selected rating ${rating} of 5`) : (isRtl ? "لم يتم اختيار تقييم بعد" : "No rating selected yet")}
+              </p>
+              {reviewStatus ? (
+                <p className={cn("rounded-2xl px-3 py-2 text-xs font-black", reviewStatus === "approved" ? "bg-emerald-50 text-emerald-700" : reviewStatus === "rejected" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700")} aria-live="polite">
+                  {reviewStatus === "approved"
+                    ? (isRtl ? "تم نشر تقييمك." : "Your review is published.")
+                    : reviewStatus === "rejected"
+                      ? (isRtl ? "تم رفض تقييمك ويمكنك تحديثه وإرساله مرة أخرى." : "Your review was rejected; you can update and resubmit it.")
+                      : (isRtl ? "تقييمك موجود وينتظر مراجعة الإدارة." : "Your review is saved and pending admin moderation.")}
+                </p>
+              ) : null}
+              <label htmlFor="event-review-comment" className="text-xs font-black uppercase text-slate-500">
+                {isRtl ? "تعليق التقييم" : "Review comment"}
+              </label>
+              <textarea
+                id="event-review-comment"
+                value={comment}
+                onChange={(event) => setComment(event.target.value)}
+                maxLength={1200}
+                aria-describedby="event-review-error event-review-status"
+                className="min-h-28 w-full resize-none rounded-2xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-700 outline-none focus:border-primary"
+                placeholder={isRtl ? "اكتب تعليق مختصر عن تجربتك..." : "Write a short note about your experience..."}
+              />
+              {error ? <p id="event-review-error" className="text-xs font-bold text-red-600" aria-live="assertive">{error}</p> : null}
+              {notice ? <p id="event-review-status" className="text-xs font-bold text-emerald-700" aria-live="polite">{notice}</p> : null}
+              <Button type="button" onClick={submitReview} disabled={submitting} className="h-11 w-full rounded-2xl font-black">
+                {submitting ? (isRtl ? "جاري الإرسال..." : "Submitting...") : eligibility.review ? (isRtl ? "تحديث التقييم" : "Update review") : (isRtl ? "إرسال التقييم" : "Submit review")}
+              </Button>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm font-bold leading-6 text-slate-500">{eligibility?.reason || (isRtl ? "التقييم متاح بعد حضور الفعالية." : "Reviews are available after attending the event.")}</p>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 

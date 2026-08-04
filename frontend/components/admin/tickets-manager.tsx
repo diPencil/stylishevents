@@ -92,7 +92,7 @@ export function TicketsManager() {
         })
         if (active) setBookings(mapped)
       } catch (error) {
-        if (active) toast.error("Could not load ticket buyers", { description: error instanceof Error ? error.message : "Check backend and MySQL." })
+        if (active) toast.error("Could not load ticket buyers", { description: error instanceof Error ? error.message : "Check the backend connection." })
       }
     }
     loadTickets()
@@ -250,7 +250,7 @@ export function TicketsManager() {
                             <ConfirmAction title="Check-in attendee?" description="This ticket QR will be checked in through the backend." confirmLabel="Check in" onConfirm={() => checkInBooking(booking)}>
                               <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-emerald-600"><UserCheck className="h-4 w-4" /> {adminT(language, "common.markCheckedIn")}</DropdownMenuItem>
                             </ConfirmAction>
-                            <ConfirmAction title="Cancel ticket booking?" description="This booking will be cancelled in MySQL." confirmLabel="Cancel booking" tone="danger" onConfirm={() => cancelBooking(booking)}>
+                            <ConfirmAction title="Cancel ticket booking?" description="This booking will be cancelled." confirmLabel="Cancel booking" tone="danger" onConfirm={() => cancelBooking(booking)}>
                               <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2 font-semibold text-red-600"><XCircle className="h-4 w-4" /> {adminT(language, "common.cancelBooking")}</DropdownMenuItem>
                             </ConfirmAction>
                           </DropdownMenuContent>

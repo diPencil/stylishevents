@@ -72,7 +72,7 @@ export default function AboutPage() {
                 <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
                   {textPair(isRtl, aboutPage.overview.eyebrowEn, aboutPage.overview.eyebrowAr)}
                 </p>
-                <h2 className="mt-4 text-3xl font-black leading-tight text-[#0f172a] md:text-5xl">
+                <h2 className="mt-4 text-2xl font-black leading-tight text-[#0f172a] md:text-4xl lg:text-5xl">
                   {textPair(isRtl, aboutPage.overview.headingEn, aboutPage.overview.headingAr)}
                 </h2>
                 <p className="mt-5 text-base font-medium leading-8 text-slate-600">
@@ -122,7 +122,7 @@ export default function AboutPage() {
               <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
                 {textPair(isRtl, aboutPage.ecosystem.eyebrowEn, aboutPage.ecosystem.eyebrowAr)}
               </p>
-              <h2 className="mt-4 text-3xl font-black leading-tight text-[#0f172a] md:text-5xl">
+              <h2 className="mt-4 text-2xl font-black leading-tight text-[#0f172a] md:text-4xl lg:text-5xl">
                 {textPair(isRtl, aboutPage.ecosystem.headingEn, aboutPage.ecosystem.headingAr)}
               </h2>
               <p className="mt-5 text-base font-medium leading-8 text-slate-600">
@@ -154,7 +154,7 @@ export default function AboutPage() {
               <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
                 {textPair(isRtl, aboutPage.team.eyebrowEn, aboutPage.team.eyebrowAr)}
               </p>
-              <h2 className="mt-4 text-3xl font-black leading-tight text-[#0f172a] md:text-5xl">
+              <h2 className="mt-4 text-2xl font-black leading-tight text-[#0f172a] md:text-4xl lg:text-5xl">
                 {textPair(isRtl, aboutPage.team.headingEn, aboutPage.team.headingAr)}
               </h2>
               <p className="mt-5 text-base font-medium leading-8 text-slate-600">
@@ -228,7 +228,7 @@ export default function AboutPage() {
                 <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
                   {textPair(isRtl, aboutPage.vision.eyebrowEn, aboutPage.vision.eyebrowAr)}
                 </p>
-                <h2 className="mt-4 text-3xl font-black leading-tight md:text-5xl">
+                <h2 className="mt-4 text-2xl font-black leading-tight md:text-4xl lg:text-5xl">
                   {textPair(isRtl, aboutPage.vision.headingEn, aboutPage.vision.headingAr)}
                 </h2>
                 <p className="mt-5 text-base font-medium leading-8 text-white/70">

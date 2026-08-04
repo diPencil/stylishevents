@@ -10,6 +10,10 @@ export type PlatformThemeSettings = {
   logoEnUrl: string
   logoArUrl: string
   faviconUrl: string
+  footerLocationEn: string
+  footerLocationAr: string
+  footerMobile: string
+  footerWhatsapp: string
 }
 
 export type EventPageSortMode = 'default' | 'nearest' | 'latest' | 'oldest'

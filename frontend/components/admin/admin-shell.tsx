@@ -60,6 +60,10 @@ const defaultTheme: PlatformThemeSettings = {
   logoEnUrl: "/logo.png",
   logoArUrl: "/LogoAR.png",
   faviconUrl: "/favicon.png",
+  footerLocationEn: "26 Tarablous Street, Abbas El Akkad, 2nd floor, Flat 5, Nasr City, Cairo, Egypt",
+  footerLocationAr: "\u0662\u0666 \u0634\u0627\u0631\u0639 \u0637\u0631\u0627\u0628\u0644\u0633\u060c \u0639\u0628\u0627\u0633 \u0627\u0644\u0639\u0642\u0627\u062f\u060c \u0627\u0644\u062f\u0648\u0631 \u0627\u0644\u062b\u0627\u0646\u064a\u060c \u0634\u0642\u0629 \u0665\u060c \u0645\u062f\u064a\u0646\u0629 \u0646\u0635\u0631\u060c \u0627\u0644\u0642\u0627\u0647\u0631\u0629\u060c \u0645\u0635\u0631",
+  footerMobile: "+2 0100 607 1661",
+  footerWhatsapp: "+2 0100 607 1661",
 }
 
 const profileStorageKey = "stylish-events-admin-profile"

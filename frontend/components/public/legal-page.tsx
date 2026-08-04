@@ -114,7 +114,7 @@ function LegalSectionBlock({ section, index, isRtl }: { section: LegalContentSec
   return (
     <section id={section.anchor} className="scroll-mt-28 border-b border-slate-100 pb-10 last:border-b-0 last:pb-0">
       <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">{String(index + 1).padStart(2, "0")}</p>
-      <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">{isRtl ? section.titleAr : section.titleEn}</h2>
+      <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950 md:text-4xl lg:text-5xl">{isRtl ? section.titleAr : section.titleEn}</h2>
       <div className="mt-5 space-y-4 text-base font-medium leading-8 text-slate-600">
         <LegalRichText text={isRtl ? section.contentAr : section.contentEn} />
       </div>

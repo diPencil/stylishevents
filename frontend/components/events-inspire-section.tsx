@@ -48,7 +48,7 @@ export function EventsInspireSection({ settings }: EventsInspireSectionProps) {
               </span>
             ) : null}
 
-            <h2 className="mt-6 text-4xl font-black leading-[1.05] tracking-tight text-[#0f172a] sm:text-5xl lg:text-6xl">
+            <h2 className="mt-6 text-2xl font-black leading-[1.08] tracking-tight text-[#0f172a] md:text-4xl lg:text-5xl">
               {title}
             </h2>
 
@@ -196,7 +196,7 @@ function galleryTileClass(index: number) {
   if (index === 0) return "row-span-1"
   if (index === 1) return "row-span-1 translate-y-6"
   if (index === 2) return "row-span-2"
-  return "row-span-1 -translate-y-4"
+  return "row-span-1 translate-y-6"
 }
 
 function normalizeInternalUrl(url: string) {
