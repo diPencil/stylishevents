@@ -36,3 +36,20 @@ export async function transaction(callback) {
     connection.release();
   }
 }
+
+export async function verifyDatabaseConnection() {
+  let connection;
+
+  try {
+    connection = await getPool().getConnection();
+    await connection.ping();
+    console.log('Database verification completed.');
+    return { ready: true };
+  } catch (error) {
+    const code = typeof error?.code === 'string' ? error.code : 'DATABASE_VERIFY_FAILED';
+    console.error(`Database verification failed (${code}).`);
+    return { ready: false };
+  } finally {
+    connection?.release();
+  }
+}
