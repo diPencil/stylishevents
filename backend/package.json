@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Backend API for Stylish Events booking system",
   "type": "module",
-  "main": "src/start.js",
+  "main": "index.cjs",
   "scripts": {
-    "dev": "node --watch src/start.js",
-    "start": "node src/start.js",
+    "dev": "node --watch index.cjs",
+    "start": "node index.cjs",
     "seed:production-data": "node scripts/seed-production-data.js",
     "checkout:release-expired": "node scripts/release-expired-checkouts.js",
     "test": "node --test"
