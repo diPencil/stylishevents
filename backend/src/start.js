@@ -1,14 +1,19 @@
-import dotenv from 'dotenv';
+import app, { runPostListenChecks } from './server.js';
 
-dotenv.config({ path: '.env.local' });
-
-const { default: app } = await import('./server.js');
+console.log('Hostinger launcher loaded');
 
 const port = Number(process.env.PORT || 3000);
-const host = process.env.HOST || '0.0.0.0';
+const host = '0.0.0.0';
 
-app.listen(port, host, () => {
-  console.log(`Stylish Events Backend Started
-Server URL: http://${host}:${port}
-Environment: ${process.env.NODE_ENV || 'development'}`);
+const server = app.listen(port, host);
+
+server.once('listening', () => {
+  console.log(`HTTP server listening on ${host}:${port}`);
+  void runPostListenChecks();
+});
+
+server.once('error', (error) => {
+  const code = typeof error?.code === 'string' ? error.code : 'HTTP_STARTUP_FAILED';
+  console.error(`HTTP server startup failed (${code}).`);
+  process.exit(1);
 });

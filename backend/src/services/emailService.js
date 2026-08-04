@@ -18,14 +18,21 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-if (process.env.SMTP_VERIFY_ON_START === 'true') {
-  transporter.verify((error) => {
-    if (error) {
-      console.error('SMTP connection error:', error.message);
-      return;
-    }
-    console.log('SMTP server ready.');
-  });
+export async function verifyEmailService() {
+  if (process.env.SMTP_VERIFY_ON_START !== 'true') {
+    console.log('SMTP verification skipped (disabled).');
+    return { ready: false, skipped: true };
+  }
+
+  try {
+    await transporter.verify();
+    console.log('SMTP verification completed.');
+    return { ready: true, skipped: false };
+  } catch (error) {
+    const code = typeof error?.code === 'string' ? error.code : 'SMTP_VERIFY_FAILED';
+    console.error(`SMTP verification failed (${code}).`);
+    return { ready: false, skipped: false };
+  }
 }
 
 export async function sendEmail(to, subject, content) {

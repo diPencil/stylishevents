@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Backend API for Stylish Events booking system",
   "type": "module",
-  "main": "src/server.js",
+  "main": "src/start.js",
   "scripts": {
     "dev": "node --watch src/start.js",
     "start": "node src/start.js",

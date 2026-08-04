@@ -21,6 +21,8 @@ import ticketRoutes from './routes/tickets.js';
 import userRoutes from './routes/users.js';
 import { optionalAuth } from './middleware/auth.js';
 import { rateLimit, securityHeaders } from './middleware/security.js';
+import { verifyDatabaseConnection } from './db/mysql.js';
+import { verifyEmailService } from './services/emailService.js';
 
 dotenv.config({ path: '.env.local' });
 
@@ -107,5 +109,12 @@ app.use((err, req, res, next) => {
     error: statusCode >= 500 && process.env.NODE_ENV === 'development' ? err.message : undefined,
   });
 });
+
+export async function runPostListenChecks() {
+  await Promise.allSettled([
+    verifyEmailService(),
+    verifyDatabaseConnection(),
+  ]);
+}
 
 export default app;
