@@ -5,6 +5,7 @@ const nextConfig = (phase) => ({
   ...(phase === PHASE_DEVELOPMENT_SERVER
     ? { distDir: ".next-dev" }
     : {}),
+  output: "standalone",
   images: {
     unoptimized: true,
   },

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "next build",
+    "build:hostinger": "next build && node scripts/prepare-hostinger-standalone.mjs",
     "dev": "next dev -p 3002",
     "lint": "eslint .",
     "start": "next start"
