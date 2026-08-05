@@ -5,8 +5,6 @@ import { fileURLToPath } from "node:url"
 const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const standaloneDir = path.join(frontendDir, ".next", "standalone")
 const serverFile = path.join(standaloneDir, "server.js")
-const launcherFile = path.join(frontendDir, "hostinger.cjs")
-const standaloneLauncherFile = path.join(standaloneDir, "hostinger.cjs")
 
 const copies = [
   [path.join(frontendDir, "public"), path.join(standaloneDir, "public")],
@@ -33,7 +31,6 @@ async function verifySafeTree(directory) {
 }
 
 await access(serverFile)
-await access(launcherFile)
 
 for (const [source, destination] of copies) {
   await verifySafeTree(source)
@@ -41,7 +38,5 @@ for (const [source, destination] of copies) {
   await mkdir(path.dirname(destination), { recursive: true })
   await cp(source, destination, { recursive: true, errorOnExist: false })
 }
-
-await cp(launcherFile, standaloneLauncherFile, { force: true })
 
 console.log("Hostinger standalone bundle prepared without environment files.")
