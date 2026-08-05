@@ -2,7 +2,9 @@ import { PHASE_DEVELOPMENT_SERVER } from "next/constants.js"
 
 /** @type {(phase: string) => import('next').NextConfig} */
 const nextConfig = (phase) => ({
-  distDir: process.env.NEXT_DIST_DIR || (phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next-build"),
+  ...(phase === PHASE_DEVELOPMENT_SERVER
+    ? { distDir: ".next-dev" }
+    : {}),
   images: {
     unoptimized: true,
   },
