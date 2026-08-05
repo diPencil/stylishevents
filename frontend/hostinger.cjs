@@ -3,13 +3,17 @@ const path = require("node:path")
 
 process.env.HOSTNAME ||= "0.0.0.0"
 
-const standaloneDirectory = path.join(__dirname, ".next", "standalone")
-const serverFile = path.join(standaloneDirectory, "server.js")
+const candidates = [
+  path.join(__dirname, "server.js"),
+  path.join(__dirname, ".next", "standalone", "server.js"),
+]
 
-if (!fs.existsSync(serverFile)) {
-  console.error("Hostinger standalone server is missing. Run npm run build:hostinger first.")
+const serverFile = candidates.find((candidate) => fs.existsSync(candidate))
+
+if (!serverFile) {
+  console.error("Hostinger standalone server artifact is missing.")
   process.exit(1)
 }
 
-process.chdir(standaloneDirectory)
+process.chdir(path.dirname(serverFile))
 require(serverFile)

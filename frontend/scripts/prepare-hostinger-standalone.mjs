@@ -5,11 +5,10 @@ import { fileURLToPath } from "node:url"
 const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const standaloneDir = path.join(frontendDir, ".next", "standalone")
 const serverFile = path.join(standaloneDir, "server.js")
-
-const copies = [
-  [path.join(frontendDir, "public"), path.join(standaloneDir, "public")],
-  [path.join(frontendDir, ".next", "static"), path.join(standaloneDir, ".next", "static")],
-]
+const hostingerDistDir = path.join(frontendDir, "hostinger-dist")
+const launcherFile = path.join(frontendDir, "hostinger.cjs")
+const publicDir = path.join(frontendDir, "public")
+const staticDir = path.join(frontendDir, ".next", "static")
 
 function isEnvironmentFile(name) {
   return name === ".env" || name.startsWith(".env.")
@@ -31,12 +30,27 @@ async function verifySafeTree(directory) {
 }
 
 await access(serverFile)
+await access(launcherFile)
+await verifySafeTree(standaloneDir)
+await verifySafeTree(staticDir)
 
-for (const [source, destination] of copies) {
-  await verifySafeTree(source)
-  await rm(destination, { recursive: true, force: true })
-  await mkdir(path.dirname(destination), { recursive: true })
-  await cp(source, destination, { recursive: true, errorOnExist: false })
+await rm(hostingerDistDir, { recursive: true, force: true })
+await mkdir(hostingerDistDir, { recursive: true })
+await cp(standaloneDir, hostingerDistDir, { recursive: true })
+
+const hostingerStaticDir = path.join(hostingerDistDir, ".next", "static")
+await rm(hostingerStaticDir, { recursive: true, force: true })
+await mkdir(path.dirname(hostingerStaticDir), { recursive: true })
+await cp(staticDir, hostingerStaticDir, { recursive: true })
+
+try {
+  await access(publicDir)
+  await verifySafeTree(publicDir)
+  await cp(publicDir, path.join(hostingerDistDir, "public"), { recursive: true })
+} catch (error) {
+  if (error?.code !== "ENOENT") throw error
 }
 
-console.log("Hostinger standalone bundle prepared without environment files.")
+await cp(launcherFile, path.join(hostingerDistDir, "hostinger.cjs"))
+
+console.log("Hostinger runtime artifact prepared without environment files.")

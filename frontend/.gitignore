@@ -9,6 +9,7 @@
 
 # production
 /build
+/hostinger-dist/
 
 # debug
 npm-debug.log*
