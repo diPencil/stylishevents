@@ -8,7 +8,10 @@ export const databaseConfig = {
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'directevents_platform',
-  charset: 'utf8mb4',
+  // Match the canonical collation declared by migrations and the Hostinger schema.
+  // Using the bare "utf8mb4" alias makes mysql2 select utf8mb4_general_ci,
+  // which can conflict with utf8mb4_unicode_ci literals and bound parameters.
+  charset: 'utf8mb4_unicode_ci',
   waitForConnections: true,
   connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
   queueLimit: 0,
