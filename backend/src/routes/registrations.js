@@ -132,6 +132,17 @@ router.get('/', ...requireRegistrationAdmin, asyncRoute(async (req, res) => {
 
   if (eventId && !(await requireEventScope(req, res, eventId))) return;
   const scope = eventScopeCondition(req.user, 'e');
+  const filters = [
+    ...(status ? ['(r.registration_status = :status OR r.payment_status = :status)'] : []),
+    ...(eventId ? ['r.event_id = :eventId'] : []),
+    `(${scope.clause})`,
+  ];
+  const where = `WHERE ${filters.join('\n      AND ')}`;
+  const params = {
+    ...(status ? { status } : {}),
+    ...(eventId ? { eventId } : {}),
+    ...scope.params,
+  };
   const rows = await query(`
     SELECT
       r.id,
@@ -171,12 +182,10 @@ router.get('/', ...requireRegistrationAdmin, asyncRoute(async (req, res) => {
     JOIN ticket_types tt ON tt.id = r.ticket_type_id
     LEFT JOIN orders o ON o.id = r.order_id
     LEFT JOIN generated_tickets gt ON gt.registration_id = r.id
-    WHERE (:status = '' OR r.registration_status = :status OR r.payment_status = :status)
-      AND (:eventId = 0 OR r.event_id = :eventId)
-      AND (${scope.clause})
+    ${where}
     ORDER BY r.created_at DESC, r.id DESC
     LIMIT :limit OFFSET :offset
-  `, { status, eventId, limit, offset, ...scope.params });
+  `, { ...params, limit, offset });
 
   // If meta is requested, also return total count for pagination
   if (String(req.query.meta || '') === 'true') {
@@ -184,10 +193,8 @@ router.get('/', ...requireRegistrationAdmin, asyncRoute(async (req, res) => {
       SELECT COUNT(*) AS total
       FROM registrations r
       JOIN events e ON e.id = r.event_id
-      WHERE (:status = '' OR r.registration_status = :status OR r.payment_status = :status)
-        AND (:eventId = 0 OR r.event_id = :eventId)
-        AND (${scope.clause})
-    `, { status, eventId, ...scope.params });
+      ${where}
+    `, params);
     ok(res, { data: rows, pagination: { total: Number(countRow.total || 0), limit, offset } });
     return;
   }

@@ -146,10 +146,14 @@ router.get('/', asyncRoute(async (req, res) => {
   if (page && !allowedPages.includes(page)) return fail(res, 400, 'Invalid page', { allowed: allowedPages })
 
   const canManageEvents = req.user?.permissions?.includes('events.manage');
-  let where = canManageEvents
-    ? `WHERE (:status = '' OR e.status = :status) AND (:includeDeleted = 1 OR e.status <> 'deleted')`
-    : `WHERE e.status = 'published' AND e.status <> 'deleted'`;
-  let params = { status, includeDeleted: includeDeleted ? 1 : 0, limit };
+  const eventFilters = canManageEvents
+    ? [
+        ...(status ? ['e.status = :status'] : []),
+        ...(!includeDeleted ? ["e.status <> 'deleted'"] : []),
+      ]
+    : ["e.status = 'published'", "e.status <> 'deleted'"];
+  let where = `WHERE ${eventFilters.join(' AND ') || '1 = 1'}`;
+  let params = { ...(status ? { status } : {}), limit };
 
   if (canManageEvents) {
     const scope = eventScopeCondition(req.user, 'e');

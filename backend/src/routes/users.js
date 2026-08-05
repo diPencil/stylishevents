@@ -143,6 +143,26 @@ router.get('/', requirePermission('users.manage'), asyncRoute(async (req, res) =
   const search = String(req.query.search || '').trim();
   const role = String(req.query.role || '').trim();
   const status = String(req.query.status || '').trim();
+  const filters = [];
+  const params = {};
+  if (search) {
+    filters.push(`(
+      u.name LIKE :searchLike
+      OR u.email LIKE :searchLike
+      OR u.username LIKE :searchLike
+      OR u.phone LIKE :searchLike
+    )`);
+    params.searchLike = `%${search}%`;
+  }
+  if (role) {
+    filters.push('r.code = :role');
+    params.role = role;
+  }
+  if (status) {
+    filters.push('u.status = :status');
+    params.status = status;
+  }
+  const where = filters.length ? `WHERE ${filters.join('\n      AND ')}` : '';
 
   const rows = await query(`
     SELECT
@@ -165,17 +185,11 @@ router.get('/', requirePermission('users.manage'), asyncRoute(async (req, res) =
       r.name_ar AS role_name_ar
     FROM users u
     JOIN roles r ON r.id = u.role_id
-    WHERE (:search = ''
-      OR u.name LIKE CONCAT('%', :search, '%')
-      OR u.email LIKE CONCAT('%', :search, '%')
-      OR u.username LIKE CONCAT('%', :search, '%')
-      OR u.phone LIKE CONCAT('%', :search, '%'))
-      AND (:role = '' OR r.code = :role)
-      AND (:status = '' OR u.status = :status)
+    ${where}
     ORDER BY
       FIELD(r.code, 'admin', 'organizer', 'back_office', 'employee', 'doctor', 'customer'),
       u.created_at DESC
-  `, { search, role, status });
+  `, params);
 
   ok(res, rows.map(mapUser));
 }));
