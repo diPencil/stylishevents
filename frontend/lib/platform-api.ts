@@ -52,7 +52,23 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(`Backend API is not reachable at ${API_BASE_URL}`)
   }
 
-  const payload = await response.json().catch(() => ({}))
+  if (response.status === 204) return undefined as T
+
+  const rawBody = await response.text()
+  if (!rawBody.trim()) {
+    const err = new Error(`Backend returned an empty response for ${path}`)
+    ;(err as any).status = response.status
+    throw err
+  }
+
+  let payload: any
+  try {
+    payload = JSON.parse(rawBody)
+  } catch {
+    const err = new Error(`Backend returned invalid JSON for ${path}`)
+    ;(err as any).status = response.status
+    throw err
+  }
 
   if (!response.ok || payload.success === false) {
     const err = new Error(payload.message || "Request failed")

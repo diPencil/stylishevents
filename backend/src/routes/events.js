@@ -98,6 +98,28 @@ function eventSelect() {
   `;
 }
 
+function normalizeEventJsonFields(event) {
+  if (!event) return event;
+  const rawGallery = event.gallery_json;
+  if (Array.isArray(rawGallery)) {
+    return { ...event, gallery_json: JSON.stringify(rawGallery) };
+  }
+
+  const serializedGallery = rawGallery == null ? '' : String(rawGallery).trim();
+  if (!serializedGallery) return { ...event, gallery_json: '[]' };
+
+  let gallery;
+  try {
+    gallery = JSON.parse(serializedGallery);
+  } catch (error) {
+    throw new Error(`Invalid gallery_json for event ${event.id}: ${error.message}`);
+  }
+  if (!Array.isArray(gallery)) {
+    throw new Error(`Invalid gallery_json for event ${event.id}: expected an array`);
+  }
+  return { ...event, gallery_json: JSON.stringify(gallery) };
+}
+
 function eventParams(event) {
   return {
     slug: event.slug,
@@ -198,17 +220,18 @@ router.get('/', asyncRoute(async (req, res) => {
     LIMIT :limit
   `, params);
 
-  ok(res, rows);
+  ok(res, rows.map(normalizeEventJsonFields));
 }));
 
 router.get('/:id', asyncRoute(async (req, res) => {
-  const event = await first(`
+  const eventRow = await first(`
     ${eventSelect()}
     WHERE e.id = :id
     GROUP BY e.id
   `, { id: Number(req.params.id) });
 
-  if (!event) return fail(res, 404, 'Event not found');
+  if (!eventRow) return fail(res, 404, 'Event not found');
+  const event = normalizeEventJsonFields(eventRow);
   const canManageEvents = req.user?.permissions?.includes('events.manage');
   if (event.status !== 'published' && !canManageEvents) return fail(res, 404, 'Event not found');
   if (canManageEvents && !(await requireEventScope(req, res, event.id))) return;

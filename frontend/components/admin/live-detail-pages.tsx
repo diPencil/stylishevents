@@ -63,6 +63,28 @@ function value(row: any, ...keys: string[]) {
   return ""
 }
 
+function parseStringArrayField(input: unknown, fieldName: string) {
+  if (input == null) return []
+  if (Array.isArray(input)) {
+    if (input.every((item) => typeof item === "string")) return input
+    throw new Error(`${fieldName} must contain only strings`)
+  }
+  if (typeof input !== "string") throw new Error(`${fieldName} must be a JSON array`)
+  const serialized = input.trim()
+  if (!serialized) return []
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(serialized)
+  } catch (error) {
+    throw new Error(`${fieldName} contains invalid JSON: ${error instanceof Error ? error.message : "parse failed"}`)
+  }
+  if (!Array.isArray(parsed) || !parsed.every((item) => typeof item === "string")) {
+    throw new Error(`${fieldName} must be an array of strings`)
+  }
+  return parsed
+}
+
 function eventTitle(row: any) {
   return value(row, "event_title_en", "title_en", "titleEn") || "Untitled event"
 }
@@ -205,7 +227,7 @@ export function LiveEventDetailPage({ id, initialMode }: { id: string; initialMo
           coverImageUrl: value(event, "cover_image_url"),
           bannerImageUrl: value(event, "banner_image_url"),
           eventDetailsImageUrl: value(event, "event_details_image_url"),
-          gallery: JSON.parse(value(event, "gallery_json") || "[]").join("\n"),
+          gallery: parseStringArrayField(value(event, "gallery_json"), "Event gallery").join("\n"),
           googleMapsUrl: value(event, "google_maps_url"),
           publicRegistrationEnabled: Number(value(event, "public_registration_enabled") || 1) === 1,
           registrationApprovalMode: value(event, "registration_approval_mode") || "automatic",
