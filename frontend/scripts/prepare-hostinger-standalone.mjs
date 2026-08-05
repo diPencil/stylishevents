@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url"
 const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const standaloneDir = path.join(frontendDir, ".next", "standalone")
 const serverFile = path.join(standaloneDir, "server.js")
-const hostingerDistDir = path.join(frontendDir, "hostinger-dist")
 const launcherFile = path.join(frontendDir, "hostinger.cjs")
 const publicDir = path.join(frontendDir, "public")
 const staticDir = path.join(frontendDir, ".next", "static")
@@ -34,11 +33,7 @@ await access(launcherFile)
 await verifySafeTree(standaloneDir)
 await verifySafeTree(staticDir)
 
-await rm(hostingerDistDir, { recursive: true, force: true })
-await mkdir(hostingerDistDir, { recursive: true })
-await cp(standaloneDir, hostingerDistDir, { recursive: true })
-
-const hostingerStaticDir = path.join(hostingerDistDir, ".next", "static")
+const hostingerStaticDir = path.join(standaloneDir, ".next", "static")
 await rm(hostingerStaticDir, { recursive: true, force: true })
 await mkdir(path.dirname(hostingerStaticDir), { recursive: true })
 await cp(staticDir, hostingerStaticDir, { recursive: true })
@@ -46,11 +41,14 @@ await cp(staticDir, hostingerStaticDir, { recursive: true })
 try {
   await access(publicDir)
   await verifySafeTree(publicDir)
-  await cp(publicDir, path.join(hostingerDistDir, "public"), { recursive: true })
+  const hostingerPublicDir = path.join(standaloneDir, "public")
+  await rm(hostingerPublicDir, { recursive: true, force: true })
+  await cp(publicDir, hostingerPublicDir, { recursive: true })
 } catch (error) {
   if (error?.code !== "ENOENT") throw error
 }
 
-await cp(launcherFile, path.join(hostingerDistDir, "hostinger.cjs"))
+await cp(launcherFile, path.join(standaloneDir, "hostinger.cjs"))
+await verifySafeTree(standaloneDir)
 
 console.log("Hostinger runtime artifact prepared without environment files.")
